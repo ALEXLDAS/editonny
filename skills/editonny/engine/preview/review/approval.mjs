@@ -7,7 +7,10 @@ export class Approval {
 
   isApproved() {
     const ap = this.view.data && this.view.data.saved && this.view.data.saved.approval;
-    return Boolean(ap && ap.approved && ap.phase === this.view.cfg.phase && this.view.info && parseMs(ap.saved_at) >= this.view.info.mtime * 1000 - 1);
+    return Boolean(ap && ap.approved && ap.phase === this.view.cfg.phase && this.view.info
+      && ap.file === this.view.rel && ap.file_sha256 === this.view.info.sha256
+      && ap.dependencies_hash === this.view.info.dependencies_hash
+      && parseMs(ap.saved_at) >= this.view.info.mtime * 1000 - 1);
   }
 
   async approve() {
@@ -43,6 +46,7 @@ export class Approval {
       const res = await postJson('/api/approve', {
         phase: this.view.cfg.phase, note: this.view.els.approveNote.value.trim(),
         file: this.view.rel, file_mtime: this.view.info.mtime, file_size: this.view.info.size,
+        file_sha256: this.view.info.sha256, dependencies_hash: this.view.info.dependencies_hash,
       });
       if (this.view.data && this.view.data.saved) this.view.data.saved.approval = res.saved;
       this.view.els.approveNote.value = '';

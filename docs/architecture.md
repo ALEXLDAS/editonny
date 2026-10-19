@@ -54,6 +54,12 @@ Scenes are project copies with independent IDs and timeline registrations. Custo
 
 ## Preview and rendering
 
+Managed jobs start with CLI `inspect` and the mandatory settings summary/reply gate. `project_contract.py` validates schema 1 and distinct consent/artifact hashes. `intake.py` owns bounded local observations and proposals; `workspace.py` owns exclusive creation, independent revisions, accepted variants, evidence and no-overwrite publication. `project/project.json.workflow` owns decisions; `edit/source_manifest.json` records selected content hashes/facts and `edit/state.json` stores confirmations and execution evidence. The physical package and code fingerprint are reported by `doctor` to distinguish a checkout from an older personal installation.
+
+`media_policy.py` derives image/precision/encoding requirements from observed inputs and accepted decisions. `render_cut.py` retains rational CFR timing; `render_vfr.py` uses selected source PTS and hard joins. The default image route does not grade or convert HDR/SDR. `fidelity.py` compares actual corresponding frames outside time-dependent measured overlay bounds and checks current sources, decode, geometry, rate, precision, color tags, audio and text. Unsupported/unknown cases remain blocked. Sample/treatment records bind media SHA, complete configuration, cut/timeline, engine and renderer identity; changed dependencies invalidate them.
+
+Workspaces live in local Downloads/editonny/date-title/revisions/v001 with sibling edit/project/exports. Remote execution requires an explicit accessible root. A revision copies mutable data, retaining its parent. Delivery stages video/subtitles/manifest in the export directory and publishes unique filenames without overwriting existing files, with the manifest last as the completion marker. Destination hard-link support is required; no cache fallback exists.
+
 The preview application separates shared state/API, playback, timeline, trims, marks, approval, and style controls. The local server has an explicit static allowlist and authenticated same-origin writes. Approval checks file versions to reject stale saves; later changes are also surfaced by the watcher.
 
 The 3D scene runtime keeps its facade over focused timing, camera, material, text, label, media, and stage modules, sharing the same local Three.js instance. Time-driven scenes must support arbitrary seeking and preserve meaningful validation.

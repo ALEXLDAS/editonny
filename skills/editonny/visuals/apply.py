@@ -508,6 +508,19 @@ def main(argv=None):
         parser.error('--project is required')
     if args.project and not (args.project / 'project.json').is_file():
         parser.error('project.json is missing from --project')
+    configuration = json.loads((args.project / 'project.json').read_text()) if args.project else {}
+    if args.project and (configuration.get('workflow') or (args.project / configuration.get('edit', '../edit') / 'source_manifest.json').exists()):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'engine/helpers'))
+        from project_contract import managed_config
+        try:
+            managed = managed_config(args.project / configuration.get('edit', '../edit'))
+            if managed and managed['workflow']['visuals']['scenes'] == 'off':
+                parser.error('Visual scenes were not confirmed; propose a settings revision first')
+            allowed = managed['workflow']['visuals'].get('allowedSceneIds', []) if managed else []
+            if allowed and args.use and args.use not in allowed:
+                parser.error('This scene is outside the confirmed allowedSceneIds')
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
     if args.start is not None and args.start < 0:
         parser.error('--start must be nonnegative')
     if args.cut is not None and args.cut < 0:

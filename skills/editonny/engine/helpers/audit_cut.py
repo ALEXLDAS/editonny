@@ -171,7 +171,7 @@ def main() -> int:
     tr = [h("transcribe.py"), str(video), "--edit-dir", str(edit)]
     if args.prompt:
         tr += ["--prompt", args.prompt]
-    vf = [h("verify_cut.py"), str(edl), str(video), "--without-approval"]
+    vf = [h("verify_cut.py"), str(edl), str(video), "--without-approval", '--report-only']
     if args.min_silence is not None:
         vf += ["--min-silence", str(args.min_silence)]
 

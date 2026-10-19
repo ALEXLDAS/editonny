@@ -56,6 +56,7 @@ from common import (  # noqa: E402
     PREVIEW_DIR,
     STYLE_CATALOG_PATH,
     file_signature,
+    content_hash,
     load_json,
     probe_video,
     save_json,
@@ -147,6 +148,7 @@ class Session:
         self._locks: dict[str, threading.Lock] = {}
         self._locks_guard = threading.Lock()
         self._last_good: dict[str, Any] = {}
+        self._identities: dict[str, tuple] = {}
 
     # -- paths
 
@@ -204,7 +206,24 @@ class Session:
         if path is None or not path.is_file():
             return None
         st = path.stat()
-        return {"mtime": st.st_mtime, "size": st.st_size, "age": max(0.0, time.time() - st.st_mtime)}
+        key = (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+        with self.lock_for('identity:' + str(path)):
+            cached = self._identities.get(str(path))
+            if not cached or cached[0] != key:
+                cached = (key, content_hash(path))
+                self._identities[str(path)] = cached
+        from project_contract import digest
+        dependencies = {}
+        for item in ('edl.json', 'cut_timeline.json', 'edit_data.json', 'captions.json', 'source_manifest.json', 'transcripts/cut.json'):
+            dependency = self.safe_path(item)
+            if dependency and dependency.is_file():
+                dependencies[item] = content_hash(dependency)
+        project_config = self.edit_dir.parent / 'project/project.json'
+        if project_config.is_file():
+            dependencies['project'] = content_hash(project_config)
+        return {"mtime": st.st_mtime, "size": st.st_size, 'sha256': cached[1], 'dependencies_hash': digest(dependencies),
+                "age": max(0.0, time.time() - st.st_mtime),
+                'display_label': 'Preview derivative; color fidelity requires the master' if 'preview' in rel else 'Exported media; approval identifies these exact bytes'}
 
     def api_state(self) -> dict:
         errors: dict[str, str] = {}
@@ -585,6 +604,12 @@ def validate_trims(body: dict) -> dict:
 
 def validate_approval(body: dict) -> dict:
     record = {"phase": _phase(body), "approved": True, "note": _text(body.get("note"), 2000)}
+    if not body.get('file'):
+        raise BadRequest('Approval requires the exact reviewed file identity')
+    for key in ('file_sha256', 'dependencies_hash'):
+        if not isinstance(body.get(key), str) or not re.fullmatch(r'[a-f0-9]{64}', body[key]):
+            raise BadRequest(f'Approval requires {key}')
+        record[key] = body[key]
     # the exact video the person watched, so an approval never carries over to a newer render
     if body.get("file") not in (None, ""):
         if not isinstance(body.get("file"), str) or len(body["file"]) > 300:
@@ -883,10 +908,20 @@ class Handler(BaseHTTPRequestHandler):
             except BadRequest as exc:
                 return self._error(400, str(exc))
             if validate is validate_approval and record.get("file"):
+                state = self.session.read_json_file('state.json', []) or {}
+                expected_file = state.get('cut_video', 'cut.mp4') if record['phase'] == 'cut' else state.get('final_video')
+                if expected_file and record['file'] != expected_file:
+                    return self._error(409, 'Displayed media was superseded; wait for the current candidate before approving')
                 current = self.session.file_info(record["file"])
                 if (not current or abs(current["mtime"] - record["file_mtime"]) > 0.01
-                        or current["size"] != record["file_size"]):
+                        or current["size"] != record["file_size"] or current['sha256'] != record['file_sha256']
+                        or current['dependencies_hash'] != record['dependencies_hash']):
                     return self._error(409, 'The video changed; watch the current version and approve again')
+                try:
+                    from project_contract import managed_config
+                    managed_config(self.session.edit_dir)
+                except (ValueError, OSError) as exc:
+                    return self._error(409, str(exc))
             try:
                 save_json(self.session.edit_dir / filename, record)
             except OSError as exc:

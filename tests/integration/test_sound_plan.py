@@ -7,12 +7,24 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 HELPER = Path(__file__).resolve().parents[2] / 'skills/editonny/engine/helpers/sound_plan.py'
 
 
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'FFmpeg is required')
 class SoundPlanTests(unittest.TestCase):
+    def test_failed_peak_retries_do_not_return_success(self):
+        spec = importlib.util.spec_from_file_location('sound_peak_test', HELPER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        result = subprocess.CompletedProcess([], 0, '', '{}')
+        with patch.object(module, 'chain_loudnorm', return_value=('null', {})), \
+             patch.object(module.subprocess, 'run', return_value=result), \
+             patch.object(module, 'loudness', return_value={'input_tp': '-0.8', 'input_i': '-14'}):
+            with self.assertRaises((SystemExit, ValueError, RuntimeError)):
+                module.finalize('video.mp4', 'audio.wav', 'output.mp4')
+
     def test_project_plan_respects_tail_and_copies_woven_license(self):
         with tempfile.TemporaryDirectory(prefix='editonny sound plan ') as temporary:
             root = Path(temporary)

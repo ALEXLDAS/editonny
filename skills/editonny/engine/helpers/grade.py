@@ -123,14 +123,13 @@ def hdr_to_sdr_chain(info: dict) -> str:
     if _has_filter("zscale") and _has_filter("tonemap"):
         return ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,"
                 "tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p")
-    return ("format=yuv420p10le,colorspace=all=bt709:iall=bt2020:itrc=bt2020-10:"
-            "irange=tv:range=tv:fast=0:format=yuv420p")
+    raise ValueError('HDR display conversion requires zscale and tonemap; approximate color fallback is disabled')
 
 
 def graded_chain(filter_str: str) -> str:
     """8-bit guard before the grade and after it, so every grade sees and returns yuv420p."""
     if not filter_str:
-        return "format=yuv420p"
+        return "null"
     return f'format=yuv420p,{filter_str},format=yuv420p'
 
 
@@ -219,16 +218,21 @@ def candidates_montage(video: Path, candidates: list[tuple[str, str]], t: float,
 
 
 def apply_grade(src: Path, dst: Path, filter_str: str) -> None:
+    from common import ensure_distinct_output
+    from media_policy import encoder_args, frame_tags
+    ensure_distinct_output(dst, [src])
     info = probe_video(src)
     cmd = ["ffmpeg", "-y", "-v", "error", "-stats", "-nostdin", "-i", str(src), "-map", "0:v:0"]
     if info.get("has_audio"):
         cmd += ["-map", "0:a:0", "-c:a", "copy"]
-    hdr = hdr_to_sdr_chain(info)
-    cmd += ["-vf", (hdr + "," if hdr else "") + graded_chain(filter_str)
-            + ",setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709",
-            "-c:v", "libx264", "-profile:v", "high", "-preset", "medium", "-crf", "18",
-            "-pix_fmt", "yuv420p", "-color_primaries", "bt709", "-color_trc", "bt709",
-            "-colorspace", "bt709", "-color_range", "tv", "-movflags", "+faststart", str(dst)]
+    if filter_str and (info.get('is_hdr') or info.get('bit_depth', 8) > 8):
+        raise ValueError('This creative preset requires an explicit tested SDR conversion; no automatic precision reduction')
+    if filter_str:
+        cmd += ['-vf', graded_chain(filter_str) + (',' + frame_tags(info) if frame_tags(info) else ''),
+                *encoder_args(info), '-preset', 'medium']
+    else:
+        cmd += ['-c:v', 'copy']
+    cmd += ['-movflags', '+faststart', str(dst)]
     dst.parent.mkdir(parents=True, exist_ok=True)
     proc = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     if proc.returncode != 0:

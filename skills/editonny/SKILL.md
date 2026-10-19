@@ -1,11 +1,34 @@
 ---
 name: editonny
-description: Edit local videos through conversation: remove unnecessary pauses, audible breaths, mistakes, false starts, and repetitions; add captions, framing, audio, and visual scenes. Use for Reels, ads, sales videos, lessons, combining takes, adapting a visual reference, or refining an existing edit. Preserve originals and meaning, respect the requested scope, and verify a representative sample before completing the render.
+description: Use when editing local videos, Reels, ads, sales videos, lessons, combining takes, adding captions or visual scenes, adapting a reference, or refining an existing edit.
 ---
 
 # editonny
 
-One portable entry point for local video editing and visual storytelling. Use the tools in this package to execute the request. Use clear English by default and respect an explicit request for another conversation language. Preserve the language and words of the user's recording unless translation was requested.
+One portable entry point for local video editing and visual storytelling. Follow the user's conversation language. Preserve recorded speech and its language unless translation was requested; prompt language does not identify speech language.
+
+## Every new editing job starts with confirmation
+
+**Inspect → present the complete proposed settings → wait for a subsequent explicit user reply → create the workspace and edit.** This applies even to a detailed prompt or “decide everything and continue.” The initial prompt cannot approve its own summary. Never fabricate confirmation, timestamps, message IDs or a reply.
+
+Before that reply, allow only read-only local probes, hashes, representative frames and bounded speech-language sampling (up to 30 seconds per source, three sources, cached local models only). Keep observations in temporary session files. No full transcription, editorial render, treatment, upload or permanent workspace yet.
+
+Present one readable summary, using the actual request and observed facts, covering:
+
+1. Goal, scope and pacing.
+2. Selected sources and order; unresolved media issues.
+3. Image: preserve original brightness, tone, contrast, saturation and color interpretation; **no automatic filter, grade, HDR/SDR conversion or “enhancement.”** HDR is not automatically better. Disclose unknown or conflicting metadata.
+4. Dimensions, aspect ratio, crop/contain, orientation, exact FPS/VFR, codec, container, precision and output variants.
+5. Conversation, detected speech, transcription, caption and translation languages separately. Show uncertain detection; do not invent a regional locale.
+6. Captions, style, density, placement/accessibility and SRT/VTT files.
+7. Cleanup, intentional pauses and protected source intervals.
+8. Voice level, noise removal, music, effects, tracks and encoded peak ceiling.
+9. Scenes, camera movement, transitions, graphics and background treatment.
+10. Sample reviewer, final checks, destination, filenames and organization.
+
+Mark requested, observed, proposed and unknown choices. Defaults are **proposals**, not permission: source appearance/geometry/FPS, standard editorial cleanup, faithful captions on (up to three words), voice normalization at -14 LUFS, processing headroom -1.5 dBTP, encoded ceiling -1 dBTP, denoise/music/effects/scenes/camera motion off, agent sample review. Respect narrower scopes: captions-only does not normalize audio or recut speech. Explain unsupported combinations before acceptance; offer concrete choices without silently changing them.
+
+End with “Approve these settings, or tell me what to change.” Wait. After changes, show the revised summary and wait for its acceptance.
 
 ## Resolve the package
 
@@ -17,8 +40,7 @@ Use absolute media paths when a command changes directories. Prefer structured s
 python3 <EDITONNY>/scripts/editonny.py doctor
 python3 <EDITONNY>/scripts/editonny.py catalog "three steps"
 python3 <EDITONNY>/scripts/editonny.py media status
-python3 <EDITONNY>/scripts/editonny.py helper transcribe /path/video.mp4 --edit-dir /path/edit
-python3 <EDITONNY>/scripts/editonny.py new /path/project --edit /path/edit --style paper
+python3 <EDITONNY>/scripts/editonny.py inspect /selected/video.mp4 --json
 python3 <EDITONNY>/scripts/editonny.py scene --project /path/project --use three-steps --start 5 --end 9
 ```
 
@@ -32,10 +54,11 @@ This is the default for every full edit even when the user did not enumerate cle
 
 ## Start or resume
 
-1. Find the footage and intended outcome in the request. Ask only for information that prevents work; when autonomy is authorized, choose reasonable defaults and record them.
-2. Preserve original files. Use an `edit/` folder for transcripts and cut outputs, with the composition project alongside it. Read `edit/project.md` if resuming.
-3. A full edit starts with [the engine workflow](engine/WORKFLOW.md). A visual change to an approved cut can start with [the visual library](visuals/README.md). A question about examples is not permission to render.
-4. Match the aspect ratio and pacing to the destination: 9:16, 16:9, 4:5, or 1:1. Do not force the same pace on a lesson and a short ad.
+1. Resolve the physical package and run `doctor`; its fingerprint distinguishes this checkout from an older personal installation. Never update personal installations automatically.
+2. Read [the engine workflow](engine/WORKFLOW.md), inspect only selected footage, prepare the complete summary above, and wait for explicit confirmation.
+3. After acceptance, use `workspace init` with the real summary/reply record. Default local root: `~/Downloads/editonny/YYYY-MM-DD-title/revisions/v001/{edit,project,exports}`. Only finals, requested subtitles and delivery manifests enter `exports/`; working files stay in the revision. Never scatter intermediates in Downloads, deliver a cache path or overwrite a previous final.
+4. Verify the execution host. A remote host's Downloads is not the person's Mac. Explain actual access and obtain a concrete destination/transfer choice; no upload or cache-download fallback by assumption. A denied/full Downloads folder is an actionable error, not permission to choose another folder.
+5. Resume with `workspace status --project <PROJECT> --json`. Read canonical `project/project.json`, observed `edit/source_manifest.json` and evidence `edit/state.json`. New decisions use `workspace revise` and a delta summary/confirmation; accepted decisions remain valid for in-scope work. Revisions own independent files. Do not manually forge state or mutate a parent revision.
 
 ## Edit and compose
 
@@ -60,7 +83,11 @@ Search with `catalog` and choose scenes by `whenToUse`, category, and duration i
 
 ## Export and verify
 
-Use `build.py hf lint`, `build.py hf check`, and render through the project's pinned HyperFrames version. Run only one render per project at a time. Use `engine/helpers/quality_gate.py` and interpret findings in context: expressive pauses, intentional darkness, and audio without narration are not automatically defects.
+Prefer the cut-only master when it already satisfies the request; another composition encode is unnecessary. Choose a supported route using the workflow's media policy. Native visual composition is CFR; HDR overlays and unsupported SDR profiles are blocked until conformance evidence exists. VFR cut-only keeps timestamps with hard joins. Offer a confirmed conversion or supported alternative when needed; never downgrade silently.
+
+For native composition, use `build.py hf lint`, `build.py hf check`, and the pinned renderer with an explicit new candidate output path. Review the representative sample, record its exact evidence with `workspace review`, and record user-approved before/after references with `workspace reference` for requested image treatment. Agent autonomy applies to sample review only after initial settings acceptance; user sample review remains mandatory when selected.
+
+Use `quality_gate.py` and `workspace export` for actual-media verification and publication. Required checks marked failed, blocked or not_checked prevent delivery. Source/candidate bytes, composition dependencies, appearance outside measured overlay bounds, timing, audio and caption layout must match current evidence. Interpret expressive pauses, original darkness and silent footage in context, documenting any intentional exceptions. Do not call unchecked media validated.
 
 Inspect the exported MP4 for playback, voice and music, duration, captions, framing, text, cut edges, and synchronization. A still frame checks layout but cannot prove motion or timing. Record exceptions and unavailable checks honestly. Finish with the video and project paths, a concise change report, checks performed, and remaining limitations.
 

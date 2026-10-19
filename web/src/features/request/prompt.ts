@@ -32,5 +32,5 @@ ${p.closing}`;
 /** A ready request that edits footage around one catalog scene. */
 export function scenePrompt(scene: SceneRef, agent: Agent, locale: AppLocale): string {
   const goal = { 'en-US': 'edit my video using this visual reference', 'pt-BR': 'editar meu vídeo usando esta referência visual', es: 'editar mi video usando esta referencia visual' }[locale];
-  return createPrompt({ agent, goal }, locale, scene);
+  return createPrompt({ agent, goal, effects: 'subtle' }, locale, scene);
 }

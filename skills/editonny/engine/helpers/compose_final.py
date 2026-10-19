@@ -16,6 +16,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from fractions import Fraction
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
@@ -163,6 +164,8 @@ class Plan:
     tv: dict | None = None                                     # edit_type "greenScreen" (prepare_tela_verde)
     person_zones: list[tuple] = field(default_factory=list)    # (f0, f1, body rectangles) in render pixels, for green screen only.
     image_zones: list[tuple] = field(default_factory=list)     # (f0, f1, rect) main area of a whole background picture
+    media_plan: dict = field(default_factory=dict)
+    fps_str: str = ''
 
     @property
     def duration(self) -> float:
@@ -253,8 +256,31 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
     if not isinstance(data, dict):
         raise ComposeError('edit_data.json must be a JSON object', 2)
     edit_dir = edit_data_path.parent.resolve()
+    from project_contract import managed_config, settings_hash
+    from common import probe_video
+    from media_policy import plan_media, COLOR_FIELDS, UNKNOWN
+    contract = managed_config(edit_dir)
+    if contract:
+        if data.get('contractHash') != settings_hash(contract):
+            raise ComposeError('Composition settings do not match the confirmed project snapshot', 2)
+        workflow = contract['workflow']
+        if workflow['visuals']['scenes'] == 'off' and (data.get('inserts') or _enabled(_section(data, 'motion'))):
+            raise ComposeError('Additional visual scenes were not confirmed', 2)
+        if not workflow['visuals']['cameraMotion'] and any(_section(data, 'camera').get(key) for key in ('zoom_cuts', 'push_in')):
+            raise ComposeError('Camera motion was not confirmed', 2)
+        if not workflow['audio']['music'] and _enabled(_section(data, 'music')):
+            raise ComposeError('Music was not confirmed', 2)
+        if _section(data, 'audio').get('denoise', 'off') != workflow['audio']['denoise']:
+            raise ComposeError('Noise removal conflicts with the confirmed audio settings', 2)
+        if _section(data, 'captions').get('enabled', contract.get('captions', {}).get('enabled')) != contract.get('captions', {}).get('enabled'):
+            raise ComposeError('Caption visibility conflicts with the confirmed settings', 2)
+        data['captions'] = {**contract.get('captions', {}), **_section(data, 'captions')}
+        data['loudness'] = {'i': workflow['audio']['targetLufs'], 'tp': workflow['audio']['truePeakLimit'], 'lra': 11}
+        data['_audio_policy'] = workflow['audio']
     base = _resolve(edit_dir, data.get("base") or "cut.mp4", "base")
     facts = _base_facts(base)
+    source_facts = probe_video(base)
+    media_plan = plan_media([source_facts], None, None, 'composition')
 
     timeline_path = edit_dir / (data.get("timeline") or "cut_timeline.json")
     timeline = load_json(timeline_path) if timeline_path.exists() else None
@@ -262,8 +288,17 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
     outcfg = _section(data, "output")
     full_w = int(outcfg.get("width") or (timeline or {}).get("width") or facts["width"])
     full_h = int(outcfg.get("height") or (timeline or {}).get("height") or facts["height"])
-    fps_val = outcfg.get("fps") or (timeline or {}).get("fps") or output_fps_for(facts["fps"])
-    fps = int(round(float(fps_val)))
+    fps_val = outcfg.get("fps") or (timeline or {}).get('fps_str') or source_facts['fps_str']
+    fps_str = str(Fraction(str(fps_val)))
+    fps = float(Fraction(fps_str))
+    if contract:
+        expected_video = contract['workflow']['video']
+        if (full_w, full_h) != (expected_video['width'], expected_video['height']) or Fraction(fps_str) != Fraction(expected_video['frameRate']):
+            raise ComposeError('Composition geometry or cadence conflicts with confirmed settings', 2)
+        manifest = load_json(edit_dir / 'source_manifest.json')
+        expected = plan_media([s['facts'] for s in manifest['sources']], contract, None, 'master')
+        if any(expected.get(k) not in UNKNOWN and source_facts.get(k) != expected[k] for k in COLOR_FIELDS):
+            raise ComposeError('The cut master color profile does not match the confirmed media plan', 2)
     if fps <= 0 or full_w < 16 or full_h < 16:
         raise ComposeError('invalid output in edit_data.json (width/height/fps)', 2)
     if preview:
@@ -292,12 +327,15 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
     else:
         out_path = edit_dir / ("final_preview.mp4" if preview else "final.mp4")
     out_path = out_path.resolve()
+    if out_path == base:
+        raise ComposeError('Output must not replace the base video or original footage', 2)
 
     plan = Plan(edit_dir=edit_dir, edit_data_path=edit_data_path.resolve(), data=data, base=base,
                 out_path=out_path, preview=preview, full_w=full_w, full_h=full_h, W=W, H=H, fps=fps,
                 base_fps=facts["fps"], base_w=facts["width"], base_h=facts["height"], nf=nf,
                 has_audio=facts["has_audio"], segments=[], accent=accent,
-                renders=edit_dir / "renders" / ("preview" if preview else "full"), timeline=timeline)
+                renders=edit_dir / "renders" / ("preview" if preview else "full"), timeline=timeline,
+                media_plan=media_plan, fps_str=fps_str)
 
     # timeline segments on the output frame grid
     segs = []
@@ -446,7 +484,7 @@ def run_denoise(plan: Plan, mode: str, keep_temp: bool) -> tuple[Path | None, di
         return None, {"mode": mode, "applied": "off", "warnings": [msg]}
     work = plan.edit_dir / "renders" / "denoise"
     try:
-        res = denoise_mod.build_voice(plan.edit_dir, plan.base, plan.timeline, plan.fps, plan.nf * SR // plan.fps, mode,
+        res = denoise_mod.build_voice(plan.edit_dir, plan.base, plan.timeline, plan.fps, round(plan.nf * SR / plan.fps), mode,
                                       work, keep_temp=keep_temp)
     except Exception as e:  # noqa: BLE001  (the cleaning is optional: the render goes on with the cut's audio)
         msg = f'noise removal failed ({e}). Preserving original audio'
@@ -2627,6 +2665,10 @@ def build_tracks(plan: Plan, inserts: list[Insert], motions: list[Visual] | None
         if sfx_on and snd:
             result["sfx_events"].append({"name": str(snd), "frame": f, "lead_frames": 0, "why": "flash"})
     result["top"] = top.build(out_dir)
+    result['overlayMasks'] = [{'start': a / fps, 'end': b / fps,
+                               'box': [max(0, box[0] - 4) / W, max(0, box[1] - 4) / H,
+                                       min(W, box[2] + 4) / W, min(H, box[3] + 4) / H]}
+                              for spans in drawn.values() for a, b, box, _ in spans if box]
     return result
 
 
@@ -2785,6 +2827,17 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
               base_clip: Path | None = None) -> None:
     """base_clip: the green screen clip, already on the output grid and size, used in place of the base."""
     W, H, fps, nf = plan.W, plan.H, plan.fps, plan.nf
+    from media_policy import encoder_args, frame_tags
+    active_tracks = any(value for value in tracks.values())
+    if not inserts and not active_tracks and not cam and base_clip is None and (W, H) == (plan.base_w, plan.base_h) and abs(fps - plan.base_fps) < 1e-6:
+        ffmpeg_cmd(['-v', 'error', '-y', '-i', plan.base, '-map', '0:v:0', '-c:v', 'copy', '-an',
+                    '-frames:v', nf, '-movflags', '+faststart', str(tmp_video)], 'preserve unchanged video essence')
+        return
+    if plan.media_plan.get('bit_depth', 8) > 8 or plan.media_plan.get('is_hdr'):
+        raise ComposeError('This FFmpeg effects path is not validated at source precision; use the native HDR route or confirm a conversion', 2)
+    if inserts and (plan.media_plan.get('color_space') != 'bt709' or plan.media_plan.get('color_range') != 'tv'):
+        raise ComposeError('Video inserts require a validated common composition space; do not reinterpret source color', 2)
+    time_base = f'{Fraction(plan.fps_str).denominator}/{Fraction(plan.fps_str).numerator}'
     inputs: list[str] = ["-i", str(base_clip or plan.base)]
     chains: list[str] = []
     n_in = 1
@@ -2794,7 +2847,7 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
         pre.append(f'fps={fps}')
     if base_clip is None and (plan.base_w, plan.base_h) != (W, H):
         pre.append(f'scale={W}:{H}:force_original_aspect_ratio=increase:flags=bicubic,crop={W}:{H},setsar=1')
-    pre += [f'settb=1/{fps}', "setpts=N", "format=yuv420p"]
+    pre += [f'settb={time_base}', "setpts=N", "format=yuv420p"]
     if cam:
         pre.append(cam)
     splits = [i for i in inserts if i.speaker is not None]
@@ -2826,7 +2879,7 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
         inputs += ["-i", str(ins.clip)]
         x, y = ins.content[0], ins.content[1]
         lab = nxt()
-        chains.append(f'[{n_in}:v]settb=1/{fps},setpts=N+{ins.f0},format=yuv420p[ins{ins.idx}]')
+        chains.append(f'[{n_in}:v]settb={time_base},setpts=N+{ins.f0},format=yuv420p[ins{ins.idx}]')
         chains.append(f"[{cur}][ins{ins.idx}]overlay=x={x}:y={y}:eof_action=pass:enable='{en}'[{lab}]")
         cur = lab
         n_in += 1
@@ -2849,21 +2902,22 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
         inputs += ["-f", "concat", "-safe", "0", "-i", str(ff)]
         en = enable_expr(windows, nf)
         lab = nxt()
-        chains.append(f'[{n_in}:v]format=rgba,scale=out_color_matrix=bt709:out_range=tv,format=yuva420p[t{name}]')
+        matrix = plan.media_plan.get('color_space') or 'bt709'
+        output_range = plan.media_plan.get('color_range') or 'tv'
+        chains.append(f'[{n_in}:v]format=rgba,scale=in_range=pc:out_color_matrix={matrix}:out_range={output_range},format=yuva420p[t{name}]')
         opt = f":enable='{en}'" if en else ""
         chains.append(f'[{cur}][t{name}]overlay=0:0:eof_action=pass:format=auto{opt}[{lab}]')
         cur = lab
         n_in += 1
-    chains.append(f'[{cur}]format=yuv420p[vout]')
+    tags = frame_tags(plan.media_plan)
+    chains.append(f'[{cur}]format=yuv420p' + (',' + tags if tags else '') + '[vout]')
 
     script = plan.renders / "final_graph.txt"
     script.write_text(";\n".join(chains) + "\n", encoding="utf-8")
     crf, preset = ("26", "veryfast") if plan.preview else ("18", "medium")
     args = ["-v", "error", "-y", *inputs, *graph_args(script), "-map", "[vout]",
-            "-frames:v", str(nf), "-fps_mode", "cfr", "-r", str(fps),
-            "-c:v", "libx264", "-preset", preset, "-crf", crf, "-profile:v", "high", "-pix_fmt", "yuv420p",
-            "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
-            "-x264-params", "colorprim=bt709:transfer=bt709:colormatrix=bt709",
+            "-frames:v", str(nf), "-fps_mode", "cfr", "-r", plan.fps_str,
+            *encoder_args(plan.media_plan, quality=crf), '-preset', preset,
             "-an", "-f", "mp4", str(tmp_video)]
     ffmpeg_cmd(args, 'compose the final video')
 
@@ -2875,7 +2929,7 @@ def loudnorm_measure(path: Path, extra: list[str] | None = None, i=-14.0, tp=-1.
                            "-vn", "-af", f'loudnorm=I={i}:TP={tp}:LRA={lra}:print_format=json', "-f", "null", "-"],
                           capture_output=True, text=True)
     m = re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", proc.stderr or "", re.S)
-    if not m:
+    if proc.returncode or not m:
         return None
     try:
         d = json.loads(m.group(0))
@@ -2919,7 +2973,7 @@ def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav
               voice: Path | None = None) -> None:
     """voice: a cleaned voice track (audio.denoise) used instead of the base's audio; None = the base's audio."""
     data = plan.data
-    fps, total = plan.fps, plan.nf * SR // plan.fps
+    fps, total = plan.fps, round(plan.nf * SR / plan.fps)
     loud = _section(data, "loudness")
     target_i = float(loud.get("i", -14))
     target_tp = float(loud.get("tp", -1.0))
@@ -3000,10 +3054,10 @@ def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav
             late = 0
             if anchor is None:
                 # a sound file with no anchor: its t=0 on the event frame (lead_frames early), as always
-                start = max(0, (e["frame"] - e["lead_frames"]) * SR // fps)
+                start = max(0, round((e["frame"] - e["lead_frames"]) * SR / fps))
             else:
                 # the anchor (the moment the sound hits full strength) lands on the event frame
-                start = e["frame"] * SR // fps - int(round(anchor * SR))
+                start = round(e["frame"] * SR / fps) - int(round(anchor * SR))
                 if start < 0:
                     late, start = -start, 0
             if start >= total or ev_gain <= 0:
@@ -3101,7 +3155,7 @@ def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav
                 "-ar", SR, "-ac", 2, str(mix)], 'mix audio')
 
     normal_tp = target_tp - AAC_TP_HEADROOM
-    if not plan.has_audio and not music_on:
+    if (not plan.has_audio and not music_on) or data.get('_audio_policy', {}).get('mode') == 'preserve':
         # no voice and no music: only effects. Normalizing them to -14 LUFS would make them blast.
         measured = None
         os.replace(mix, out_wav)
@@ -3111,8 +3165,7 @@ def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav
         if measured:
             af = (f"loudnorm=I={target_i}:TP={normal_tp}:LRA={target_lra}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true")
         else:
-            af = f'loudnorm=I={target_i}:TP={normal_tp}:LRA={target_lra}'
-            plan.warnings.append('loudness measurement failed (silent audio?); using one-pass normalization')
+            raise ComposeError('Normalization needs a finite measured voice track; select preserve for silence')
         ffmpeg_cmd(["-v", "error", "-y", "-i", mix, "-af",
                     f'{af},aresample={SR},apad=whole_len={total},atrim=end_sample={total}',
                     "-c:a", "pcm_f32le", "-ar", SR, "-ac", 2, str(out_wav)], "normalizar o volume")
@@ -3283,6 +3336,13 @@ def compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: boo
     tmp_out = plan.out_path.with_name(".tmp-" + plan.out_path.name)
 
     def mux(gain_db: float) -> None:
+        policy = plan.data.get('_audio_policy', {})
+        untouched = policy.get('mode') == 'preserve' and policy.get('denoise') == 'off' and not policy.get('music') and not policy.get('effects')
+        if untouched:
+            ffmpeg_cmd(['-v', 'error', '-y', '-i', tmp_video, '-i', plan.base, '-map', '0:v:0', '-map', '1:a?',
+                        '-c', 'copy', '-t', f'{plan.duration:.6f}', '-movflags', '+faststart', '-f', 'mp4', tmp_out],
+                       'preserve original audio streams under the edited picture')
+            return
         af = ["-af", f'volume={gain_db:.2f}dB'] if abs(gain_db) > 0.001 else []
         ffmpeg_cmd(["-v", "error", "-y", "-i", tmp_video, "-i", audio_wav, "-map", "0:v:0", "-map", "1:a:0",
                     "-c:v", "copy", *af, "-c:a", "aac", "-b:a", "192k", "-ar", SR, "-ac", 2,
@@ -3290,12 +3350,22 @@ def compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: boo
                    'mux video and audio')
 
     mux(0.0)
-    final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp)
+    normalize = plan.has_audio and plan.data.get('_audio_policy', {}).get('mode', 'normalize') == 'normalize'
+    final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp) if normalize else None
     if final_loud and final_loud["input_tp"] > target_tp + 0.05:
         # the AAC encoder pushed a true peak over the target: trim the gain just enough and encode again
         mux(target_tp - final_loud["input_tp"] - 0.1)
         final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp)
+    if normalize and (not final_loud or final_loud['input_tp'] > target_tp):
+        tmp_out.unlink(missing_ok=True)
+        raise ComposeError('Encoded audio did not meet the confirmed peak limit; candidate was not published')
     os.replace(tmp_out, plan.out_path)
+    if plan.data.get('_audio_policy'):
+        from common import content_hash
+        from workspace import record_artifact, render_dependencies
+        project = plan.edit_dir.parent / 'project'
+        record_artifact(project, 'render:' + content_hash(plan.out_path), plan.out_path, render_dependencies(project),
+                        {'overlayMasks': tracks.get('overlayMasks', []), 'renderer': 'ffmpeg-compose'})
     for p in (tmp_video, audio_wav):
         if keep_temp:
             break

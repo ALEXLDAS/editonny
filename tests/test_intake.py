@@ -1,0 +1,67 @@
+import importlib
+from pathlib import Path
+import sys
+import unittest
+import tempfile
+from unittest.mock import patch
+
+HELPERS = Path(__file__).resolve().parents[1] / 'skills/editonny/engine/helpers'
+sys.path.insert(0, str(HELPERS))
+
+
+class IntakeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        assert (HELPERS / 'intake.py').exists(), 'Inspection and proposal are not implemented'
+        cls.i = importlib.import_module('intake')
+
+    def source(self):
+        return {'sources': [{'id': 'source', 'path': '/selected/source.mp4', 'sha256': 'abc', 'facts':
+            {'display_width': 1080, 'display_height': 1920, 'fps_str': '30000/1001', 'is_vfr': False,
+             'has_video': True, 'has_audio': True, 'duration': 20, 'bit_depth': 8, 'pix_fmt': 'yuv420p',
+             'color_transfer': 'bt709', 'color_primaries': 'bt709', 'color_space': 'bt709', 'color_range': 'tv'}}]}
+
+    def test_short_prompt_gets_complete_proposal_without_forcing_speech(self):
+        proposal = self.i.propose_settings(self.source(), {'conversation': 'pt-BR'})
+        workflow = proposal['config']['workflow']
+        self.assertEqual(workflow['language']['transcription'], 'auto')
+        self.assertEqual(workflow['language']['captions'], 'source')
+        self.assertEqual(workflow['color']['mode'], 'preserve')
+        self.assertIsNone(workflow['color']['grade'])
+        self.assertEqual(workflow['video']['frameRate'], '30000/1001')
+        self.assertTrue(proposal['confirmationRequired'])
+        self.assertEqual(len(proposal['summary']), 10)
+        self.assertIn('no color treatment', proposal['summary']['image'].lower())
+
+    def test_complete_prompt_still_requires_summary(self):
+        proposal = self.i.propose_settings(self.source(), {'captions': False, 'conversation': 'en-US', 'scope': 'captions'})
+        self.assertFalse(proposal['config']['captions']['enabled'])
+        self.assertEqual(proposal['config']['workflow']['editing']['scope'], 'captions')
+        self.assertTrue(proposal['confirmationRequired'])
+
+    def test_mixed_source_formats_are_not_silently_selected(self):
+        inspection = self.source()
+        import copy
+        other = copy.deepcopy(inspection['sources'][0])
+        other['id'] = 'other'
+        other['facts']['display_width'] = 1920
+        other['facts']['display_height'] = 1080
+        inspection['sources'].append(other)
+        with self.assertRaisesRegex(ValueError, 'target'):
+            self.i.propose_settings(inspection, {})
+
+    def test_bounded_local_detection_does_not_invent_regional_locale(self):
+        self.assertTrue(hasattr(self.i, 'detect_language_sample'), 'Bounded local language detection is missing')
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / 'source.mp4'; source.write_bytes(b'footage')
+            facts = self.source()['sources'][0]['facts']
+            with patch.object(self.i, 'probe_video', return_value=facts), \
+                 patch.object(self.i, 'detect_language_sample', return_value={'status': 'detected', 'language': 'pt', 'sampleSeconds': 20}) as detect:
+                result = self.i.inspect_sources([source])
+            detect.assert_called_once()
+            self.assertEqual(result['sources'][0]['language']['language'], 'pt')
+            self.assertEqual(list(Path(temp).iterdir()), [source])
+
+
+if __name__ == '__main__':
+    unittest.main()

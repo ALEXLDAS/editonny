@@ -156,7 +156,8 @@ export class Review {
       this.showEmpty(true);
       return;
     }
-    const key = `${rel}|${info.mtime}|${info.size}`;
+    const key = `${rel}|${info.mtime}|${info.size}|${info.sha256}`;
+    if (key === this.mediaKey) this.info = info;
     if (key !== this.mediaKey) {
       const settled = info.age > 2.5 || key === this.candidateKey;
       if (settled) {

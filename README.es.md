@@ -123,9 +123,9 @@ La guía incluye **54 ejemplos de edición**, un generador de prompts y el catá
 </p>
 
 1. Elige una intención en la guía, indica la carpeta y copia la solicitud al agente.
-2. La skill comprueba el entorno, analiza la voz, selecciona tomas y aplica la limpieza medida.
-3. Revisa una muestra representativa de **8–15 segundos**, con voz, subtítulos y movimiento. Pide explícitamente que el agente espere si quieres aprobarla antes de continuar.
-4. Completa el proyecto, renderiza con su versión fija de HyperFrames y comprueba el MP4 final.
+2. La skill inspecciona las fuentes seleccionadas, propone todos los ajustes y **espera tu confirmación**, incluso con una solicitud detallada. Conserva imagen, geometría y FPS por defecto; los filtros y conversiones de color nunca son automáticos.
+3. Tras la aprobación, el trabajo queda en **Downloads/editonny/fecha-titulo/revisions/v001/**, con carpetas separadas para edición, proyecto y exportación. Revisa una muestra de **8–15 segundos**; elige aprobación del usuario si quieres que el agente espere también en esta etapa.
+4. Completa una ruta compatible y entrega MP4/subtítulos con nombres únicos y un manifiesto de verificación. Las rutas de color o tiempo incompatibles se bloquean con una explicación; la ejecución remota requiere un destino realmente accesible.
 
 Mantén vídeos, proyectos y bibliotecas personales fuera de la skill. Sustituye números, ofertas, marcas y testimonios de demostración por datos proporcionados. Las imágenes generadas no son pruebas.
 

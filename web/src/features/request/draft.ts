@@ -15,7 +15,7 @@ export type RequestDraft = {
 /** The fields of an example that personalize a draft. */
 export type ExamplePreset = { id: string; goal: string; format?: Format; effects?: Effects };
 
-export const DEFAULT_DRAFT: RequestDraft = { agent: 'codex', folder: '', goal: '', format: 'vertical', pace: 'natural', captions: 'readable', effects: 'subtle', sceneId: null };
+export const DEFAULT_DRAFT: RequestDraft = { agent: 'codex', folder: '', goal: '', format: 'source', pace: 'natural', captions: 'readable', effects: 'none', sceneId: null };
 
 const MAX_TEXT = 4000;
 const SCENE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

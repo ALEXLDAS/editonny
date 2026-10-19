@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shutil
@@ -61,6 +62,8 @@ def black_intervals(video: Path, dur: float) -> list[tuple[float, float]]:
                         f'blackdetect=d={BLACK_MIN_S - 0.02:.2f}:pix_th=0.06', "-an", "-f", "null", "-"],
                        capture_output=True, text=True)
     out = []
+    if r.returncode:
+        raise RuntimeError('Could not decode video for black-frame inspection: ' + r.stderr[-300:])
     for m in re.finditer(r"black_start:([\d.]+)\s+black_end:([\d.]+)", r.stderr):
         a, b = float(m[1]), float(m[2])
         if a < 0.05 and b - a <= BLACK_START_S + 0.05:
@@ -69,27 +72,29 @@ def black_intervals(video: Path, dur: float) -> list[tuple[float, float]]:
     return out
 
 
-def volume(video: Path, complete: bool = False) -> dict:
+def volume(video: Path, complete: bool = False, target_lufs: float = -14, processing_peak: float = -1.5) -> dict:
     r = subprocess.run(["ffmpeg", "-nostdin", "-v", "info", "-i", str(video), "-vn", "-af",
-                        "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+                        f'loudnorm=I={target_lufs}:TP={processing_peak}:LRA=11:print_format=json', "-f", "null", "-"],
                        capture_output=True, text=True)
     m = re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr, re.S)
-    if not m:
+    if r.returncode or not m:
         raise RuntimeError('Could not measure loudness. Does the file have audio?')
     d = json.loads(m.group(0))
     out = {"lufs": float(d["input_i"]), 'peak_db': float(d["input_tp"])}
+    if not all(math.isfinite(value) for value in out.values()):
+        raise RuntimeError('Loudness is not a finite voice measurement; silence requires an explicit audio policy')
     if complete:
         out["_loudnorm"] = d
     return out
 
 
-def adjust_volume(video: Path) -> Path:
+def adjust_volume(video: Path, target_lufs: float = -14, processing_peak: float = -1.5, peak_limit: float = -1) -> Path:
     """Two-pass loudnorm to -14 LUFS (true peak -1.5), picture copied. The original stays next to it."""
     before_value = video.with_name(video.stem + "_before_volume" + video.suffix)
     if os.path.lexists(before_value):
         raise RuntimeError(f'Backup already exists: {before_value}. Choose another output name before adjusting volume.')
-    d = volume(video, complete=True)["_loudnorm"]
-    af = (f"loudnorm=I=-14:TP=-1.5:LRA=11:linear=true:measured_I={d['input_i']}:measured_TP={d['input_tp']}:measured_LRA={d['input_lra']}:measured_thresh={d['input_thresh']}:offset={d['target_offset']}")
+    d = volume(video, complete=True, target_lufs=target_lufs, processing_peak=processing_peak)["_loudnorm"]
+    af = (f"loudnorm=I={target_lufs}:TP={processing_peak}:LRA=11:linear=true:measured_I={d['input_i']}:measured_TP={d['input_tp']}:measured_LRA={d['input_lra']}:measured_thresh={d['input_thresh']}:offset={d['target_offset']}")
     with tempfile.NamedTemporaryFile(prefix=f'.{video.stem}-volume-', suffix=video.suffix,
                                      dir=video.parent, delete=False) as temporary:
         new_value = Path(temporary.name)
@@ -99,6 +104,9 @@ def adjust_volume(video: Path) -> Path:
                             "-movflags", "+faststart", str(new_value)], capture_output=True, text=True)
         if r.returncode != 0 or not new_value.stat().st_size:
             raise RuntimeError('Could not adjust loudness: ' + r.stderr[-300:])
+        measured = volume(new_value)
+        if measured['peak_db'] > peak_limit or abs(measured['lufs'] - target_lufs) > 1.5:
+            raise RuntimeError('Encoded audio did not meet the confirmed loudness/peak targets; original candidate preserved')
         with before_value.open('xb') as backup, video.open('rb') as source:
             shutil.copyfileobj(source, backup)
         shutil.copystat(video, before_value)
@@ -119,10 +127,12 @@ def text_outside(video: Path, w: int, h: int, fps: float, ignore: list[tuple[flo
     dur = float(info["duration"])
     n_total = int(dur * fps - 1e-6) + 1
     findings: list[dict] = []
+    recognized = 0
     with tempfile.TemporaryDirectory(prefix="editonny-quality-") as tmp:
         directory = Path(tmp)
         n = cd.extract_frames(video, directory, 0, n_total, fps, fps_video, True, "")
         raw_value = cd.read_directory(engine_value, directory) if n else {}
+    recognized = sum(len(lines) for lines in raw_value.values())
     ignore = ignore or []
     for k in range(n):
         t = k / fps
@@ -149,7 +159,7 @@ def text_outside(video: Path, w: int, h: int, fps: float, ignore: list[tuple[flo
             together[-1]["end"] = a["t"]
         else:
             together.append(dict(a, end=a["t"]))
-    return {"reader": engine_value[0], "findings": sorted(together, key=lambda a: a["t"]), "safe_zone": safe_zone, "ignored": ignore}
+    return {"reader": engine_value[0], "findings": sorted(together, key=lambda a: a["t"]), "safe_zone": safe_zone, "ignored": ignore, 'recognized': recognized}
 
 
 def footage_intervals(cfg: dict, project: Path | None, dur: float) -> list[tuple[float, float]]:
@@ -224,14 +234,16 @@ def main(argv: list[str] | None = None) -> int:
         if a.project and (a.project / "project.json").is_file():
             cfg = json.loads((a.project / "project.json").read_text(encoding="utf-8"))
         blacks_value = black_intervals(a.video, dur)
-        vol = volume(a.video)
+        audio_policy = cfg.get('workflow', {}).get('audio', {})
+        target_lufs = audio_policy.get('targetLufs', TARGET_LUFS)
+        peak_max = audio_policy.get('truePeakLimit', PEAK_MAX_DB_VALUE)
+        normalize = audio_policy.get('mode', 'normalize') == 'normalize'
+        vol = volume(a.video) if info.get('has_audio', True) and normalize else None
         volume_adjusted = None
-        if a.adjust_volume and (abs(vol["lufs"] - TARGET_LUFS) > MARGIN_LUFS or vol['peak_db'] > PEAK_MAX_DB_VALUE):
-            volume_adjusted = adjust_volume(a.video)
-            vol = volume(a.video)
-        db = waveform.envelope(a.video, None)
-        th = waveform.threshold(db)
-        quiet_intervals = breaths.find(db, th, breaths.MIN_S)
+        cleanup = cfg.get('workflow', {}).get('editing', {}).get('scope', 'full') in ('full', 'intervals')
+        db = waveform.envelope(a.video, None) if info.get('has_audio', True) and cleanup else None
+        th = waveform.threshold(db) if db is not None else None
+        quiet_intervals = breaths.find(db, th, breaths.MIN_S) if db is not None else []
         end_voice = end_of_speech(cfg, dur)
         ending_silence = []
         if end_voice is not None:                 # silence after the last word is the still end / the card, not a breath
@@ -245,15 +257,28 @@ def main(argv: list[str] | None = None) -> int:
     failures: list[str] = []
     if blacks_value:
         failures.append("black frame: " + ", ".join(f'{fmt_time(x)} to {fmt_time(y)}' for x, y in blacks_value))
-    if abs(vol["lufs"] - TARGET_LUFS) > MARGIN_LUFS:
-        failures.append(f"volume {vol['lufs']:.1f} LUFS (target: {TARGET_LUFS:.0f}, margin {MARGIN_LUFS:g}); adjust output gain and check again")
-    if vol['peak_db'] > PEAK_MAX_DB_VALUE:
-        failures.append(f"peak {vol['peak_db']:.1f} dBTP (limit: {PEAK_MAX_DB_VALUE:g}): lower the gain or apply the limiter")
+    if vol and abs(vol["lufs"] - target_lufs) > MARGIN_LUFS:
+        failures.append(f"volume {vol['lufs']:.1f} LUFS (target: {target_lufs:g}, margin {MARGIN_LUFS:g}); adjust output gain and check again")
+    if vol and vol['peak_db'] > peak_max:
+        failures.append(f"peak {vol['peak_db']:.1f} dBTP (limit: {peak_max:g}): lower the gain or apply the limiter")
     if quiet_intervals:
         failures.append("quiet interval: " + ", ".join(f'{fmt_time(x)} ({y - x:.2f} s)' for x, y in quiet_intervals))
     for f in txt["findings"]:
         failures.append(f'''text {f['reason']}: "{f['text'][:40]}" at {fmt_time(f['t'])}'''
                       + (f" to {fmt_time(f['end'])}" if f["end"] > f["t"] else ""))
+    if txt['reader'] is None and cfg.get('captions', {}).get('enabled', True):
+        failures.append('text check not performed: install a local reader or provide an explicitly reviewed artifact')
+    if a.adjust_volume and failures and all(f.startswith(('volume ', 'peak ')) for f in failures):
+        if cfg.get('workflow') and (not normalize or target_lufs != -14 or peak_max != -1):
+            print('ERROR: Automatic adjustment uses a different target; render with the confirmed audio policy.', file=sys.stderr)
+            return 2
+        volume_adjusted = adjust_volume(a.video)
+        vol = volume(a.video)
+        failures = []
+        if abs(vol['lufs'] - TARGET_LUFS) > MARGIN_LUFS:
+            failures.append('volume remains outside the required target after adjustment')
+        if vol['peak_db'] > PEAK_MAX_DB_VALUE:
+            failures.append('peak remains above the required encoded limit after adjustment')
     output_value = a.sheet_value or ((a.project / "renders" / "quality_gate.png") if a.project else a.video.with_name("quality_gate.png"))
     times_value = sorted({round(min(dur - 0.05, x), 2) for x in
                      [0.1] + [f["t"] for f in txt["findings"]][:6] + [i * dur / 11 for i in range(1, 12)]})[:18]
@@ -264,15 +289,25 @@ def main(argv: list[str] | None = None) -> int:
         output_value = None
         print(f'Warning: could not build the contact sheet ({e})', file=sys.stderr)
 
-    report = {"passed": not failures, "failures": failures, "duration": round(dur, 2), "volume": vol,
+    media = None
+    if cfg.get('workflow'):
+        from fidelity import verify_media
+        media = verify_media(a.video, a.project)
+        if media['status'] != 'passed':
+            failures.append('media contract or source appearance did not pass; inspect mediaChecks')
+    report = {'status': 'failed' if failures else 'passed', "passed": not failures, "failures": failures, "duration": round(dur, 2), "volume": vol,
+           'mediaChecks': media,
            "quiet_threshold_db": th, 'text_reader': txt["reader"], "sheet": str(output_value) if output_value else None}
     if a.json:
         print(json.dumps(report, ensure_ascii=False))
         return 0 if not failures else 1
     print(f'quality gate · {a.video.name} · {dur:.1f} s · {W}x{H}')
     print(f"  black frame: {('none' if not blacks_value else len(blacks_value))}")
-    print(f"  volume: {vol['lufs']:.1f} LUFS, peak {vol['peak_db']:.1f} dBTP"
-          + (f' (adjusted; original saved at {volume_adjusted.name})' if volume_adjusted else ""))
+    if vol:
+        print(f"  volume: {vol['lufs']:.1f} LUFS, peak {vol['peak_db']:.1f} dBTP"
+              + (f' (adjusted; original saved at {volume_adjusted.name})' if volume_adjusted else ""))
+    else:
+        print('  volume: source audio preserved or no audio present; normalization check not applicable')
     print(f"  quiet intervals lasting at least 0.25 s: {('none' if not quiet_intervals else len(quiet_intervals))}"
           + (f' (ending silence of {ending_silence[-1][1] - ending_silence[0][0]:.1f} seconds belongs to an intentional hold or end card and is excluded)' if ending_silence else ""))
     if txt["reader"] is None:

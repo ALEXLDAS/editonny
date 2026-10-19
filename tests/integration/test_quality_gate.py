@@ -34,6 +34,18 @@ class QualityGateTests(unittest.TestCase):
                     'startAfter': 5, 'end': 'End', 'endAfter': 7}]}
             self.assertEqual(self.module.footage_intervals(cfg, project, 10), [(6, 8)])
 
+    def test_meter_failure_with_partial_json_cannot_pass(self):
+        result = subprocess.CompletedProcess([], 1, '', '{"input_i":"-14","input_tp":"-1.5"}')
+        with patch.object(self.module.subprocess, 'run', return_value=result):
+            with self.assertRaises(RuntimeError):
+                self.module.volume(Path('partial.mp4'))
+
+    def test_nonfinite_loudness_is_not_valid_voice_measurement(self):
+        result = subprocess.CompletedProcess([], 0, '', '{"input_i":"-inf","input_tp":"-inf"}')
+        with patch.object(self.module.subprocess, 'run', return_value=result):
+            with self.assertRaises(RuntimeError):
+                self.module.volume(Path('silent.mp4'))
+
     def test_ocr_uses_current_extractor_and_reports_english_fields(self):
         module = self.module
         line = {'t': 'Sample', 'x': 0.01, 'y': 0.5, 'w': 0.2, 'h': 0.05, 'c': 1}
@@ -93,6 +105,7 @@ class QualityGateTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0, '', '')
             measurement = {'_loudnorm': {key: '0' for key in
                 ('input_i', 'input_tp', 'input_lra', 'input_thresh', 'target_offset')}}
+            measurement.update(lufs=-14, peak_db=-1.5)
             with patch.object(self.module, 'volume', return_value=measurement), \
                  patch.object(self.module.subprocess, 'run', side_effect=encode), \
                  patch.object(self.module.os, 'replace', side_effect=OSError('Publication failed')):

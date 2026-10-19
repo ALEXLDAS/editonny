@@ -329,6 +329,10 @@ def verify(edl_path: Path, video: Path, min_silence: float) -> tuple[dict, list[
 
     edl = load_json(edl_path)
     edit_dir = edl_path.parent
+    from project_contract import managed_config, settings_hash
+    contract = managed_config(edit_dir)
+    if contract and edl.get('contractHash') != settings_hash(contract):
+        raise ValueError('EDL does not match the confirmed contract')
     info = probe_video(video)
     if not info.get("has_video") or not info.get("duration"):
         raise ValueError('The video has no picture or duration')
@@ -744,16 +748,26 @@ def main() -> int:
     ap.add_argument("-o", "--output", type=Path, help='report JSON (default: edit/verify/cut_report.json)', dest='output')
     ap.add_argument("--without-approval", action="store_true",
                     help='check only without changing preview state; audit_cut.py uses this alongside speech review', dest='without_approval')
+    ap.add_argument('--report-only', action='store_true', help='diagnostic report only; findings do not count as a passing gate')
     ap.add_argument("--approve-existing", action="store_true",
                     help='request approval using the existing report for this cut.mp4 without repeating verification', dest='approve')
     args = ap.parse_args()
 
     edl_path, video = abspath(args.edl), abspath(args.video)
+    def identity():
+        from common import content_hash
+        from project_contract import digest
+        inputs = {'video': content_hash(video), 'edl': content_hash(edl_path)}
+        for path in (edl_path.parent / 'cut_timeline.json', edl_path.parent.parent / 'project/project.json'):
+            if path.is_file():
+                inputs[str(path)] = content_hash(path)
+        return digest(inputs)
     if args.approve:
         out = abspath(args.output) if args.output else edl_path.parent / "verify" / "cut_report.json"
         report = load_json(out)
         if (not isinstance(report, dict) or not video.exists() or report.get("video") != str(video)
-                or video.stat().st_mtime > out.stat().st_mtime):
+                or video.stat().st_mtime > out.stat().st_mtime or not edl_path.is_file()
+                or report.get('verificationIdentity') != identity()):
             print(f'error: {out.name} does not belong to this {video.name}, or the cut has changed. Run verification without --approve-existing',
                   file=sys.stderr)
             return 2
@@ -761,7 +775,7 @@ def main() -> int:
                                                                 args.ask_approval)
         save_json(out, report)
         print(state_line or "This video is not the folder's cut; there is nothing to approve.")
-        return 0
+        return 0 if args.report_only or not report.get('flags') else 1
     if not edl_path.exists():
         print(f'Error: EDL not found: {edl_path}', file=sys.stderr)
         return 2
@@ -777,6 +791,7 @@ def main() -> int:
         print('Error: EDL has no intervals in ranges', file=sys.stderr)
         return 2
     try:
+        before_identity = identity()
         report, lines = verify(edl_path, video, args.min_silence)
     except (ValueError, RuntimeError, json.JSONDecodeError) as exc:
         print(f'error: could not read {video.name}: {exc}', file=sys.stderr)
@@ -786,6 +801,11 @@ def main() -> int:
               file=sys.stderr)
         return 2
     out = abspath(args.output) if args.output else edl_path.parent / "verify" / "cut_report.json"
+    if identity() != before_identity:
+        print('Error: inputs changed during verification; check the current files again', file=sys.stderr)
+        return 2
+    report['verificationIdentity'] = before_identity
+    report['status'] = 'failed' if report['flags'] else 'passed'
     state_line, report["approval_requested"] = (None, None) if args.without_approval else\
         update_state(edl_path.parent, video, report["flags"], args.ask_approval)
     save_json(out, report)
@@ -793,7 +813,7 @@ def main() -> int:
     if state_line:
         print(state_line)
     print(f'\nReport: {out}')
-    return 0
+    return 0 if args.report_only or not report['flags'] else 1
 
 
 if __name__ == "__main__":

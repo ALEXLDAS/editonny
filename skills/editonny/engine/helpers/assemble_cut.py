@@ -127,10 +127,12 @@ def main() -> int:
     ap.add_argument("--edit-dir", type=Path, required=True, dest='edit_dir')
     ap.add_argument("--sources", nargs="*", help='videos in script order (default: transcribed sources sorted by name)', dest='sources')
     ap.add_argument("--pause", type=float, default=PAUSE_S, dest='pause_value')
-    ap.add_argument("--format", default="vertical", choices=sorted(FORMATS_VALUE), dest='format_value')
+    ap.add_argument("--format", default=None, choices=sorted(FORMATS_VALUE), dest='format_value')
     ap.add_argument("--dry-run", action="store_true", help='show the plan without writing edl.json', dest='dry_run')
     args = ap.parse_args()
     edit = args.edit_dir
+    from project_contract import managed_config, settings_hash
+    contract = managed_config(edit, 'cut')
 
     trs = {}
     for p in sorted((edit / "transcripts").glob("*.json")):
@@ -235,9 +237,15 @@ def main() -> int:
             dropped.append((bl["stem"], bl, bl["why"]))
 
     edl = {"version": 1, "sources": sources,
-           "output": {"format": args.format_value, "width": FORMATS_VALUE[args.format_value][0],
-                      "height": FORMATS_VALUE[args.format_value][1]},
+           "output": ({"format": args.format_value, "width": FORMATS_VALUE[args.format_value][0],
+                      "height": FORMATS_VALUE[args.format_value][1]} if args.format_value else {}),
            "grade": "", "jcut": {"lead_frames": 4, "tail_trim_frames": 2}, "ranges": ranges}
+    if contract:
+        video = contract['workflow']['video']
+        edl.update(contractHash=settings_hash(contract), output={'width': video['width'], 'height': video['height'], 'fps': video['frameRate']})
+        protected = contract['workflow']['editing'].get('protectedIntervals', [])
+        if protected:
+            raise ValueError('Protected intervals require a measured manual EDL; automatic take selection cannot guarantee them')
     log_lines: list[str] = []
     alerts = refine_edl(edl, envs, log=log_lines.append)
 

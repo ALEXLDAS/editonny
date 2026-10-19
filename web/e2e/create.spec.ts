@@ -111,7 +111,8 @@ test('each choice group is a single Tab stop on its selected option', async ({ p
   await page.goto('/en/create');
   await page.getByLabel('Video folder on your computer').focus();
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('radio', { name: /9:16/ })).toBeFocused();
+  await expect(page.getByRole('radio', { name: /Original/ })).toBeFocused();
+  await expect(page.getByRole('radio', { name: /Original/ })).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Tab');
   await expect(page.getByLabel('Pace')).toBeFocused();
 });

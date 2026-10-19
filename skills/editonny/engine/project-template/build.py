@@ -36,6 +36,8 @@ from contextlib import contextmanager
 from html import escape
 from html.parser import HTMLParser
 from string import Template
+from pathlib import Path
+from fractions import Fraction
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_VERSION = '2026-10-18'
 CHANGES = [('2026-10-18', 'English project schema, commands, scenes, and runtime interfaces.')]
@@ -141,6 +143,19 @@ def project_engine(cfg):
             return os.path.abspath(os.path.expanduser(cand))
     return None
 
+def confirmed_project(cfg):
+    """Managed projects consume their confirmed policy before processing or rendering."""
+    if not cfg.get('workflow'):
+        if os.path.isfile(os.path.join(HERE, cfg.get('edit', '../edit'), 'source_manifest.json')):
+            raise BuildError('Managed workflow is missing; restore the confirmed project settings')
+        return None
+    engine = project_engine(cfg)
+    if not engine:
+        raise BuildError('Managed project engine is unavailable; restore its recorded package')
+    sys.path.insert(0, os.path.join(engine, 'helpers'))
+    from project_contract import managed_config
+    return managed_config(Path(HERE) / cfg.get('edit', '../edit'))
+
 def find_uv():
     for c in (shutil.which('uv'), os.path.join(os.path.expanduser('~'), '.local', 'bin', 'uv'), os.path.join(os.path.expanduser('~'), '.cargo', 'bin', 'uv'), '/opt/homebrew/bin/uv', '/usr/local/bin/uv'):
         if c and os.path.isfile(c):
@@ -229,6 +244,7 @@ def correct(words, fix):
 class Project:
 
     def __init__(self):
+        global FPS
         path = os.path.join(HERE, 'project.json')
         if not os.path.exists(path):
             raise BuildError('project.json was not found in this directory')
@@ -236,13 +252,26 @@ class Project:
             self.cfg = json.load(f)
         c = self.cfg
         register_engine(c)
+        managed = confirmed_project(c)
         self.edit = os.path.normpath(os.path.join(HERE, c.get('edit', '../edit')))
         if not os.path.isdir(self.edit):
             raise BuildError(f'cut edit directory not found: {self.edit} (project.json edit field)')
         self.format = c.get('format', '9:16')
-        if self.format not in FORMATS:
+        if self.format not in FORMATS and not (managed and self.format == 'source'):
             raise BuildError('format must be "9:16", "16:9", "4:5", or "1:1"')
-        self.F = FORMATS[self.format]
+        self.F = dict(FORMATS.get(self.format, FORMATS['16:9' if c.get('workflow', {}).get('video', {}).get('width', 0) > c.get('workflow', {}).get('video', {}).get('height', 1) else '9:16']))
+        if managed:
+            dimensions = managed['workflow']['video']
+            sx, sy = dimensions['width'] / self.F['W'], dimensions['height'] / self.F['H']
+            for key in ('safeArea', 'frame', 'frameArea', 'lowerLeftArea'):
+                self.F[key] = tuple(round(value * (sx if i % 2 == 0 else sy)) for i, value in enumerate(self.F[key]))
+            for key in ('captions', 'alternateCaptions'):
+                self.F[key] = tuple(round(value * sy) for value in self.F[key])
+            for key in ('defaultCaptionY', 'captionPadding', 'hudTop'):
+                self.F[key] = round(self.F[key] * sy)
+            for key in ('radius', 'captionFontSize', 'subtleCaptionFontSize'):
+                self.F[key] = max(1, round(self.F[key] * min(sx, sy)))
+            self.F.update(W=dimensions['width'], H=dimensions['height'], scale=min(sx, sy))
         if self.F.get('needsReview'):
             (sx0, sy0, sx1, sy1) = self.F['safeArea']
             warn(f'Format {self.format}: safe area ({sx0}, {sy0}, {sx1}, {sy1}) is approximate. Check text, buttons, and faces on the destination platform.')
@@ -254,6 +283,11 @@ class Project:
         tl = self._json('cut_timeline.json')
         self.VDUR = round(tl['duration'], 3)
         self.fps = float(tl.get('fps') or FPS)
+        self.fps_str = str(tl.get('fps_str') or self.fps)
+        if managed and managed['workflow']['video']['frameRate']:
+            self.fps_str = managed['workflow']['video']['frameRate']
+            self.fps = float(Fraction(self.fps_str))
+        FPS = self.fps
         (self.vw, self.vh) = (int(tl.get('width') or self.W), int(tl.get('height') or self.H))
         self.cuts = sorted((float(s['out_start']) for s in tl['segments'] if s['out_start'] > 0.01))
         if self.format == '16:9':
@@ -1309,7 +1343,7 @@ def piece_hud(M, p, pid):
     pairs = []
     for f in range(int(math.ceil(max(t_in, M.T0) * FPS)), int(math.floor(min(t_out, M.VFIM) * FPS)) + 1):
         t = f / FPS
-        pairs.append((t, {'textContent': f'{int(t // 60):02d}:{int(t % 60):02d}:{f % FPS:02d}'}))
+        pairs.append((t, {'textContent': f'{int(t // 60):02d}:{int(t % 60):02d}:{int(f % max(1, round(FPS))):02d}'}))
     M.FRAMES('#hud-tc', pairs)
     for (t, name) in sections:
         (n, nm) = (name.split(' ', 1) + [''])[:2]
@@ -2716,6 +2750,10 @@ def captions(M):
             placement += f';left:{box[0]}px;right:auto;width:{box[1]}px'
         content = escape(text) if style == 'standard' else f'<span>{escape(text)}</span>'
         M._HT.append(f'<div class="cap caption-cue clip" id="cap{i}" data-start="{M.rr(start_time)}" data-duration="{round(b - start_time, 3)}" data-track-index="{TRACK_CAPTION}" data-track-kind="captions" data-timeline-label="Captions · {escape(text)}" style="{placement}">{content}</div>')
+        left = box[0] if box else max(0, (M.W - width) / 2 - fs)
+        right = box[0] + box[1] if box else min(M.W, (M.W + width) / 2 + fs)
+        M.overlay_masks.append({'start': max(0, a - M.T0), 'end': b - M.T0,
+                                'box': [left / M.W, max(0, top - 8) / M.H, right / M.W, min(M.H, top + hcap + 22) / M.H]})
         M.FT(f'#cap{i}', {'opacity': 0, 'y': 14}, {'opacity': 1, 'y': 0, 'duration': 0.12}, a)
         M.SET(f'#cap{i}', {'opacity': 0}, b)
         n += 1
@@ -3038,6 +3076,7 @@ def build(P, mode, T0, T1):
     if hold > 3:
         warn(f'endHold start_time {hold:g} s: holding for more than 3 s may look like frozen playback')
     M = Composition(P, T0, T1, mode, hold, card)
+    M.overlay_masks = []
     save_edited()
     video = os.path.join(HERE, 'assets', 'cut.mp4')
     blocks_all = M.blocks if mode != 'cut' else resolve_blocks(P) if any((b.get('blur') for b in P.cfg.get('blocks', []))) else []
@@ -3105,14 +3144,15 @@ def build(P, mode, T0, T1):
     (pf_a, pf_z) = ('<div class="parallax-background">', '</div>') if M.PARALLAX_LAYERS else ('', '')
     if M.BEHIND or M.PERSON_BEHIND:
         behind = f"""\n  <div id="behind" {track_structure('behind')}>\n{join(M.BEHIND)}\n  </div>\n  {pf_a}<div id="innerp" class="camera" {track_structure('innerp')}>\n""" + '\n'.join(M.PERSON_BEHIND) + f'\n  </div>{pf_z}'
-    html = f'''<!doctype html>\n<html lang="en"><head>\n<meta charset="UTF-8"/><meta name="viewport" content="width={M.W}, height={M.H}"/>\n<title>{title} ({mode})</title>\n<script src="{gsap}"></script>\n{data_scenes}<style>\n{css}\n</style></head>\n<body>\n<div id="root" data-composition-id="main" data-start="0" data-duration="{M.DUR}" data-width="{M.W}" data-height="{M.H}" data-fps="{FPS}">\n<div id="stage" {track_structure('stage')}>\n<div id="bg" {track_structure('bg')}></div>{backgrounds}\n<div id="border" {track_structure('border')}></div>\n<div id="frame" {track_structure('frame')}>{pf_a}<div id="inner" class="camera" {track_structure('inner')}>{last}\n  <video id="cam" src="assets/cut.mp4" muted playsinline data-start="0" data-duration="{VD}" data-media-start="{round(M.T0, 3)}" data-track-index="{TRACK_VIDEO}" data-timeline-label="Cut video"></video>\n</div>{pf_z}{behind}</div>\n<div id="pieces" {track_structure('pieces')}>\n{chr(10).join(M.COMPARISON_HTML)}{(chr(10) if M.COMPARISON_HTML else '')}{join(M._HT)}\n</div>\n</div>\n{voices(M, VD)}\n{chr(10).join(M.AUD)}\n</div>\n<script>\nconst tl = gsap.timeline({{ paused: true }});\n{chr(10).join(M.js(M.R, M.T0, M.DUR))}\nwindow.__timelines["main"] = tl;\n</script>\n</body></html>\n'''
+    html = f'''<!doctype html>\n<html lang="en"><head>\n<meta charset="UTF-8"/><meta name="viewport" content="width={M.W}, height={M.H}"/>\n<title>{title} ({mode})</title>\n<script src="{gsap}"></script>\n{data_scenes}<style>\n{css}\n</style></head>\n<body>\n<div id="root" data-composition-id="main" data-start="0" data-duration="{M.DUR}" data-width="{M.W}" data-height="{M.H}" data-fps="{P.fps_str}">\n<div id="stage" {track_structure('stage')}>\n<div id="bg" {track_structure('bg')}></div>{backgrounds}\n<div id="border" {track_structure('border')}></div>\n<div id="frame" {track_structure('frame')}>{pf_a}<div id="inner" class="camera" {track_structure('inner')}>{last}\n  <video id="cam" src="assets/cut.mp4" muted playsinline data-start="0" data-duration="{VD}" data-media-start="{round(M.T0, 3)}" data-track-index="{TRACK_VIDEO}" data-timeline-label="Cut video"></video>\n</div>{pf_z}{behind}</div>\n<div id="pieces" {track_structure('pieces')}>\n{chr(10).join(M.COMPARISON_HTML)}{(chr(10) if M.COMPARISON_HTML else '')}{join(M._HT)}\n</div>\n</div>\n{voices(M, VD)}\n{chr(10).join(M.AUD)}\n</div>\n<script>\nconst tl = gsap.timeline({{ paused: true }});\n{chr(10).join(M.js(M.R, M.T0, M.DUR))}\nwindow.__timelines["main"] = tl;\n</script>\n</body></html>\n'''
     with open(os.path.join(HERE, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(html)
     with open(os.path.join(HERE, 'suggested_sounds.json'), 'w', encoding='utf-8') as f:
         json.dump(dict(window=[round(M.T0, 3), round(M.T0 + M.DUR, 3)], sounds=sorted(M.sounds_sug, key=lambda s: s['at'])), f, ensure_ascii=False, indent=1)
     files = {rel: signature(os.path.join(HERE, rel)) for rel in ['index.html'] + written}
     with open(os.path.join(HERE, '.build.json'), 'w', encoding='utf-8') as f:
-        json.dump(dict(mode=mode, window=[round(M.T0, 3), round(M.T1, 3)], files=files), f, ensure_ascii=False, indent=1)
+        json.dump(dict(mode=mode, window=[round(M.T0, 3), round(M.T1, 3)], files=files,
+                       inputs=build_inputs(P.cfg), overlayMasks=M.overlay_masks), f, ensure_ascii=False, indent=1)
     blocks = ', '.join((f"{b['scene']} {max(b['start'], M.T0):.2f}-{min(b['end'], M.VFIM):.2f}" for b in M.blocks if M.inside(b['start'], b['end'])))
     print(f'ok: index.html ({mode}) · {M.DUR:.2f} s · {M.W}x{M.H}')
     print(f'  blocks: {blocks}')
@@ -3151,17 +3191,17 @@ def copy_video(src, dst):
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     if os.path.exists(dst) or os.path.islink(dst):
         (a, b) = (os.stat(src), os.stat(dst))
-        if a.st_size == b.st_size and int(a.st_mtime) <= int(b.st_mtime):
+        if signature_file(src) == signature_file(dst) and not os.path.samefile(src, dst):
             return
         os.remove(dst)
-    try:
-        os.link(src, dst)
-    except OSError:
-        shutil.copy2(src, dst)
+    shutil.copy2(src, dst)
 
 def signature_file(p):
-    st = os.stat(p)
-    return f'{st.st_size}-{int(st.st_mtime)}'
+    value = hashlib.sha256()
+    with open(p, 'rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            value.update(chunk)
+    return value.hexdigest()
 
 def ffprobe_value(p, entries, stream='v:0'):
     r = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', stream, '-show_entries', entries, '-of', 'csv=p=0', p], capture_output=True, text=True)
@@ -3665,6 +3705,25 @@ def without_ai_keys(env):
         env.pop(k, None)
     return outside
 
+def build_inputs(cfg):
+    """Bind generated HTML to configuration, measured timing and actual asset bytes."""
+    paths = [os.path.join(HERE, 'project.json')]
+    edit = os.path.join(HERE, cfg.get('edit', '../edit'))
+    paths += [os.path.join(edit, name) for name in ('cut.mp4', 'cut_timeline.json', 'captions.json', 'transcripts/cut.json')]
+    for directory in ('assets', 'compositions'):
+        paths += [str(p) for p in Path(HERE, directory).rglob('*') if p.is_file()]
+    paths.append(__file__)
+    result = {}
+    for path in sorted(set(paths)):
+        if os.path.isfile(path):
+            value = hashlib.sha256()
+            with open(path, 'rb') as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                    value.update(chunk)
+            result[os.path.relpath(path, HERE)] = value.hexdigest()
+    return result
+
+
 def cmd_hf(args):
     """Cmd hf."""
     if not args:
@@ -3682,6 +3741,51 @@ def cmd_hf(args):
     v = version_hf()
     env = environment_node(npx)
     args = list(args)
+    cfg = read_optional_json(os.path.join(HERE, 'project.json')) or {}
+    managed = confirmed_project(cfg)
+    if managed and args[0] == 'render':
+        from common import probe_video, ensure_distinct_output
+        from media_policy import plan_media
+        from project_contract import read_json
+        if any(arg.startswith('--') and '=' in arg for arg in args):
+            raise BuildError('Use separate render flag/value arguments so the confirmed policy can validate them')
+        for flag in ('--fps', '--format', '--output', '--video-frame-format'):
+            if args.count(flag) > 1 or (flag in args and (args.index(flag) + 1 >= len(args) or args[args.index(flag) + 1].startswith('--'))):
+                raise BuildError(f'Provide exactly one value for {flag}')
+        if '--output' not in args:
+            raise BuildError('Managed rendering requires an explicit candidate --output path')
+        output = Path(HERE, args[args.index('--output') + 1]).resolve()
+        if output.exists():
+            raise BuildError('Candidate already exists; use a new filename to preserve prior renders')
+        meta = read_optional_json(os.path.join(HERE, '.build.json')) or {}
+        if meta.get('inputs') != build_inputs(cfg) or any(signature(os.path.join(HERE, path)) != value for path, value in meta.get('files', {}).items()):
+            raise BuildError('Generated composition is stale; build it again from the current settings and assets')
+        edit = Path(HERE) / cfg.get('edit', '../edit')
+        manifest = read_json(edit / 'source_manifest.json')
+        ensure_distinct_output(output, [edit / cfg.get('video', 'cut.mp4'), *[Path(s['path']) for s in manifest['sources']]])
+        facts = probe_video(edit / cfg.get('video', 'cut.mp4'))
+        if managed['workflow']['audio']['denoise'] != 'off':
+            raise BuildError('Native composition does not apply the confirmed denoise; use the FFmpeg composition route')
+        plan_media([facts], managed, None, 'composition')
+        expected_rate = managed['workflow']['video']['frameRate']
+        if '--fps' in args and Fraction(args[args.index('--fps') + 1]) != Fraction(expected_rate):
+            raise BuildError('Render FPS conflicts with the confirmed settings')
+        if '--fps' not in args:
+            args += ['--fps', expected_rate]
+        if any(flag in args for flag in ('--resolution', '--width', '--height')):
+            raise BuildError('Render size overrides require a confirmed output variant')
+        if facts.get('is_hdr'):
+            raise BuildError('Native HDR overlays have no passing fidelity conformance evidence in this release; preserve the cut-only master or confirm a supported conversion')
+            if '--sdr' in args or ('--format' in args and args[args.index('--format') + 1] != 'mp4'):
+                raise BuildError('An SDR/alpha output would change the confirmed image; confirm a conversion first')
+            if '--hdr' not in args:
+                args.append('--hdr')
+        elif '--hdr' in args:
+            raise BuildError('SDR-to-HDR is not an automatic image improvement')
+        elif facts.get('bit_depth', 8) > 8 or facts.get('color_space') not in ('bt709', '') or facts.get('color_range') == 'pc':
+            raise BuildError('Native SDR output changes this source profile; use a validated preservation composition route or confirm its conversion')
+        if '--video-frame-format' not in args:
+            args += ['--video-frame-format', 'png']
     if args[0] == 'snapshot' or (args[0] == 'check' and '--snapshots' in args):
         if '--with-ai' in args:
             args.remove('--with-ai')
@@ -3692,7 +3796,32 @@ def cmd_hf(args):
                 print('Local snapshot: frames stay on this computer. External AI requires explicit user authorization and --with-ai.')
     print(f"hyperframes@{v} {' '.join(args)}", flush=True)
     try:
-        return subprocess.run([npx, '--yes', f'hyperframes@{v}'] + args, cwd=HERE, env=env).returncode
+        result = subprocess.run([npx, '--yes', f'hyperframes@{v}'] + args, cwd=HERE, env=env).returncode
+        if result == 0 and managed and args[0] == 'render':
+            if meta.get('inputs') != build_inputs(cfg):
+                raise BuildError('Composition inputs changed during rendering; candidate is not approved')
+            from workspace import record_artifact, render_dependencies
+            from common import content_hash
+            audio = managed['workflow']['audio']
+            if audio['mode'] == 'normalize' and (facts.get('has_audio') or audio.get('music')):
+                from quality_gate import adjust_volume
+                try:
+                    adjust_volume(output, audio['targetLufs'], audio['processingPeak'], audio['truePeakLimit'])
+                except RuntimeError as error:
+                    raise BuildError(str(error)) from error
+            elif audio['mode'] == 'preserve' and not audio['music'] and not audio['effects'] and not meta['window'][0]:
+                import tempfile
+                with tempfile.TemporaryDirectory(prefix='preserve-audio-', dir=output.parent) as temporary:
+                    remuxed = Path(temporary) / 'candidate.mp4'
+                    process = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(output), '-i', str(edit / cfg.get('video', 'cut.mp4')),
+                        '-map', '0:v:0', '-map', '1:a?', '-c', 'copy', '-t', str(meta['window'][1] - meta['window'][0]),
+                        '-movflags', '+faststart', str(remuxed)], capture_output=True, text=True)
+                    if process.returncode:
+                        raise BuildError('Could not preserve source audio: ' + process.stderr[-300:])
+                    os.replace(remuxed, output)
+            record_artifact(Path(HERE), 'render:' + content_hash(output), output, render_dependencies(Path(HERE)),
+                            {'overlayMasks': meta.get('overlayMasks', []), 'window': meta.get('window'), 'renderer': f'hyperframes@{v}'})
+        return result
     except KeyboardInterrupt:
         return 130
 

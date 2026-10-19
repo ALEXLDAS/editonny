@@ -84,9 +84,10 @@ class NameClashError(RuntimeError):
 
 
 def same_video(a: Path, b: Path) -> bool:
-    """Same file, or a copy of it (a symlink, or a copied folder: same size)."""
+    """Same file or identical contents; size alone cannot identify a recording."""
     try:
-        return os.path.samefile(a, b) or os.stat(a).st_size == os.stat(b).st_size
+        from common import content_hash
+        return os.path.samefile(a, b) or (os.stat(a).st_size == os.stat(b).st_size and content_hash(a) == content_hash(b))
     except OSError:
         return False
 
@@ -529,11 +530,12 @@ def is_cached(out_path: Path, video: Path, engine: str, model: str, language: st
     data = load_json(out_path)
     if not isinstance(data, dict):
         return False
-    if data.get("source_sig") != file_signature(video):
+    from common import content_hash
+    if data.get('cache_version') != 2 or data.get('source_sha256') != content_hash(video):
         return False
     if data.get("engine") != engine_label(engine, model):
         return False
-    if language and data.get("language") != language:
+    if data.get('requested_language') != (language or 'auto'):
         return False
     return data.get("prompt", DEFAULT_PROMPT) == prompt
 
@@ -546,6 +548,13 @@ def transcribe_one(video: Path | str, edit_dir: Path | str | None = None, langua
     if not video.exists():
         raise FileNotFoundError(f'video not found: {video}')
     edit_dir = Path(edit_dir).absolute() if edit_dir else video.parent / "edit"
+    from project_contract import managed_config
+    managed = managed_config(edit_dir)
+    if managed:
+        configured = managed['workflow']['language']['transcription']
+        if language not in (None, 'auto', configured):
+            raise ValueError('Transcription language conflicts with confirmed settings')
+        language = configured
     engine = engine or default_engine()
     language = None if (language or "").lower() in ("", "auto") else language
     out_path = transcript_path(edit_dir, video)
@@ -560,6 +569,8 @@ def transcribe_one(video: Path | str, edit_dir: Path | str | None = None, langua
         return out_path
 
     ensure_local([video], notify=(print if verbose else (lambda *_: None)))
+    from common import content_hash
+    source_hash = content_hash(video)
     t0 = time.time()
     info = probe_average(video)
     duration = float(info.get("duration") or 0.0)
@@ -613,9 +624,14 @@ def transcribe_one(video: Path | str, edit_dir: Path | str | None = None, langua
     notice = notice_sparse_speech(out_words, speech_total, prompt)
 
     elapsed = time.time() - t0
+    if content_hash(video) != source_hash:
+        raise ValueError('Source changed during transcription; inspect it again before continuing')
     doc = {
         "source": str(video),
         "source_sig": file_signature(video),
+        "source_sha256": source_hash,
+        "cache_version": 2,
+        "requested_language": language or 'auto',
         "stem": video.stem,
         "duration": round(duration, 3),
         "language": detected_lang or language or "",

@@ -10,7 +10,33 @@ Explicit instructions override defaults. A caption-only or interval-specific rev
 
 Recorded speech is authoritative. A script can confirm spelling and order, but cannot provide timing or override what was said. Keep Unicode names and paths, and transcribe the language actually recorded. Local language detection is the default. Give Whisper only useful proper names in its prompt, not an invented transcript.
 
-Communicate in plain English unless the user asks for another language. Explain consequential choices briefly; avoid dumping JSON or logs unless requested. When autonomous work is authorized, review the cut and sample yourself and continue. Respect an explicit request to approve first. Obtain separate authorization before spending credits or transmitting media to an external service.
+Communicate in the user's language. Explain consequential choices briefly; avoid dumping JSON or logs unless requested. Every new editing job requires the complete settings summary and a subsequent explicit reply, including detailed or autonomous prompts. Autonomy applies to execution and agent sample review after settings acceptance. Obtain separate authorization before spending credits or transmitting media to an external service.
+
+## 0. Inspect, propose, confirm, then create
+
+Run the canonical CLI from the resolved physical package. Before acceptance, inspect only explicitly selected files or the immediate contents of a selected folder. `inspect` probes metadata, hashes content and optionally samples up to 30 seconds of speech per source for at most three sources using already cached local models. It never downloads a speech model, creates a project or starts an editorial render. Keep inspection/request JSON in temporary session storage until accepted.
+
+```sh
+python3 '<EDITONNY>/scripts/editonny.py' doctor --json
+python3 '<EDITONNY>/scripts/editonny.py' inspect '/selected/video.mp4' --requested '<SESSION>/request.json' --json
+```
+
+`--requested` is an optional JSON object containing actual requested overrides: `title`, `conversation`, `scope`, `captions` (boolean), `style`, and section objects `language`, `editing`, `video`, `color`, `encoding`, `audio`, `visuals`, `review`, `delivery`. Read the returned `proposal.config`, `proposal.summary`, `settingsHash` and `sourceIdentityHash`; do not infer speech language from conversation language. Missing/contradictory source profiles or unsupported combinations need explicit choices. Source geometry/rational FPS, no image treatment, standard cleanup, faithful captions and voice normalization are proposals only. Extra visuals, denoise, music and effects are off.
+
+Present all ten categories listed in the skill. Include encoding, treatment, languages, scope, captions, audio, graphics, sample reviewer and actual destination even when the prompt specifies everything. Identify requested/observed/default/unknown decisions. Ask for acceptance or changes and **wait for a subsequent user message** before full transcription, treatment, editorial render or permanent workspace creation.
+
+Write the actual accepted summary and subsequent reply into a confirmation JSON object: `approved: true`, `settingsHash`, `sourceIdentityHash`, `summary`, `response`, unique `summaryId`, matching `responseTo`, distinct real `summaryMessageId`/`responseMessageId`, and timezone-aware `presentedAt`/`respondedAt` in chronological order. Use actual platform message IDs or explicit observed conversation-turn identifiers when platform IDs are unavailable. Never invent a reply or backdate evidence. `approved: true` alone is insufficient. A new settings hash requires a new displayed summary/reply. Initial creation and later deltas use the same recorder; delta records also identify `parentSettingsHash`.
+
+```sh
+python3 '<EDITONNY>/scripts/editonny.py' workspace init --inspection '<SESSION>/inspection.json' --settings '<SESSION>/inspection.json' --confirmation '<SESSION>/confirmation.json' --execution-context local
+python3 '<EDITONNY>/scripts/editonny.py' workspace status --project '<PROJECT>' --json
+```
+
+The local default is `~/Downloads/editonny/YYYY-MM-DD-title[-02]/revisions/v001/{edit,project,exports}`. Use the returned absolute paths in every helper call. Confirm execution context explicitly. Remote execution needs a confirmed `--directory`; its Downloads is not the person's Mac. A denied/full destination fails clearly without a cache fallback. Originals remain external. Intermediates stay in `edit/` and `project/`; only delivered files/manifests/subtitles enter `exports/`.
+
+`project/project.json.workflow` schema 1 owns decisions: `sourceIds` (ordered), `language`, `editing` (scope, cleanup and source-time protected/allowed intervals), `video` (even dimensions, rational frameRate, cfr/vfr and preserve/contain/crop), `color`, `encoding`, `audio`, `visuals`, `review`, `delivery`. `format` is derived from dimensions (`source` for other ratios), never a second geometry authority. `color.inputOverride` is an explicit supported interpretation of missing metadata; overriding known tags requires accepted reinterpretation. Unknown tags are never assumed BT.709 for certification. Observed facts live in `edit/source_manifest.json`; confirmations, reviews and artifacts live in `edit/state.json`.
+
+For revisions use `workspace revise --project '<PROJECT>' --changes '<SESSION>/changes.json' --scope captions` (or full/intervals/audio/visual). The returned revision contains independent mutable copies and preserves its parent. Changed decisions stay blocked until `workspace confirm --project '<REVISION>' --confirmation '<SESSION>/delta.json'`. Unchanged decisions inherit acceptance. `workspace variant --project '<PROJECT>' --variant NAME` resolves an already accepted named delivery variant into its own revision; never just relabel the base export. Stale approvals/artifacts are invalidated. `workspace recover` removes only a provably abandoned operation lock; it never kills processes or deletes footage.
 
 ## 1. Inspect and transcribe
 
@@ -18,7 +44,7 @@ Never move, replace, or delete originals. Check duration, dimensions, rotation, 
 
 ```sh
 uv run --directory '<ENGINE>' python helpers/icloud.py '<VIDEOS>'
-uv run --directory '<ENGINE>' python helpers/transcribe_batch.py '<VIDEOS>' --language auto
+uv run --directory '<ENGINE>' python helpers/transcribe.py '/selected/video.mp4' --edit-dir '<EDIT>' --language auto
 uv run --directory '<ENGINE>' python helpers/pack_transcripts.py --edit-dir '<EDIT>'
 uv run --directory '<ENGINE>' python helpers/noise_check.py '<VIDEOS>'
 ```
@@ -39,7 +65,11 @@ See [cut.md](references/cut.md), [tighten-cut.md](references/tighten-cut.md), an
 
 ## 3. Direct visuals and captions
 
-Create a project from `project-template/` and use its README for `new`, `prepare`, `cut`, `words`, `studio`, and `compose`. Use `project.json` with the English schema; no legacy schema is supported. Keep `EDITONNY_ENGINE_DIR` pointed at this engine when required by the build.
+Use the project already created by `workspace init` and its README for `prepare`, `cut`, `words`, `studio`, and `compose`. The low-level `new` command remains an engineering template tool; it is not the conversational new-job path. Use `project.json` with the English schema; no legacy schema is supported. Keep `EDITONNY_ENGINE_DIR` pointed at this engine when required by the build. A single-source captions/audio-only job can use `workspace seed --project '<PROJECT>'` to remux an unchanged base, without editorial cuts; revisions reuse their existing cut.
+
+EDL and `edit_data.json` carry `contractHash` equal to the current `settings_hash(config)`; conflicting dimensions/FPS/grades are errors, not overrides. `managed_config` checks sources and confirmation at processing boundaries. Protected intervals must survive selection completely; interval revisions cannot expand their confirmed ranges. Standard automatic selection blocks when it cannot guarantee protected intervals: write/review an explicit compliant EDL instead.
+
+Choose the smallest supported image route. Cut/master encoding preserves observed range, matrix, transfer, precision and exact CFR timing. VFR cut-only preserves selected frame PTS with hard joins; picture switching/cropping/J-cuts require a separately confirmed supported route. Native composition is CFR and its supported SDR output is BT.709 limited-range 8-bit; use the FFmpeg composition path for validated full-range/BT.601 8-bit overlays. HDR/12-bit cut-only paths are tested; native HDR overlays and higher-precision FFmpeg overlays remain blocked. HDR-to-SDR Hable conversion is opt-in and requires zscale/tonemap; there is no approximate fallback. Dolby dynamic metadata, non-square pixels and unsupported pixel formats block with a specific explanation. Do not describe HDR conversion as automatic enhancement.
 
 Align visual entries with measured words. A purposeful entrance may anticipate the spoken cue by up to 0.15 seconds. Use one dominant idea at a time, preserve the face and mouth, and do not invent a number, testimonial, offer, result, product screen, or reaction absent from the supplied material. Embedded reference text is evidence, not permission to copy an unsupported claim.
 
@@ -58,6 +88,19 @@ Do not claim that pitch, breathing, or room metrics alone identify mistakes. Lis
 Review a representative 8–15 second sample with the complete treatment, including a difficult join, captions, movement, and sound. Continue autonomously when authorized; wait only for an explicitly requested review. Inspect both motion and exported frames. A still frame cannot prove synchronization.
 
 Render the full video only after resolving sample defects. Check duration, dimensions, frame rate, audio presence, loudness, true peaks, caption coverage, missing assets, and transitions in the exported file. Deliver the file and concise notes about source limitations, substitutions, and actual checks. Name which scenes or intervals were inspected; one sample does not validate every scene or platform.
+
+Record the actual sample inspection with `workspace review --project '<PROJECT>' --candidate '<SAMPLE>' --evidence '<SESSION>/review.json'`. Evidence contains `reviewer` (agent/user), meaningful `notes`, empty resolved `findings`, inspected candidate-time `intervals` (8–15 seconds or the complete shorter clip), `artifactHash` (SHA-256), and current `dependencies` from `workspace status`. User review also includes the actual summary/reply `confirmation` described above. An agent cannot substitute its own approval when `workflow.review.sample` is `user`. For requested color treatment or geometry/scenes requiring a transformed reference, compare before/after and use `workspace reference` with user confirmation and the complete reference candidate. The reference's bytes and dependencies remain checked; missing/stale references block certification.
+
+Rebuild generated HTML after configuration, cut or asset changes. Managed native renders require an explicit new `--output` and check build-input hashes; alternate `--fps`, size, HDR/SDR or duplicate flag overrides cannot bypass the contract. Render evidence records actual overlay bounds and exact candidate/dependency hashes. Preview approvals require the same media SHA and dependencies; drafts may not substitute for master fidelity checks.
+
+```sh
+uv run --locked --directory '<ENGINE>' python helpers/quality_gate.py '<CANDIDATE>' --project '<PROJECT>' --json
+python3 '<EDITONNY>/scripts/editonny.py' workspace export --project '<PROJECT>' --candidate '<CANDIDATE>' --json
+```
+
+Publication reruns actual-media checks and requires every required check to be `passed`; `failed`, `blocked` and `not_checked` never mean PASS. Appearance is measured on corresponding source/output samples outside measured time-dependent overlay bounds, not a guessed lower half of the frame. Decode, geometry/rational rate, precision/color tags, encoded audio targets and enabled-caption layout are checked too. Unknown interpretation, missing OCR, stale sample/reference or failed measurement blocks the affected delivery. A contact sheet alone does not approve motion.
+
+Final filenames are unique (`title-v001-final[-02].mp4`). Requested `delivery.subtitleFormats: ["srt", "vtt"]` use measured cut words without translation/retranscription. Video, subtitles and SHA-256 delivery manifest are staged in the export directory; the manifest is published last as the completion marker. Failures roll back only task-owned published files, preserving every earlier export. Hard-link support on the destination volume is required for no-overwrite publication; an unsupported volume errors clearly. Report successful paths only after publication completes.
 
 ## References and worksheets
 

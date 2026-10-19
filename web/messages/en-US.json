@@ -202,7 +202,8 @@
       "vertical": "Vertical",
       "horizontal": "Horizontal",
       "square": "Square",
-      "portrait": "Portrait feed"
+      "portrait": "Portrait feed",
+      "source": "Original format"
     },
     "paces": {
       "natural": "Natural and flowing",

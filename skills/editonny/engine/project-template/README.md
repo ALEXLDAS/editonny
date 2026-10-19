@@ -2,6 +2,8 @@
 
 Create a project from this template with `python3 build.py new DIRECTORY --edit EDIT --style paper`. The destination must be empty. `project.json` records the engine directory and references the prepared edit directory. Original recordings remain outside the project.
 
+This is the low-level engineering template command. Conversational jobs use the portable skill's inspect → complete summary → explicit subsequent reply → `workspace init` flow. Managed revisions require `project.json.workflow` schema 1, matching source identities and recorded acceptance before processing. See `engine/WORKFLOW.md` in the recorded package for the canonical settings, confirmation, revision and delivery contracts. Do not add another settings file or manually approve state.
+
 The edit directory supplies `cut.mp4`, `cut_timeline.json`, and `transcripts/cut.json`. Optional `face_layout.json`, `face_track.json`, and `waveform_words.json` improve framing and spoken-word timing. Speech stays in its original language.
 
 ## Build and review
@@ -16,6 +18,8 @@ The edit directory supplies `cut.mp4`, `cut_timeline.json`, and `transcripts/cut
 - `python3 build.py hf render --quality draft --output renders/sample.mp4` renders a review copy.
 
 Use the pinned HyperFrames version in `package.json`; do not upgrade it while editing. Python 3.10–3.13, FFmpeg, and Node.js 22.13+ or 24+ are required. The original template's `update DIRECTORY` command backs up replaced template files while preserving project configuration, media, custom scenes, sounds, and renders.
+
+Managed geometry and exact rational FPS come from the accepted workflow; `source` is the derived format label for other ratios. Rebuild after changing settings, cut, captions or assets: renders check actual build-input hashes and require a new explicit candidate path. Zoom defaults to 1.0. No source-wide grade or HDR/SDR conversion is automatic. Native HDR overlays, VFR composition and unsupported SDR profiles block instead of silently changing the image; use a supported workflow route or confirm a concrete conversion. Native output applies accepted voice normalization and verifies encoded peaks, or preserves unchanged full-cut audio streams when requested. Export via `workspace export`, which rechecks the actual candidate and publishes unique finals/manifests rather than treating `renders/` as delivery.
 
 ## Project contract
 

@@ -9,6 +9,8 @@ This file is the contract other helpers rely on: keep signatures stable.
 from __future__ import annotations
 
 import json
+import hashlib
+import math
 import os
 import shutil
 import subprocess
@@ -166,6 +168,15 @@ def probe_video(path: Path | str) -> dict:
             color_transfer=transfer,
             color_primaries=v.get("color_primaries", "") or "",
             color_space=v.get("color_space", "") or "",
+            color_range=v.get("color_range", "") or "",
+            chroma_location=v.get("chroma_location", "") or "",
+            sample_aspect_ratio=v.get("sample_aspect_ratio", "") or "",
+            time_base=v.get("time_base", "") or "",
+            nominal_fps_str=v.get("r_frame_rate", "") or "",
+            is_vfr=bool(v.get('r_frame_rate') and v.get('avg_frame_rate') and
+                        v['r_frame_rate'] != v['avg_frame_rate']),
+            side_data=v.get('side_data_list', []) or [],
+            profile=v.get('profile', ''),
             is_hdr=transfer in ("arib-std-b67", "smpte2084"),
         )
     return out
@@ -179,18 +190,41 @@ def nominal_fps(fps: float) -> float:
     return min(_COMMON_RATES, key=lambda r: abs(r - fps)) if fps > 0 else 30.0
 
 
-def output_fps_for(source_fps: float) -> int:
-    """Delivery fps for short-form: 30 when the source is ~30 or faster, else 24/25."""
-    n = nominal_fps(source_fps)
-    if n >= 29.0:
-        return 30
-    return 25 if abs(n - 25.0) < 0.5 else 24
+def output_fps_for(source_fps: float) -> float:
+    """Preserve measured source cadence; conversion requires an explicit output choice."""
+    if not math.isfinite(source_fps) or source_fps <= 0:
+        raise ValueError('Source frame rate is unknown; choose it explicitly')
+    return source_fps
 
 
 def file_signature(path: Path | str) -> str:
     """Cheap change detector for caches: size + mtime_ns."""
     st = os.stat(path)
     return f'{st.st_size}:{st.st_mtime_ns}'
+
+
+def content_hash(path: Path | str) -> str:
+    """Stream identity without trusting timestamps; refuse changes during the read."""
+    path = Path(path)
+    before = path.stat()
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(block)
+        after = os.fstat(stream.fileno())
+    current = path.stat()
+    identity = lambda stat: (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+    if identity(before) != identity(after) or identity(after) != identity(current):
+        raise ValueError(f'Source changed while hashing: {path.name}; inspect it again')
+    return digest.hexdigest()
+
+
+def ensure_distinct_output(output: Path | str, sources: list[Path | str]) -> None:
+    output = Path(output).expanduser()
+    for source in sources:
+        source = Path(source).expanduser()
+        if output.resolve() == source.resolve() or (output.exists() and source.exists() and os.path.samefile(output, source)):
+            raise ValueError('Output must not replace original or input media, including through a link')
 
 
 # ---------------------------------------------------------------- paths & json

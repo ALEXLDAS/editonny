@@ -58,13 +58,28 @@ class PreviewServerTests(unittest.TestCase):
 
     def test_stale_approval_does_not_overwrite_current_approval(self):
         info = self.session.file_info('cut.mp4')
-        body = {'phase': 'cut', 'file': 'cut.mp4', 'file_mtime': info['mtime'], 'file_size': info['size']}
+        body = {'phase': 'cut', 'file': 'cut.mp4', 'file_mtime': info['mtime'], 'file_size': info['size'],
+                'file_sha256': info.get('sha256'), 'dependencies_hash': info.get('dependencies_hash')}
         self.assertEqual(self.request('/api/approve', body, self.auth())[0], 200)
         saved = self.session.edit_dir / 'preview_approval.json'
         before = saved.read_bytes()
         body['file_mtime'] -= 1
         self.assertEqual(self.request('/api/approve', body, self.auth())[0], 409)
         self.assertEqual(saved.read_bytes(), before)
+
+    def test_missing_identity_is_not_an_approval(self):
+        self.assertEqual(self.request('/api/approve', {'phase': 'cut'}, self.auth())[0], 400)
+
+    def test_same_size_timestamp_replacement_invalidates_approval(self):
+        import os
+        path = self.session.edit_dir / 'cut.mp4'
+        info = self.session.file_info('cut.mp4')
+        body = {'phase': 'cut', 'file': 'cut.mp4', 'file_mtime': info['mtime'], 'file_size': info['size'],
+                'file_sha256': info.get('sha256'), 'dependencies_hash': info.get('dependencies_hash')}
+        content = path.read_bytes()
+        path.write_bytes(bytes([content[0] ^ 1]) + content[1:])
+        os.utime(path, (info['mtime'], info['mtime']))
+        self.assertEqual(self.request('/api/approve', body, self.auth())[0], 409)
 
 
 if __name__ == '__main__':

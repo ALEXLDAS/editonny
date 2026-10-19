@@ -1,6 +1,20 @@
 # Validation evidence
 
-Reviewed on 2026-10-19 on macOS Apple Silicon with Node.js 24.21.0, launcher Python 3.9.6, and engine Python 3.13.16; rows marked 2026-10-18 were not rerun after the guide rebuild because the engine, preview, and scenes did not change. Results apply to this checkout and environment; they do not establish universal scene or platform coverage.
+Reviewed on 2026-10-19 on macOS Apple Silicon with Node.js 24.21.0, launcher Python 3.9.6, engine Python 3.13.16, FFmpeg 9.0.2 and HyperFrames 0.8.171. Results below apply only to the named tests, profiles and environment. Historical sections remain dated and do not certify the current engine universally.
+
+## Confirmed editing and source appearance (1.1.0)
+
+The original incident cannot be attributed to one exact source/export pair because no authorized pair was supplied. Controlled tests reproduced source-wide range/matrix changes: the old path forced limited-range BT.709/yuv420p and automatic HDR-to-SDR treatment. Setting filter metadata alone is insufficient: actual encoder range/color flags must agree too. The replacement policy preserves observed properties or blocks the unsupported route, with no approximate tone-map fallback.
+
+Fixtures contain independent stored YUV neutral/color samples, full/limited range, BT.601/BT.709, missing tags, PQ/HLG and 10/12-bit precision. Real FFmpeg tests exercise cut/no-effect composition and unchanged originals. Exact fractional 30000/1001 timing, 60 FPS retention, irregular VFR cuts, content-identical cache/approval boundaries and protected intervals have focused regressions. VFR tests compare actual picture PTS, not only nominal FPS. Packet-duration handling follows the [FFmpeg setts contract](https://ffmpeg.org/ffmpeg-bitstream-filters.html#setts). CIEDE2000 math is checked against the first three published [Sharma/Wu/Dalal reference pairs](https://www.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf).
+
+The explicit managed native conformance test (`EDITONNY_NATIVE_CONFORMANCE=1 uv run --locked --directory skills/editonny/engine python -m unittest discover -s ../../../tests/integration -p test_managed_native.py`) passed locally. A three-second tagged SDR fixture retained 360×640, 24 FPS and color tags. At the measured corresponding midpoint outside generated caption bounds, deltaE00 median/p95 were 0.42677 (limits 1/2); encoded voice measured -14.0 LUFS and -12.67 dBTP. Vision recognized rendered captions with no layout findings. MP4, SRT, VTT and a matching delivery manifest published successfully; original bytes were unchanged. Exported frames were inspected. This is a synthetic color/voice signal fixture, not a natural-speech intelligibility or whole-timeline certification.
+
+Runtime SDR comparison requires deltaE00 median ≤1, p95 ≤2 and p95 absolute linear luminance drift ≤1% reference white; HDR uses deltaEITP median ≤1, p95 ≤3 and sampled luminance tolerances (2% above 1 nit, 0.02 nit below; at most 5% sampled pixels outside tolerance). HLG assumes a 1000-nit zero-black display with system gamma 1.2. Measurements are sampled corresponding frames resized to 192 pixels wide, outside recorded time-dependent overlay bounds. Unknown transfer/primaries cannot receive a guessed PASS; metadata equality alone is insufficient. These runtime sample limits are distinct from universal per-pixel/per-frame fidelity, codec losslessness or HDR-display calibration.
+
+Supported evidence covers SDR cut paths, full-range/BT.601 no-effect composition, the named native SDR caption fixture and PQ/HLG/12-bit cut-only fixtures. Native HDR overlays, high-precision FFmpeg overlays, Dolby dynamic metadata and non-square pixels remain blocked. HDR-to-SDR requires an accepted conversion and actual zscale/tonemap capability; this local FFmpeg lacks zscale. The HDR fixtures validate decoded signal behavior, not appearance on a calibrated HDR display. Long-form throughput, arbitrary phones/cameras, all scenes, playback software and remote filesystems remain unvalidated.
+
+Behavioral pressure testing reproduced the old instructions starting work under autonomy without the complete summary and leaving the workspace root undefined. The updated skill requires a later explicit reply even for complete/autonomous prompts. Source, config, cut/timeline, engine and actual candidate hashes invalidate stale evidence; required blocked/not_checked checks prevent delivery. Personal installations were inspected for provenance only and were not updated. Existing older engine copies require a separately authorized installer update.
 
 ## Observed checks
 
@@ -8,10 +22,10 @@ Reviewed on 2026-10-19 on macOS Apple Silicon with Node.js 24.21.0, launcher Pyt
 |---|---|
 | `npm ci --ignore-scripts` | Passed (2026-10-19); workspace installed from one lockfile; `npm audit --omit=dev` reports zero production vulnerabilities; five high development-only advisories trace to `braces` through `eslint-config-next`'s file globbing (no fixed version exists; lint runs only on repository files) |
 | `npm run build` | Passed (2026-10-19); Next.js 16.4.2 production build: every page prerendered for `en-US`, `pt-BR`, and `es`, the `/design-system` showcase, sitemap, robots, manifest, icon, and the localized Open Graph images |
-| `npm run check` | Passed (2026-10-19); rule self-check, ESLint (TypeScript, Next.js, React Compiler rules, design-system adherence), both typechecks, 55 Python tests, 15 Node tests, 126 Vitest tests, and the icon registry check |
+| `npm run check` | Passed (2026-10-19); rule self-check, ESLint, both typechecks, 77 Python tests, 15 Node tests, 130 Vitest tests, and the icon registry check |
 | `python3 editonny.py doctor` | Passed; local tools, engine interpreter, catalog, and pinned HyperFrames configuration present |
 | `python3 editonny.py media status` | Passed; 79/79 bundled videos valid, zero missing or invalid |
-| `npm run test:engine` | Passed; 27 integration tests |
+| `npm run test:engine` | Passed (2026-10-19); 52 integration tests, one explicit native-render job skipped in ordinary discovery and separately run successfully |
 | `npm run test:browser` | Passed twice in a row (2026-10-19); 168 Playwright tests (28 project-specific skips) on desktop Chromium 1440×900 and a Pixel 7 phone profile (see below) |
 | `npm run test:preview` | Passed; marks, trims, drafts, and approval confirmation |
 | `npm run test:scenes` | Passed; covered 2D templates, parameter variants, seeking, and selected visual scenes |
@@ -43,6 +57,8 @@ Reusable security review is based on the prompt in [Vibe Coding Toolkit revision
 The first GitHub Actions run of the sanitized snapshot failed on Ubuntu because the rollback unit test mocked dependency synchronization but still relied on a real `uv` executable for preflight. Reproducing that test locally with `shutil.which` returning `None` produced the same failure. The test now supplies its external-tool prerequisite explicitly while continuing to exercise the real installation, failed synchronization, version restoration, and agent registration checks. Production installer validation is unchanged. The focused reproduction passes with `uv` unavailable, and the canonical local suite is rerun before pushing the fix.
 
 GitHub Actions checks Node.js 22.13.0 and 24 using Python 3.11. Two FFmpeg-dependent voice tests are skipped when those system tools are absent; that limitation is distinct from the local engine/browser/render evidence above. Confirm the latest run on the repository's Actions page rather than interpreting an earlier failed run as the current result.
+
+The 1.1.0 workflow adds a separate Ubuntu engine job with FFmpeg/Tesseract, locked uv engine tests, the synthetic pinned render smoke and explicit managed-native conformance. This job has been authored but has not been run remotely from this local checkout; local macOS success is not an Ubuntu result.
 
 ## README visual refresh
 

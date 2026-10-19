@@ -49,9 +49,12 @@ def probe_value(p: str) -> dict:
 
 
 def loudness(p: str, af: str = "") -> dict:
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", p, "-vn", "-af",
+    process = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", p, "-vn", "-af",
                         af + "loudnorm=I=-14:TP=-1:LRA=11:print_format=json", "-f", "null", "-"],
-                       capture_output=True, text=True).stderr
+                       capture_output=True, text=True)
+    if process.returncode:
+        error_value(f'could not measure loudness of {p}')
+    r = process.stderr
     try:
         return json.loads(r[r.rindex("{"): r.rindex("}") + 1])
     except ValueError:
@@ -72,7 +75,9 @@ def chain_loudnorm(wav: str, target_value: float = -14.0, tp: float = -1.0) -> t
 
 def finalize(video: str, wav: str, output_value: str) -> tuple[dict, str, dict]:
     'Copy the video stream, mux normalized audio, then measure encoded AAC true peaks. If they exceed -0.5 dBTP, retry with a lower ceiling while preserving -14 LUFS integrated loudness.'
-    tp = -1.0
+    from common import ensure_distinct_output
+    ensure_distinct_output(output_value, [video, wav])
+    tp = -1.5
     for attempt_value in range(2):
         af, j = chain_loudnorm(wav, tp=tp)
         r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-y", "-i", video, "-i", wav, "-map", "0:v:0",
@@ -87,9 +92,11 @@ def finalize(video: str, wav: str, output_value: str) -> tuple[dict, str, dict]:
         except ValueError:
             pass
         end_value = loudness(output_value)
-        if float(end_value["input_tp"]) <= -0.5:
+        if math.isfinite(float(end_value['input_tp'])) and float(end_value["input_tp"]) <= -1.0:
             break
         tp = round(tp - (float(end_value["input_tp"]) + 0.8), 2)
+    if not math.isfinite(float(end_value['input_tp'])) or float(end_value['input_tp']) > -1.0:
+        error_value('Encoded true peak remains above -1.0 dBTP after retries; output is not a validated final')
     return j, type_value, end_value
 
 
@@ -228,6 +235,14 @@ def main(argv=None):
     ap.add_argument("--start-music", type=float, default=0.0, help='music source start in seconds (default 0)', dest='start_music')
     ap.add_argument("--output", help='output video (default: <video>_music.mp4 beside the source)', dest='output_value')
     a = ap.parse_args(argv)
+    from project_contract import managed_config
+    managed = managed_config(Path(a.video).resolve().parent)
+    if managed:
+        policy = managed['workflow']['audio']
+        if not policy['music']:
+            error_value('Music was not confirmed; propose a settings revision first')
+        if policy['mode'] != 'normalize' or policy['targetLufs'] != -14 or policy['truePeakLimit'] != -1:
+            error_value('Use compose_final for the confirmed custom/preserved audio policy; this standalone mixer targets -14 LUFS/-1 dBTP')
 
     for b in ("ffmpeg", "ffprobe"):
         if not shutil.which(b):

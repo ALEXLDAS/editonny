@@ -202,7 +202,8 @@
       "vertical": "Vertical",
       "horizontal": "Horizontal",
       "square": "Cuadrado",
-      "portrait": "Feed vertical"
+      "portrait": "Feed vertical",
+      "source": "Formato original"
     },
     "paces": {
       "natural": "Natural y fluido",

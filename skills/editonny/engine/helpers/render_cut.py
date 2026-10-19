@@ -70,7 +70,7 @@ DEFAULT_JCUT = {"lead_frames": 4, "tail_trim_frames": 2}
 LOUDNORM = {"I": -14.0, "TP": -1.0, "LRA": 11.0}
 TRUE_PEAK_LIMIT = -1.0         # delivered cut.mp4 (after AAC) must not go above this
 TRUE_PEAK_MARGIN = 0.05        # loudnorm (here) and ebur128 (verify_cut) read the true peak a few hundredths apart
-CACHE_VERSION = "render_cut/2"
+CACHE_VERSION = "render_cut/3-preserve"
 SYNC_FILE = "synchronization.json"
 BT709_TAGS = "setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709"
 ASPECT_WARN = 1.15             # source/output shape ratio beyond this: warn and frame on the face
@@ -495,6 +495,7 @@ class Plan:
     audio_path: Path = field(default_factory=Path)
     meta_path: Path = field(default_factory=Path)
     cached: bool = False
+    out_start_frame: int = 0
     seconds: float = 0.0
 
     @property
@@ -693,21 +694,24 @@ def crop_filter(W: int, H: int, crop: dict | None) -> str:
     return (f'crop={W}:{H}:x=max(0\\,min(iw-ow\\,iw*{fx:.4f}-ow/2)):y=max(0\\,min(ih-oh\\,ih*{fy:.4f}-oh/2))')
 
 
-def build_vf(info: dict, W: int, H: int, fps: int, grade_filter: str, crop: dict | None = None) -> str:
-    # SDR: convert any matrix (e.g. BT.601 phones) and full range to BT.709 tv while scaling.
-    # HDR keeps its matrix here; the shared HDR->SDR chain (grade.hdr_to_sdr_chain) converts it.
+def build_vf(info: dict, W: int, H: int, fps: int, grade_filter: str, crop: dict | None = None, fit: str = 'crop') -> str:
+    from media_policy import frame_tags, preserve_scale
     # start_time=0: with -noaccurate_seek the frames before the seek point fill the first slot,
     # so a sparse VFR source shows the frame that is on screen at the start time.
-    matrix = "" if info.get("is_hdr") else ":out_color_matrix=bt709"
-    parts = [f'fps={fps}:start_time=0',
-             f'scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos:out_range=tv{matrix}',
-             crop_filter(W, H, crop), "setsar=1"]
-    hdr = hdr_to_sdr_chain(info)
-    if hdr:
-        parts.append(hdr)
-    parts.append(graded_chain(grade_filter))
-    # ffmpeg takes the stream color tags from the frames: stamp them so untagged sources are tagged too.
-    parts.append(BT709_TAGS)
+    if fit == 'preserve' and info.get('display_width') and info['display_width'] * H != info['display_height'] * W:
+        raise CutError('Preserve framing cannot crop a different aspect ratio; confirm contain or crop', 2)
+    geometry = [f'scale={W}:{H}:force_original_aspect_ratio={"decrease" if fit == "contain" else "increase"}:flags=lanczos{preserve_scale(info)}']
+    geometry.append(f'pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black' if fit == 'contain' else crop_filter(W, H, crop))
+    parts = [f'fps={fps}:start_time=0', *geometry, 'setsar=1']
+    # Normalize the deprecated format name inside the range-aware scaler, not a later auto-scale.
+    if info.get('pix_fmt') == 'yuvj420p':
+        parts.append('format=yuv420p')
+    if grade_filter:
+        if info.get('is_hdr') or info.get('bit_depth', 8) > 8:
+            raise CutError('Creative grading cannot silently reduce HDR or source precision; confirm a tested conversion', 2)
+        parts.append(graded_chain(grade_filter))
+    if frame_tags(info):
+        parts.append(frame_tags(info))
     return ",".join(parts)
 
 
@@ -788,19 +792,25 @@ def extract(p: Plan, cfg: dict) -> Plan:
     fps, W, H = cfg["fps"], cfg["width"], cfg["height"]
     spf = SR / fps
     src_fps = p.pic_info.get("fps") or fps
-    vf = build_vf(p.pic_info, W, H, fps, cfg["grade_filter"], p.crop)
-    samples = int(round(p.audio_frames * spf))
+    picture_info = {**p.pic_info, **cfg['media_plan'].get('inputOverride', {})}
+    vf = build_vf(picture_info, W, H, cfg.get('fps_str', fps), cfg["grade_filter"], p.crop, cfg.get('fit', 'crop'))
+    samples = round((p.out_start_frame + p.frames) * spf) - round((p.out_start_frame - p.lead) * spf)
     audio_start = p.audio_start
     mode = cfg["channel_modes"].get(p.source, "stereo") if p.info.get("has_audio") else "silent"
     af = build_af(p, mode, samples)
-    enc = ["-c:v", "libx264", "-profile:v", "high", "-preset", cfg["x264_preset"], "-crf", str(cfg["crf"]),
-           "-pix_fmt", "yuv420p", "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709",
-           "-color_range", "tv", "-video_track_timescale", str(fps * 1000), "-movflags", "+faststart"]
-    key_src = {"v": CACHE_VERSION, "src": str(p.src), "sig": file_signature(p.src), "pic": round(p.pic_start, 6),
+    from media_policy import encoder_args, frame_tags
+    media = cfg['media_plan']
+    if media['filters']:
+        vf += ',' + ','.join(media['filters'])
+        if frame_tags(media):
+            vf += ',' + frame_tags(media)
+    enc = [*encoder_args(media, quality=str(cfg['crf'])), '-preset', cfg['x264_preset'],
+           '-video_track_timescale', str(Fraction(cfg.get('fps_str', str(fps))).numerator), '-movflags', '+faststart']
+    key_src = {"v": CACHE_VERSION, "src": str(p.src), "sig": cfg['source_hashes'][str(p.src)], "pic": round(p.pic_start, 6),
                "snap": p.pic_snapped, "frames": p.frames, "astart": round(audio_start, 6), "samples": samples, "vf": vf, "af": af,
                "enc": enc, "mode": mode}
     if p.other_picture:
-        key_src.update(pic_src=str(p.pic_src), pic_sig=file_signature(p.pic_src))
+        key_src.update(pic_src=str(p.pic_src), pic_sig=cfg['source_hashes'][str(p.pic_src)])
     p.key = hashlib.sha1(json.dumps(key_src, sort_keys=True).encode()).hexdigest()[:12]
     stem = f"{cfg['mode']}_{p.idx:03d}_{re.sub('[^A-Za-z0-9_-]', '_', p.rid)}_{p.key}"
     clips = cfg["clips_dir"]
@@ -847,7 +857,7 @@ def extract(p: Plan, cfg: dict) -> Plan:
     if got != p.frames:
         warn(f'interval {p.rid}: expected {p.frames} frames; received {got}; adjusting audio')
         p.frames = got
-        samples = int(round(p.audio_frames * spf))
+        samples = round((p.out_start_frame + p.frames) * spf) - round((p.out_start_frame - p.lead) * spf)
         af = build_af(p, mode, samples)
         cmd = ["ffmpeg", "-y", "-v", "error", "-nostdin"]
         if p.info.get("has_audio"):
@@ -899,12 +909,15 @@ def mix_audio(plans: list[Plan], fps: int, total_samples: int, out_wav: Path) ->
     ffmpeg(cmd, 'mix audio')
 
 
-def loudnorm_measure(wav_path: Path) -> dict | None:
+def loudnorm_measure(wav_path: Path, targets: dict | None = None) -> dict | None:
+    targets = targets or LOUDNORM
     proc = subprocess.run(
         ["ffmpeg", "-hide_banner", "-nostats", "-nostdin", "-i", str(wav_path), "-af",
-         f"loudnorm=I={LOUDNORM['I']}:TP={LOUDNORM['TP']}:LRA={LOUDNORM['LRA']}:print_format=json",
+         f"loudnorm=I={targets['I']}:TP={targets['TP']}:LRA={targets['LRA']}:print_format=json",
          "-f", "null", "-"], capture_output=True, text=True)
     text = proc.stderr
+    if proc.returncode:
+        raise CutError('Loudness measurement failed: ' + text[-300:], 2)
     start, end = text.rfind("{"), text.rfind("}")
     if start < 0 or end <= start:
         return None
@@ -957,6 +970,14 @@ def render(args: argparse.Namespace) -> int:
     edl = load_edl(edl_path)
     edl_sig = edl_signature(json.loads(edl_path.read_text(encoding="utf-8")))  # raw file, before normalizing
     edit_dir = edl_path.parent
+    from project_contract import managed_config, settings_hash
+    from media_policy import plan_media
+    contract = managed_config(edit_dir, 'cut')
+    if contract and edl.get('contractHash') != settings_hash(contract):
+        raise CutError('EDL does not match the confirmed project contract; regenerate its settings snapshot', 2)
+    if contract:
+        from project_contract import validate_edl_scope
+        validate_edl_scope(contract, load_json(edit_dir / 'source_manifest.json'), edl)
     jcut = jcut_settings(edl, args.in_jcut)
 
     probes: dict[str, dict] = {}
@@ -976,22 +997,34 @@ def render(args: argparse.Namespace) -> int:
             if key in audio_keys:
                 raise CutError(f'{src.name} has no video stream; provide an alternate picture source for its intervals', 2)
             raise CutError(f'{src.name} has no video stream', 2)
-        probes[key] = {"path": src, "info": info}
+        from common import content_hash
+        probes[key] = {"path": src, "info": info, 'sha256': content_hash(src)}
     sync, sync_path = load_sync(edl, edit_dir, probes)
 
-    out_cfg = edl.get("output") or {}
-    fmt = out_cfg.get("format") or "vertical"
-    if fmt not in OUTPUT_FORMATS and not (out_cfg.get("width") and out_cfg.get("height")):
+    out_cfg = dict(edl.get("output") or {})
+    if contract:
+        video = contract['workflow']['video']
+        if any(key in out_cfg and str(out_cfg[key]) != str(video[target]) for key, target in (('width', 'width'), ('height', 'height'))):
+            raise CutError('EDL dimensions conflict with the confirmed output snapshot', 2)
+        if out_cfg.get('fps') and Fraction(str(out_cfg['fps'])) != Fraction(video['frameRate']):
+            raise CutError('EDL frame rate conflicts with the confirmed output snapshot', 2)
+        out_cfg.update(width=video['width'], height=video['height'], fps=video['frameRate'])
+    first_info = next(pr['info'] for key, pr in probes.items() if key in picture_keys)
+    fmt = out_cfg.get("format")
+    if fmt and fmt not in OUTPUT_FORMATS and not (out_cfg.get("width") and out_cfg.get("height")):
         raise CutError(f"output.format {fmt!r} unknown (use {', '.join(OUTPUT_FORMATS)})", 2)
-    W = int(out_cfg.get("width") or OUTPUT_FORMATS[fmt][0])
-    H = int(out_cfg.get("height") or OUTPUT_FORMATS[fmt][1])
-    fps = int(round(float(out_cfg.get("fps") or choose_output_fps({k: v for k, v in probes.items()
-                                                                      if k in picture_keys}))))
-    if fps <= 0 or SR % fps:
-        raise CutError(f'output.fps {fps} unsupported; use 24, 25, 30, 48, 50, or 60', 2)
+    default_size = OUTPUT_FORMATS[fmt] if fmt else (first_info['display_width'], first_info['display_height'])
+    W = int(out_cfg.get("width") or default_size[0])
+    H = int(out_cfg.get("height") or default_size[1])
+    fps_str = str(Fraction(str(out_cfg.get('fps') or first_info['fps_str'])))
+    fps = float(Fraction(fps_str))
+    if not 0 < fps <= 240:
+        raise CutError('Output frame rate must be explicitly known and within the supported range', 2)
+    variable_rate = contract['workflow']['video']['timing'] == 'vfr' if contract else any(pr['info'].get('is_vfr') for key, pr in probes.items() if key in picture_keys) and not out_cfg.get('fps')
     if args.preview:
         W, H = (W // 2) - (W // 2) % 2, (H // 2) - (H // 2) % 2
-    W, H = W - W % 2, H - H % 2
+    if W % 2 or H % 2:
+        raise CutError('Odd output dimensions require an explicit adjustment; no automatic rounding', 2)
 
     try:
         grade_filter = resolve_grade(edl.get("grade"))
@@ -1000,10 +1033,23 @@ def render(args: argparse.Namespace) -> int:
     err = check_filter(grade_filter)
     if err:
         raise CutError(f'the EDL grade is unsupported by FFmpeg: {err}', 2)
+    if contract and grade_filter and edl.get('grade') != contract['workflow']['color'].get('grade'):
+        raise CutError('EDL grade was not confirmed in project settings', 2)
+    effective = contract or {'workflow': {'color': {'mode': 'convert' if grade_filter else 'preserve', 'target': 'source', 'grade': edl.get('grade')}}}
+    media_plan = plan_media([pr['info'] for key, pr in probes.items() if key in picture_keys], effective, None, 'master')
+    grade_filter = ''  # The shared media plan owns each requested transform exactly once.
 
     jobs = args.jobs if args.jobs and args.jobs > 0 else min(4, max(1, (os.cpu_count() or 4) // 3))
     out_path = (Path(os.path.abspath(args.output.expanduser())) if args.output
                 else edit_dir / ("cut_preview.mp4" if args.preview else "cut.mp4"))
+    from common import ensure_distinct_output
+    ensure_distinct_output(out_path, [pr['path'] for pr in probes.values()])
+    if variable_rate:
+        if args.preview:
+            raise CutError('VFR cut-only preserves source geometry; inspect the full-resolution candidate instead of a resized frame-grid preview', 2)
+        from render_vfr import render_vfr
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        return render_vfr(edl, edit_dir, probes, contract, media_plan, out_path)
     timeline_path = out_path.with_name(f'{out_path.stem}_timeline.json')
     clips_dir = edit_dir / "clips"
     clips_dir.mkdir(parents=True, exist_ok=True)
@@ -1018,20 +1064,23 @@ def render(args: argparse.Namespace) -> int:
         log('Hard joins without J-cuts')
     if sync:
         log(f"Alternate-camera picture at {sum((1 for r in edl['ranges'] if r.get('picture_source')))} intervals, synchronization from {sync_path.name}")
-    if any(pr["info"].get("is_hdr") for pr in probes.values()) and not has_ffmpeg_filter("zscale"):
-        warn('HDR source, but FFmpeg lacks zscale: approximate SDR conversion; inspect colors')
 
     t_plan = time.time()
     plans = plan_cut(edl, edit_dir, fps, jcut, probes, jobs, W, H, sync)
+    out_position = 0
+    for plan in plans:
+        plan.out_start_frame = out_position
+        out_position += plan.frames
     channel_modes = {}
     for key, pr in probes.items():
         if key in audio_keys:
             channel_modes[key] = channel_mode(pr["path"], pr["info"]) if pr["info"].get("has_audio") else "silent"
     t_plan = time.time() - t_plan
 
-    cfg = {"fps": fps, "width": W, "height": H, "grade_filter": grade_filter, "channel_modes": channel_modes,
+    cfg = {"fps": fps, 'fps_str': fps_str, 'media_plan': media_plan, 'fit': contract['workflow']['video']['fit'] if contract else 'crop', "width": W, "height": H, "grade_filter": grade_filter, "channel_modes": channel_modes,
            "x264_preset": "veryfast" if args.preview else "medium", "crf": 26 if args.preview else 18,
-           "clips_dir": clips_dir, "mode": mode}
+           "clips_dir": clips_dir, "mode": mode,
+           'source_hashes': {str(pr['path']): pr['sha256'] for pr in probes.values()}}
     t_ext = time.time()
     log(f'Extracting {len(plans)} intervals ({jobs} in parallel)...')
     with ThreadPoolExecutor(max_workers=jobs) as pool:
@@ -1051,7 +1100,10 @@ def render(args: argparse.Namespace) -> int:
     t_mix = time.time()
     mix_wav = clips_dir / f'{mode}_mix.wav'
     mix_audio(plans, fps, total_samples, mix_wav)
-    measured = loudnorm_measure(mix_wav)
+    audio_policy = contract['workflow']['audio'] if contract else {'mode': 'normalize', 'targetLufs': LOUDNORM['I'], 'processingPeak': LOUDNORM['TP'], 'truePeakLimit': TRUE_PEAK_LIMIT}
+    has_audio = any(pr['info'].get('has_audio') for key, pr in probes.items() if key in audio_keys)
+    targets = {'I': audio_policy['targetLufs'], 'TP': audio_policy['processingPeak'], 'LRA': LOUDNORM['LRA']}
+    measured = loudnorm_measure(mix_wav, targets) if has_audio and audio_policy['mode'] == 'normalize' else None
     t_mix = time.time() - t_mix
 
     concat_list = clips_dir / f'{mode}_concat.txt'
@@ -1063,12 +1115,13 @@ def render(args: argparse.Namespace) -> int:
 
     normal_wav = clips_dir / f'{mode}_norm.wav'
     if measured:
-        af = (f"loudnorm=I={LOUDNORM['I']}:TP={LOUDNORM['TP']}:LRA={LOUDNORM['LRA']}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true,aresample={SR}")
+        af = (f"loudnorm=I={targets['I']}:TP={targets['TP']}:LRA={targets['LRA']}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true,aresample={SR}")
         ffmpeg(["ffmpeg", "-y", "-v", "error", "-nostdin", "-i", str(mix_wav), "-af", af, "-c:a", "pcm_f32le",
                 "-ar", str(SR), "-ac", "2", "-f", "wav", str(normal_wav)], "normalizar o volume")
         audio_in = normal_wav
     else:
-        warn('could not measure loudness (silent audio?); audio will not be normalized')
+        if has_audio and audio_policy['mode'] == 'normalize':
+            raise CutError('Normalization requires a finite voice measurement; choose preserve for silent audio', 2)
         audio_in = mix_wav
 
     t_mux = time.time()
@@ -1076,25 +1129,30 @@ def render(args: argparse.Namespace) -> int:
 
     def mux(gain_db: float) -> None:
         af_mux = ["-af", f'volume={gain_db:.2f}dB'] if abs(gain_db) > 0.001 else []
+        audio_args = ["-i", str(audio_in)] if has_audio else []
+        audio_map = ["-map", "1:a:0", *af_mux, "-c:a", "aac", "-b:a", "192k", "-ar", str(SR), "-ac", "2"] if has_audio else ['-an']
         ffmpeg(["ffmpeg", "-y", "-v", "error", "-nostdin", "-f", "concat", "-safe", "0", "-i", str(concat_list),
-                "-i", str(audio_in), "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", *af_mux,
-                "-c:a", "aac", "-b:a", "192k", "-ar", str(SR), "-ac", "2", "-t", f'{duration:.6f}',
+                *audio_args, "-map", "0:v:0", "-c:v", "copy", *audio_map, "-t", f'{duration:.6f}',
                 "-movflags", "+faststart", "-f", "mp4", str(tmp_out)], f'montar o {out_path.name}')
 
     peak_gain = 0.0
     try:
         mux(peak_gain)
-        out_tp = true_peak_db(tmp_out)
+        normalize = has_audio and audio_policy['mode'] == 'normalize'
+        out_tp = true_peak_db(tmp_out) if normalize else None
         # The AAC encoder adds inter-sample peaks over the loudnorm target: lower just enough and encode again.
-        peak_goal = TRUE_PEAK_LIMIT - TRUE_PEAK_MARGIN
+        peak_goal = audio_policy['truePeakLimit'] - TRUE_PEAK_MARGIN
         for _ in range(3):
             if out_tp is None or out_tp <= peak_goal:
                 break
             peak_gain += peak_goal - out_tp - 0.15
             mux(peak_gain)
             out_tp = true_peak_db(tmp_out)
-        if out_tp is not None and out_tp > TRUE_PEAK_LIMIT:
-            warn(f'true peak reached {out_tp:.2f} dBTP, above {TRUE_PEAK_LIMIT:.0f}, despite reducing gain by {peak_gain:.1f} dB: lower gain_db on the loudest interval')
+        if normalize and (out_tp is None or out_tp > audio_policy['truePeakLimit']):
+            raise CutError('Encoded audio could not meet the confirmed true-peak limit', 2)
+        for pr in probes.values():
+            if content_hash(pr['path']) != pr['sha256']:
+                raise CutError('Source changed during rendering; no candidate was published', 2)
         os.replace(tmp_out, out_path)
     finally:
         tmp_out.unlink(missing_ok=True)
@@ -1134,7 +1192,8 @@ def render(args: argparse.Namespace) -> int:
         pos = out_end_f
 
     timeline = {
-        "edl_sig": edl_sig, "fps": fps, "width": W, "height": H,
+        "edl_sig": edl_sig, "fps": fps, 'fps_str': fps_str, 'mediaPolicy': media_plan,
+        'contractHash': settings_hash(contract) if contract else None, "width": W, "height": H,
         "duration": round(duration, 6), "frames": total_frames,
         "video": out_path.name, "preview": bool(args.preview),
         "jcut": jcut, "grade": edl.get("grade") or "",

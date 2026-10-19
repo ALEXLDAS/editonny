@@ -28,7 +28,7 @@ def catalog(query=''):
     return [scene for scene in scenes if all(word in normalize(json.dumps(scene, ensure_ascii=False)) for word in words)]
 
 
-def doctor(as_json=False):
+def doctor(as_json=False, probe_media=False):
     checks = []
     def check(name, ok, detail, required=True):
         checks.append(dict(name=name, ok=bool(ok), detail=detail, required=required))
@@ -54,12 +54,32 @@ def doctor(as_json=False):
     except (OSError, ValueError, KeyError) as error:
         check('Visual catalog', False, str(error))
     check('HyperFrames', True, 'Pinned in engine/project-template/package.json; the first render may download the package.', False)
-    report = {'product': 'editonny', 'version': (SKILL / 'VERSION').read_text().strip(),
+    sys.path.insert(0, str(ENGINE / 'helpers'))
+    from media_policy import probe_capabilities
+    import hashlib
+    fingerprint = hashlib.sha256()
+    for base in (SKILL / 'scripts', ENGINE / 'helpers', ENGINE / 'preview', ENGINE / 'project-template'):
+        for path in sorted(base.rglob('*')):
+            if path.is_file() and not any(part in ('__pycache__', 'node_modules', '.venv') for part in path.parts) and path.suffix in ('.py', '.mjs', '.js', '.json', '.html', '.md'):
+                fingerprint.update(path.relative_to(SKILL).as_posix().encode())
+                fingerprint.update(path.read_bytes())
+    marker = SKILL / '.editonny-install.json'
+    identity = {'packageRoot': str(SKILL), 'engineRoot': str(ENGINE), 'codeFingerprint': fingerprint.hexdigest(),
+                'installedFingerprint': json.loads(marker.read_text()).get('sha256') if marker.is_file() else None,
+                'layout': 'engine/visuals', 'mediaIntegrity': 'Run media status to verify bundled media'}
+    capabilities = probe_capabilities()
+    report = {'product': 'editonny', 'version': (SKILL / 'VERSION').read_text().strip(), 'identity': identity,
+              'mediaCapabilities': capabilities,
               'ok': all(c['ok'] for c in checks if c['required']), 'checks': checks}
+    if probe_media:
+        from fidelity import probe_media_route
+        report['mediaProbe'] = probe_media_route()
+        report['ok'] = report['ok'] and report['mediaProbe']['status'] == 'passed'
     if as_json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
         print(f"editonny {report['version']} — local diagnostic")
+        print(f"Package: {SKILL} · code {identity['codeFingerprint'][:12]}")
         for c in checks:
             print(f"{'OK' if c['ok'] else 'MISSING'} · {c['name']}: {c['detail']}")
         print('This diagnostic does not replace a render test or final video review.')
@@ -106,6 +126,25 @@ def main(argv=None):
     sub = parser.add_subparsers(dest='command', required=True)
     p = sub.add_parser('doctor', help='check the environment and files without installing tools')
     p.add_argument('--json', action='store_true')
+    p.add_argument('--probe-media', action='store_true', help='explicit short local media conformance probe; never installs tools')
+    p = sub.add_parser('inspect', help='inspect selected footage and propose settings; do not start an edit')
+    p.add_argument('sources', nargs='+', type=Path)
+    p.add_argument('--requested', type=Path, help='explicit requested choices as JSON')
+    p.add_argument('--json', action='store_true')
+    p = sub.add_parser('workspace', help='confirmed revision ownership and validated local delivery')
+    p.add_argument('action', choices=['init', 'status', 'seed', 'revise', 'variant', 'confirm', 'review', 'reference', 'recover', 'export'])
+    p.add_argument('--project', type=Path)
+    p.add_argument('--inspection', type=Path)
+    p.add_argument('--settings', type=Path)
+    p.add_argument('--confirmation', type=Path)
+    p.add_argument('--changes', type=Path)
+    p.add_argument('--scope', choices=['full', 'captions', 'intervals', 'audio', 'visual'])
+    p.add_argument('--directory', type=Path)
+    p.add_argument('--execution-context', choices=['local', 'remote'])
+    p.add_argument('--candidate', type=Path)
+    p.add_argument('--evidence', type=Path)
+    p.add_argument('--variant', default='final')
+    p.add_argument('--json', action='store_true')
     p = sub.add_parser('catalog', help='search visual scenes by name, category, or use')
     p.add_argument('query', nargs='*')
     p.add_argument('--json', action='store_true')
@@ -139,7 +178,71 @@ def main(argv=None):
             return run([uv, 'run', '--locked', '--project', ENGINE, 'python', ENGINE / 'helpers' / f'{name}.py', *argv[2:]])
         args = parser.parse_args(argv)
         if args.command == 'doctor':
-            return doctor(args.json)
+            return doctor(args.json, args.probe_media)
+        if args.command in ('inspect', 'workspace'):
+            engine_python = ENGINE / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+            if engine_python.is_file() and Path(sys.prefix).resolve() != (ENGINE / '.venv').resolve():
+                return run([engine_python, Path(__file__).resolve(), *argv])
+            sys.path.insert(0, str(ENGINE / 'helpers'))
+            from project_contract import read_json
+            if args.command == 'inspect':
+                from intake import inspect_sources, propose_settings
+                report = inspect_sources(args.sources)
+                try:
+                    report['proposal'] = propose_settings(report, read_json(args.requested) if args.requested else {})
+                except ValueError as error:
+                    report['proposalBlocked'] = str(error)
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+                return 0
+            from workspace import (create_workspace, read_status, revise_workspace, record_confirmation,
+                                   record_review, recover_revision, publish_export, seed_source)
+            if args.action == 'init':
+                if not all((args.inspection, args.settings, args.confirmation, args.execution_context)):
+                    raise ValueError('init requires --inspection, --settings, --confirmation and explicit --execution-context local|remote')
+                if args.execution_context == 'remote' and not args.directory:
+                    raise ValueError('Remote Downloads is not the user computer; provide a confirmed accessible --directory')
+                settings = read_json(args.settings)
+                settings = settings.get('proposal', settings)
+                settings = settings.get('config', settings)
+                project = create_workspace(args.directory or Path.home() / 'Downloads/editonny', settings.get('title', 'My video'),
+                                           read_json(args.inspection), settings, read_json(args.confirmation))
+                result = {'project': str(project), 'confirmation': 'confirmed'}
+            else:
+                if not args.project:
+                    raise ValueError(f'{args.action} requires --project')
+                if args.action == 'status':
+                    result = read_status(args.project)
+                elif args.action == 'recover':
+                    result = recover_revision(args.project)
+                elif args.action == 'seed':
+                    result = {'cut': str(seed_source(args.project))}
+                elif args.action in ('review', 'reference'):
+                    if not args.candidate or not args.evidence:
+                        raise ValueError('review/reference requires --candidate and --evidence')
+                    result = record_review(args.project, args.candidate, read_json(args.evidence), args.action == 'reference')
+                elif args.action == 'variant':
+                    from project_contract import load_contract
+                    original = load_contract(args.project)
+                    project = revise_workspace(args.project, {}, original['workflow']['editing']['scope'], args.variant)
+                    result = read_status(project)
+                elif args.action == 'confirm':
+                    if not args.confirmation:
+                        raise ValueError('confirm requires --confirmation identifying the actual summary and reply')
+                    result = record_confirmation(args.project, read_json(args.confirmation))
+                elif args.action == 'revise':
+                    if not args.changes or not args.scope:
+                        raise ValueError('revise requires --changes and --scope')
+                    project = revise_workspace(args.project, read_json(args.changes), args.scope)
+                    if args.confirmation:
+                        record_confirmation(project, read_json(args.confirmation))
+                    result = read_status(project)
+                else:
+                    if not args.candidate:
+                        raise ValueError('export requires --candidate')
+                    from fidelity import verify_media
+                    result = publish_export(args.project, args.candidate, verify_media(args.candidate, args.project), args.variant)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         if args.command == 'catalog':
             scenes = catalog(' '.join(args.query))
             if args.json:
