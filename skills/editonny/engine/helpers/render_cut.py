@@ -804,7 +804,7 @@ def extract(p: Plan, cfg: dict) -> Plan:
         vf += ',' + ','.join(media['filters'])
         if frame_tags(media):
             vf += ',' + frame_tags(media)
-    enc = [*encoder_args(media, quality=str(cfg['crf'])), '-preset', cfg['x264_preset'],
+    enc = [*encoder_args(media, quality=cfg['crf']), '-preset', cfg['x264_preset'],
            '-video_track_timescale', str(Fraction(cfg.get('fps_str', str(fps))).numerator), '-movflags', '+faststart']
     key_src = {"v": CACHE_VERSION, "src": str(p.src), "sig": cfg['source_hashes'][str(p.src)], "pic": round(p.pic_start, 6),
                "snap": p.pic_snapped, "frames": p.frames, "astart": round(audio_start, 6), "samples": samples, "vf": vf, "af": af,
@@ -1118,7 +1118,7 @@ def _render(args: argparse.Namespace) -> int:
     t_plan = time.time() - t_plan
 
     cfg = {"fps": fps, 'fps_str': fps_str, 'media_plan': media_plan, 'fit': contract['workflow']['video']['fit'] if contract else 'crop', "width": W, "height": H, "grade_filter": grade_filter, "channel_modes": channel_modes,
-           "x264_preset": "veryfast" if args.preview else "medium", "crf": 26 if args.preview else 18,
+           "x264_preset": "veryfast" if args.preview else "medium", "crf": 26 if args.preview else None,
            "clips_dir": clips_dir, "mode": mode,
            'source_hashes': {str(pr['path']): pr['sha256'] for pr in probes.values()}}
     t_ext = time.time()

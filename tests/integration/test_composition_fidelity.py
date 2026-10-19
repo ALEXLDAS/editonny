@@ -15,6 +15,22 @@ from compose_final import ComposeError, build_plan, build_tracks, run_video
 
 
 class CompositionFidelityTests(unittest.TestCase):
+    def test_motion_requires_its_validated_common_color_space(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / 'source.mp4'; make_patches(source, True, 'smpte170m')
+            data = root / 'edit_data.json'
+            data.write_text(json.dumps({'base': str(source), 'captions': {'enabled': False}}))
+            output = root / 'composed.mp4'
+            plan = build_plan(data, str(output), False); plan.renders.mkdir(parents=True)
+            overlay = root / 'motion.png'
+            Image.new('RGBA', (128, 64)).save(overlay)
+            clip = {'file': str(overlay), 'fps': 24, 'frames': 1, 'x': 0, 'y': 0}
+            with self.assertRaisesRegex(ComposeError, 'common composition space'):
+                run_video(plan, [], {'motion': [(clip, 0, [(0, 1)])]}, None, output)
+            self.assertFalse(output.exists())
+
     def test_unsupported_chroma_overlay_blocks_before_writing(self):
         from PIL import Image
         import subprocess

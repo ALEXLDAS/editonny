@@ -50,6 +50,14 @@ class MediaPolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'libx265'):
             self.m.plan_media([self.facts(pix_fmt='yuv420p10le', bit_depth=10)], config(), {'encoders': ['libx264']}, 'master')
 
+    def test_hdr_master_quality_and_preview_override(self):
+        capabilities = {'encoders': ['libx264', 'libx265']}
+        hdr = self.facts(is_hdr=True, pix_fmt='yuv420p10le', bit_depth=10)
+        for facts, override, expected in [(hdr, None, '16'), (self.facts(), None, '18'), (hdr, '26', '26')]:
+            with self.subTest(hdr=facts['is_hdr'], override=override):
+                args = self.m.encoder_args(facts, capabilities, quality=override)
+                self.assertEqual(args[args.index('-crf') + 1], expected)
+
     def test_missing_required_filter_blocks_not_approximates(self):
         c = config()
         c['workflow']['color'].update(mode='convert', target='sdr-bt709', conversion='hable')

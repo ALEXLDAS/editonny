@@ -56,7 +56,7 @@ def probe_capabilities() -> dict:
     return result
 
 
-def encoder_args(info: dict, available: dict | None = None, quality: str = '18') -> list[str]:
+def encoder_args(info: dict, available: dict | None = None, quality: str | int | None = None) -> list[str]:
     available = available if available is not None else probe_capabilities()
     pix_fmt = info.get('pix_fmt') or 'yuv420p'
     if pix_fmt == 'yuvj420p':
@@ -66,6 +66,8 @@ def encoder_args(info: dict, available: dict | None = None, quality: str = '18')
     codec = info.get('encoder') or ('libx264' if pix_fmt in ('yuv420p', 'yuv422p', 'yuv444p') else 'libx265')
     if codec not in available.get('encoders', []):
         raise ValueError(f'{codec} is required for source precision; no automatic bit-depth reduction is allowed')
+    if quality is None:
+        quality = 16 if info.get('is_hdr') else 18
     result = ['-c:v', codec, '-pix_fmt', pix_fmt, '-crf', str(quality)]
     if codec == 'libx265':
         result += ['-tag:v', 'hvc1', '-x265-params', 'log-level=error']

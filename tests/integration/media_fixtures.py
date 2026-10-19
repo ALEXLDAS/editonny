@@ -22,7 +22,7 @@ def make_patches(path: Path, full: bool = False, matrix: str = 'bt709') -> bytes
 
 def decoded_samples(path: Path) -> bytes:
     return subprocess.run(['ffmpeg', '-v', 'error', '-i', str(path), '-frames:v', '1',
-                           '-pix_fmt', 'yuv420p', '-f', 'rawvideo', '-'],
+                           '-pix_fmt', '+', '-f', 'rawvideo', '-'],
                           check=True, capture_output=True).stdout
 
 

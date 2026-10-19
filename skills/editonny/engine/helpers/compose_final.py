@@ -2846,7 +2846,7 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
               base_clip: Path | None = None) -> None:
     """base_clip: the green screen clip, already on the output grid and size, used in place of the base."""
     W, H, fps, nf = plan.W, plan.H, plan.fps, plan.nf
-    from media_policy import encoder_args, frame_tags
+    from media_policy import encoder_args, frame_tags, preserve_scale
     active_tracks = bool(tracks.get('motion')) or any(
         track and track[0] and track[1] for name, track in tracks.items() if name in ('mid', 'captions', 'top'))
     if not inserts and not active_tracks and not cam and base_clip is None and (W, H) == (plan.base_w, plan.base_h) and abs(fps - plan.base_fps) < 1e-6:
@@ -2855,8 +2855,8 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
         return
     if plan.media_plan.get('bit_depth', 8) > 8 or plan.media_plan.get('is_hdr') or '420' not in plan.media_plan.get('pix_fmt', ''):
         raise ComposeError('This FFmpeg effects path is validated only for 8-bit SDR 4:2:0; preserve the cut-only master or confirm a supported conversion', 2)
-    if inserts and (plan.media_plan.get('color_space') != 'bt709' or plan.media_plan.get('color_range') != 'tv'):
-        raise ComposeError('Video inserts require a validated common composition space; do not reinterpret source color', 2)
+    if (inserts or tracks.get('motion')) and (plan.media_plan.get('color_space') != 'bt709' or plan.media_plan.get('color_range') != 'tv'):
+        raise ComposeError('Video inserts and motion require a validated common composition space; do not reinterpret source color', 2)
     time_base = f'{Fraction(plan.fps_str).denominator}/{Fraction(plan.fps_str).numerator}'
     inputs: list[str] = ["-i", str(base_clip or plan.base)]
     chains: list[str] = []
@@ -2866,7 +2866,9 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
     if base_clip is None and abs(plan.base_fps - fps) > 0.01:
         pre.append(f'fps={fps}')
     if base_clip is None and (plan.base_w, plan.base_h) != (W, H):
-        pre.append(f'scale={W}:{H}:force_original_aspect_ratio=increase:flags=bicubic,crop={W}:{H},setsar=1')
+        pre.append(f'scale={W}:{H}:force_original_aspect_ratio=increase:flags=bicubic{preserve_scale(plan.media_plan)},crop={W}:{H},setsar=1')
+    else:
+        pre.append(f'scale=iw:ih{preserve_scale(plan.media_plan)}')
     pre += [f'settb={time_base}', "setpts=N", "format=yuv420p"]
     if cam:
         pre.append(cam)
@@ -2926,7 +2928,7 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
         output_range = plan.media_plan.get('color_range') or 'tv'
         chains.append(f'[{n_in}:v]format=rgba,scale=in_range=pc:out_color_matrix={matrix}:out_range={output_range},format=yuva420p[t{name}]')
         opt = f":enable='{en}'" if en else ""
-        chains.append(f'[{cur}][t{name}]overlay=0:0:eof_action=pass:format=auto{opt}[{lab}]')
+        chains.append(f'[{cur}][t{name}]overlay=0:0:eof_action=pass:format=yuv420{opt}[{lab}]')
         cur = lab
         n_in += 1
     tags = frame_tags(plan.media_plan)

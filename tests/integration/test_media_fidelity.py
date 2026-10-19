@@ -21,13 +21,14 @@ class MediaFidelityTests(unittest.TestCase):
     def render(self, full=False, matrix='bt709'):
         with tempfile.TemporaryDirectory() as temp:
             source, output = Path(temp) / 'source.mp4', Path(temp) / 'output.mkv'
-            make_patches(source, full, matrix)
+            known_samples = make_patches(source, full, matrix)
             original = hashlib.sha256(source.read_bytes()).hexdigest()
             facts = probe_video(source)
             vf = build_vf(facts, 128, 64, 24, '')
             subprocess.run(['ffmpeg', '-v', 'error', '-i', str(source), '-vf', vf,
                             '-c:v', 'ffv1', *color_tags(facts), str(output)], check=True, capture_output=True)
             self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), original)
+            self.assertEqual(decoded_samples(source), known_samples, 'Fixture decoding changed stored source samples')
             return facts, probe_video(output), decoded_samples(source), decoded_samples(output)
 
     def test_sdr_no_effect_preserves_gray_and_color(self):
