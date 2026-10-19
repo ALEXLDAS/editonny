@@ -3,46 +3,54 @@
 <a id="top"></a>
 
 <p align="center">
-  <picture>
-    <source media="(max-width: 640px)" srcset="docs/assets/readme/hero-mobile.svg" />
-    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/hero-still.svg" />
-    <img src="docs/assets/readme/hero.svg" alt="editonny: an editorial local video studio with an animated video, voice, and visuals timeline." width="1600" />
-  </picture>
+  <a href="#install"><img src="docs/assets/readme/en-US/hero.svg" alt="editonny: You ask. Your video gets rhythm. An animated workbench cuts pauses, adds captions, and applies a three-step motion scene while a playhead runs across the video, voice, caption, and motion tracks." width="100%" /></a>
 </p>
 
-# editonny
+<h1 align="center">editonny</h1>
 
-**Your story. Your rhythm. One local editing workflow.**
+<p align="center"><strong>You ask. Your video gets rhythm.</strong></p>
 
-Local video editing, guided by conversation. One portable skill brings together transcription, precise cutting, captions, framing, audio, and a library of **145 visual scenes** for **Codex** and **Claude Code**.
-
-[Start editing](#install) · [See the motion](#motion) · [Explore the guide](#open-the-guide) · [Star history](#community)
+<p align="center">A free, open-source video editing skill for <strong>Claude Code</strong> and <strong>Codex</strong>. Cut pauses and mistakes, add captions, fix the audio, reframe, and turn parts of your speech into motion scenes by asking in plain language. Transcription and rendering run on your computer.</p>
 
 <p align="center">
-  <a href="https://github.com/soumatheusgomes/editonny/stargazers"><img src="https://img.shields.io/github/stars/soumatheusgomes/editonny?style=flat&amp;label=Stars&amp;color=354935&amp;labelColor=242721" alt="GitHub stars" /></a>
+  <a href="https://github.com/soumatheusgomes/editonny/stargazers"><img src="https://img.shields.io/github/stars/soumatheusgomes/editonny?style=flat&amp;label=Stars&amp;color=ff4f12&amp;labelColor=17171b" alt="GitHub stars" /></a>
   <a href="https://github.com/soumatheusgomes/editonny/actions/workflows/verify.yml"><img src="https://github.com/soumatheusgomes/editonny/actions/workflows/verify.yml/badge.svg?branch=main" alt="GitHub Actions verification" /></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-354935?labelColor=242721" alt="MIT license for first-party code" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-d4ff3a?labelColor=17171b" alt="MIT license for first-party code" /></a>
+  <img src="https://img.shields.io/badge/Claude%20Code-skill-ff4f12?labelColor=17171b" alt="Works as a Claude Code skill" />
+  <img src="https://img.shields.io/badge/Codex-skill-ff4f12?labelColor=17171b" alt="Works as a Codex skill" />
 </p>
 
-| Visual scenes | Editing examples | Bundled videos |
-| :---: | :---: | :---: |
-| **145** ways to explain | **54** starting points | **79** original clips |
+<p align="center"><a href="#install"><strong>Install with one request</strong></a> · <a href="#how-it-works">How it works</a> · <a href="#lab">Lab</a> · <a href="#motion">Motion scenes</a> · <a href="#open-the-guide">Guide</a> · <a href="#community">Star history</a></p>
 
-## Start with one request
+<p align="center"><img src="docs/assets/readme/en-US/marquee.svg" alt="Pause cutting, captions, audio, reframing, motion, 145 scenes, and 54 requests on a scrolling tape." width="100%" /></p>
 
-Install the skill, open your agent in the footage folder, and describe the edit. You direct the result; editonny brings the local tools and visual library.
+<a id="install"></a>
+
+## Install with one request
+
+You don't download anything by hand. Open **Claude Code** or **Codex** in any folder and paste this request. The same request installs editonny the first time and updates it later: your agent clones the skill from GitHub, follows its setup procedure, verifies everything, and asks before anything outside the request.
 
 ```text
-$editonny
-Edit a 45-second vertical video from /path/to/footage.
-Keep complete takes, clean pauses, breaths, and mistakes, and add clear captions.
-Use visual scenes only where they explain the story.
-Verify an 8–15 second sample before finishing the export.
+Install or update the editonny skill for Codex and Claude Code from https://github.com/soumatheusgomes/editonny. Clone the latest version into a temporary folder; I won't download anything myself. Read skills/editonny/SKILL.md and follow its complete setup procedure. If editonny is already installed, compare versions, summarize what changes, and update it through its existing delivery method: the repository installer for a shared installation (it preserves my settings and backs up the previous copy) or the host's updater for a managed plugin. Prepare the compatible local tools, locked engine, pinned renderer and browser, default transcription model, local OCR for caption checks, and bundled media before the first edit. Verify with diagnostics and a synthetic sample, report anything pending, remove the temporary clone, and tell me when to restart my agent. Ask before paid services or sending my media.
 ```
 
-## Install
+<p align="center"><img src="docs/assets/readme/en-US/install.svg" alt="An agent terminal receives the install request, then reports cloning the repository, reading the setup procedure, installing for both agents, preparing the engine, renderer, model, and OCR, and passing diagnostics." width="100%" /></p>
 
-Prepare Python **3.9+** for the launcher, **uv**, **FFmpeg/ffprobe**, **Node.js 22.13+ or 24+**, and an already configured agent. The engine requires Python **>=3.10,<3.14**; uv selects a compatible interpreter. System tools must be available on `PATH`.
+When it finishes, restart your agent and call **`/editonny` in Claude Code** or **`$editonny` in Codex**. This is the same request the guide copies for you.
+
+| You'll need | Version |
+|---|---|
+| Claude Code or Codex | Already configured |
+| Python | 3.9+ for the launcher; the engine uses >=3.10,<3.14 through uv |
+| uv | Python manager |
+| FFmpeg and ffprobe | On `PATH` |
+| Node.js and npx | 22.13+ or 24+ |
+| Local OCR for caption checks | Apple Vision (macOS) or Tesseract |
+
+The agent prepares what is missing and reports pending downloads or failed checks before calling setup complete. Local transcription and rendering do not need an LLM API key; your agent subscription is separate. External generators are optional and require your authorization before costs or media transmission.
+
+<details>
+<summary><strong>Prefer the terminal?</strong></summary>
 
 ```sh
 git clone https://github.com/soumatheusgomes/editonny.git
@@ -52,13 +60,64 @@ python3 ~/.local/share/editonny/scripts/editonny.py doctor
 python3 ~/.local/share/editonny/scripts/editonny.py media status
 ```
 
-Restart your agent. Invoke **`$editonny` in Codex** or **`/editonny` in Claude Code**. Use `--target codex` or `--target claude` to register one agent. One shared installation lives at `~/.local/share/editonny`; agent entries are links to it.
+Use `--target codex` or `--target claude` to register one agent. One shared installation lives at `~/.local/share/editonny`; agent entries are links to it. These commands register the skill and prepare its Python environment. For the complete setup (renderer, browser, transcription model, OCR, and synthetic checks), ask your agent to read `skills/editonny/SKILL.md` and follow its [setup procedure](skills/editonny/references/setup.md). Each use checks local readiness and GitHub updates; applying an update requires your acceptance.
 
-These commands register the skill and prepare its Python environment. For a complete installation before the first edit, ask your agent to read `skills/editonny/SKILL.md` and follow its [setup procedure](skills/editonny/references/setup.md): prepare compatible local tools, the pinned renderer/browser, the default transcription model, local OCR for caption verification, bundled media, and synthetic readiness checks. Report pending downloads or failed checks before calling setup complete. Each use checks local readiness and GitHub updates; applying an update requires your acceptance.
+See [installation and recovery](docs/installation.md) for isolated installation, plugin loading, updates, and removal.
 
-Local transcription and rendering do not require an LLM API key. Your agent subscription is separate. External generators are optional and require authorization before costs or media transmission.
+</details>
 
-See [installation and recovery](docs/installation.md) for prerequisites, isolated installation, plugin loading, updates, and removal.
+<a id="how-it-works"></a>
+
+## How it works
+
+<p align="center"><img src="docs/assets/readme/en-US/workflow.svg" alt="Three steps: copy the install request, paste it into your agent, and talk to your agent." width="100%" /></p>
+
+editonny is a skill installed on your computer. You describe the result and point your agent at a video folder; the skill inspects the recording, chooses complete takes, measures cuts against the waveform, assembles a project, reviews a representative sample, and exports a checked MP4.
+
+```text
+$editonny
+Edit a 45-second vertical video from /path/to/footage.
+Keep complete takes, clean pauses, breaths, and mistakes, and add clear captions.
+Use visual scenes only where they explain the story.
+Verify an 8–15 second sample before finishing the export.
+```
+
+1. Choose a goal in the guide, specify the footage folder, and copy the request (in the guide's language) to your agent.
+2. The skill inspects the selected sources, proposes every editing setting, and **waits for your confirmation**, even with a detailed prompt. Defaults preserve the original image, geometry, and FPS; color filters and conversions are never automatic.
+3. After acceptance, work stays in **Downloads/editonny/date-title/**: finished videos in **exports/**, editing files in **project/**. Review an **8–15 second** sample; select user approval if you want the agent to wait at this later step too.
+4. A supported render route publishes uniquely named MP4/subtitle files with a matching verification manifest. Unsupported color/timing paths block clearly; remote execution must identify an accessible destination.
+
+Standard cleanup removes unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions while preserving complete words, natural pacing, intentional pauses, and meaning. Narrow revisions stay within the requested scope. Original footage is preserved, and speech can stay in its original language.
+
+## Every request is a layer
+
+<p align="center"><img src="docs/assets/readme/en-US/anatomy.svg" alt="An exploded isometric stack of four layers: raw footage, cut markers, captions, and a motion scene, beside their explanations." width="100%" /></p>
+
+## Two services, one flow
+
+<p align="center"><img src="docs/assets/readme/en-US/features.svg" alt="Editor card: pause and mistake cuts, storytelling, captions, audio adjustments, and reframing. Motion card: animated lists, comparisons, numbers, diagrams, and 145 catalog scenes." width="100%" /></p>
+
+<a id="lab"></a>
+
+## Input, request, result
+
+<p align="center"><img src="docs/assets/readme/en-US/lab.svg" alt="A transcript with marked pauses and struck mistakes switches from raw to edited, beside the input, the request, and the result." width="100%" /></p>
+
+<p align="center"><img src="docs/assets/readme/en-US/captions.svg" alt="The same caption in four lettering styles, Impact, Clean, Handwritten, and Marker, with a word-by-word highlight." width="100%" /></p>
+
+<p align="center"><img src="docs/assets/readme/en-US/framing.svg" alt="The same footage reframed through 9:16, 16:9, 1:1, and 4:5 while the subject stays centered." width="100%" /></p>
+
+<a id="motion"></a>
+
+## Speech becomes a scene
+
+<p align="center"><img src="docs/assets/readme/en-US/motion.svg" alt="Four catalog scene motifs replaying in phone frames: three stacked steps, before and after, a number spotlight, and a question with its answer." width="100%" /></p>
+
+<p align="center"><img src="docs/assets/readme/en-US/stats.svg" alt="Free. Open. Forever. 145 motion scenes, 54 requests, and 79 bundled videos." width="100%" /></p>
+
+Scenes come from the bundled catalog of **145** motion scenes and **79** original clips; projects receive only the clips they use. Sample numbers, offers, testimonials, and brands in scenes are illustrative and must be replaced with supplied facts. Never treat generated visuals as evidence. All banners in this README are illustrative animations of the workflow, not renders of customer footage.
+
+<a id="open-the-guide"></a>
 
 ## Open the guide
 
@@ -73,62 +132,6 @@ python3 editonny.py guide
 
 This starts the development server at `http://localhost:4173` and opens it. Stop it with `Ctrl+C`; use `--port` to choose another port and `--no-open` to skip the browser. `npm run dev` does the same on port 3000.
 
-<a id="motion"></a>
-
-## Words, ideas, and objects in motion
-
-Three real scenes from the bundled library. These silent, cropped excerpts use synthetic text and illustrative scene content; they are examples, not customer footage.
-
-<p align="center">
-  <a href="docs/assets/readme/captions.gif">
-  <picture>
-    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/captions-still.png" />
-    <img src="docs/assets/readme/captions.gif" alt="Timed chromatic captions reveal “Your story. Your rhythm.”" width="260" loading="lazy" />
-  </picture>
-  </a>
-  <a href="docs/assets/readme/explain.gif">
-  <picture>
-    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/explain-still.png" />
-    <img src="docs/assets/readme/explain.gif" alt="An illustrative building rises floor by floor beside a changing floor count." width="260" loading="lazy" />
-  </picture>
-  </a>
-  <a href="docs/assets/readme/motion.gif">
-  <picture>
-    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/motion-still.png" />
-    <img src="docs/assets/readme/motion.gif" alt="Planets orbit a rotating Sun in the solar system scene." width="260" loading="lazy" />
-  </picture>
-  </a>
-</p>
-
-[Timed captions](skills/editonny/visuals/scenes/text-chromatic.html) · [Illustrated explanations](skills/editonny/visuals/scenes/building-panel.html) · [Spatial motion](skills/editonny/visuals/scenes/solar-system.html)
-
-Previews play once for 4.5 seconds. Reduced-motion preferences select still images. Open a preview to replay it.
-
-## What it does
-
-Describe the result and point your agent at a video folder. editonny helps it inspect the recording, choose complete takes, measure cuts against the waveform, assemble a project, review a representative sample, and export a checked MP4.
-
-Standard editing cleanup removes unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions while preserving complete words, natural pacing, intentional pauses, and meaning. Narrow revisions stay within the requested scope. Original footage is preserved. Speech can remain in its original language; an English product does not require English recordings.
-
-The browser guide includes **54 editing examples**, a prompt builder, and the scene catalog. Every editing prompt includes the shared cleanup policy. The guide does not upload files or edit video in the browser.
-
-## Editing workflow
-
-<p align="center">
-  <picture>
-    <source media="(max-width: 640px)" srcset="docs/assets/readme/workflow-mobile.svg" />
-    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/workflow-still.svg" />
-    <img src="docs/assets/readme/workflow.svg" alt="A local editing workflow: describe your intent, edit the footage, review an 8–15 second sample, and export a checked MP4." width="1600" />
-  </picture>
-</p>
-
-1. Choose a goal in the guide, specify the footage folder, and copy the request (in the guide's language) to your agent.
-2. The skill inspects selected sources, proposes every editing setting and **waits for your confirmation**, even with a detailed prompt. Defaults preserve the original image, geometry and FPS; color filters and conversions are never automatic.
-3. After acceptance, work stays in **Downloads/editonny/date-title/**: finished videos in **exports/**, editing files in **project/**. Review an **8–15 second** sample; select user approval if you want the agent to wait at this later step too.
-4. Complete a supported render route and publish uniquely named MP4/subtitle files with a matching verification manifest. Unsupported color/timing paths block clearly; remote execution must identify an accessible destination.
-
-Keep footage, editable projects, and personal libraries outside the installed skill. Sample numbers, offers, testimonials, and brands in scenes are illustrative and must be replaced with supplied facts. Never treat generated visuals as evidence.
-
 ## Structure
 
 | Path | Responsibility |
@@ -140,7 +143,7 @@ Keep footage, editable projects, and personal libraries outside the installed sk
 | `DESIGN.md` | Visual contract and source of truth for design tokens |
 | `design-system/` | React component library, tokens, preview templates, showcase, and reference HTML |
 | `docs/` | Canonical architecture, installation, integration, and validation references |
-| `scripts/`, `tests/` | Packaging, render checks, and regression tests |
+| `scripts/`, `tests/` | Packaging, README artwork, render checks, and regression tests |
 
 New projects use `project.json` and English commands, fields, and scene IDs. This is a clean pre-release foundation; previous experimental project formats are unsupported.
 
@@ -166,9 +169,11 @@ python3 scripts/smoke_engine.py
 
 The repository is an npm workspace: `web/` (`@editonny/web`) and `design-system/` (`@editonny/design-system`). `npm run build` builds the guide; `npm run check` runs lint, typechecks, unit tests, and the icon registry check (`npm run icons` regenerates it from `design-system/assets/icons/`). Open `/design-system` on the running guide to browse every component and state in both themes; new UI follows [DESIGN.md](DESIGN.md) and [the library map](design-system/README.md).
 
+The README banners are generated from the guide's interface text and the DESIGN.md tokens: run `npm run readme:art` after changing either. `npm test` fails when a banner is stale, and the install request in each README must match the guide's.
+
 ### Deploy the guide
 
-Import the repository in Vercel and set **Root Directory** to `web`; Vercel installs the workspace from the repository root and keeps the skill's catalog available to the build. Set `NEXT_PUBLIC_SITE_URL` to the public origin (for example, a custom domain) so canonical links, `hreflang`, the sitemap, and social images use it; otherwise the Vercel production domain is used.
+Import the repository in Vercel and set **Root Directory** to `web`; Vercel installs the workspace from the repository root and keeps the skill's catalog available to the build. Set `NEXT_PUBLIC_SITE_URL` to the public origin (for example, a custom domain) so canonical links, `hreflang`, the sitemap, structured data, and the localized social images use it; otherwise the Vercel production domain is used.
 
 ## Package
 
@@ -211,4 +216,4 @@ First-party code and documentation use the [MIT License](LICENSE.md). Third-part
 
 [Product](PRODUCT.md) · [Architecture](docs/architecture.md) · [Interface](docs/design.md) · [Integrations](docs/integrations.md) · [Development setup](docs/setup.md)
 
-<p align="center"><strong>YOUR STORY. ITS OWN RHYTHM.</strong><br /><a href="#top">Back to top ↑</a></p>
+<p align="center"><strong>YOU HAVE THE STORY. WE GIVE IT RHYTHM.</strong><br /><a href="#top">Back to top ↑</a></p>

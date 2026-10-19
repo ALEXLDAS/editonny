@@ -15,7 +15,7 @@ import styles from '@/features/home/home.module.css';
 import { Offer } from '@/features/home/Offer';
 import { ClientMessages } from '@/i18n/ClientMessages';
 import type { AppLocale } from '@/i18n/routing';
-import { pageMetadata } from '@/lib/site';
+import { homeJsonLd, pageMetadata } from '@/lib/site';
 
 /** Catalog scenes the lab's motion requests point to. */
 const LAB_SCENES = { steps: 'three-steps', beforeAfter: 'before-after', number: 'revenue-counter', question: 'question-answer' } as const;
@@ -44,6 +44,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     return [pick, { id, name: scene.name }];
   })) as Record<keyof typeof LAB_SCENES, { id: string; name: string }>;
   return <ClientMessages groups={['Home.bench', 'Home.anatomy', 'Home.lab', 'Home.library', 'Home.offer', 'Home.bar', 'Library', 'Catalog', 'Examples', 'Nav', 'Common']}>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: await homeJsonLd(locale) }} />
     <Hero />
     <div className={styles.tape}><Marquee tone="orange" size={44} speed={38} rotate={-2} items={t('marquee', counts).split('|')} /></div>
     <Anatomy />

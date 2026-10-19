@@ -16,7 +16,7 @@ export const SITE_URL = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? (vercelUrl ?
  */
 export const BRAND = {
   ink950: '#050506', ink900: '#0b0b0d', ink800: '#17171b', ink600: '#2c2c33',
-  fog50: '#fafafa', fog400: '#a1a1aa', orange500: '#ff4f12', orange900: '#2b0b00', volt400: '#d4ff3a',
+  fog50: '#fafafa', fog400: '#a1a1aa', orange500: '#ff4f12', orange700: '#b82f00', orange900: '#2b0b00', volt400: '#d4ff3a', sun400: '#ffd60a',
 } as const;
 
 export type PageKey = 'home' | 'create' | 'catalog' | 'examples' | 'install';
@@ -49,5 +49,28 @@ export async function pageMetadata(locale: AppLocale, page: PageKey): Promise<Me
       locale: OG_LOCALES[locale], alternateLocale: routing.locales.filter(code => code !== locale).map(code => OG_LOCALES[code]),
     },
     twitter: { card: 'summary_large_image', title, description, images },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 } },
   };
+}
+
+/** schema.org description of the site and the skill for the home page, serialized safely for a `<script>` tag. */
+export async function homeJsonLd(locale: AppLocale) {
+  const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const absolute = (path: string) => new URL(path, SITE_URL).href;
+  const url = absolute(localizedPath(locale, 'home'));
+  const author = { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.instagram };
+  const graph = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'WebSite', '@id': `${url}#website`, url, name: t('siteName'), description: t('home.description'), inLanguage: locale, publisher: author },
+      {
+        '@type': 'SoftwareApplication', '@id': `${url}#software`, name: t('siteName'), url, description: t('home.description'), inLanguage: locale,
+        image: absolute(`/${locale}/opengraph-image`), applicationCategory: 'MultimediaApplication', applicationSubCategory: 'Video editing',
+        operatingSystem: 'macOS', isAccessibleForFree: true, license: 'https://opensource.org/licenses/MIT', downloadUrl: REPOSITORY_URL,
+        softwareHelp: absolute(localizedPath(locale, 'install')), sameAs: [REPOSITORY_URL], author,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      },
+    ],
+  };
+  return JSON.stringify(graph).replace(/</g, '\\u003c');
 }

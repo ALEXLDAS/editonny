@@ -16,7 +16,7 @@ test('the installation request copies in the visitor language', async ({ page, c
   await page.goto('/es/instalacion');
   await page.getByRole('button', { name: 'Copiar pedido de instalación' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Pedido de instalación copiado.' })).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^Instala editonny desde este repositorio/);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^Instala o actualiza la skill editonny para Codex y Claude Code desde https:\/\/github\.com\/soumatheusgomes\/editonny\. /);
 });
 
 test('the FAQ opens one answer at a time', async ({ page }) => {

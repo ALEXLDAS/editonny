@@ -2,11 +2,11 @@ import { expect, test } from '@playwright/test';
 
 test('the English home presents the landing with the real catalog numbers', async ({ page }) => {
   await page.goto('/en');
-  await expect(page).toHaveTitle('editonny — video editing through conversation');
+  await expect(page).toHaveTitle('editonny — AI video editing in Claude Code and Codex');
   const heading = page.getByRole('heading', { level: 1 });
   await expect(heading).toContainText('You ask.');
   await expect(heading).toContainText('Your video gets');
-  for (const name of [/Every request is/, /Fewer operations/, /Input, request/, /The site teaches/, /One idea/, /From download to/, /An editor costs/]) {
+  for (const name of [/Every request is/, /Fewer operations/, /Input, request/, /The site teaches/, /One idea/, /From zero to your/, /An editor costs/]) {
     await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
   }
   await expect(page.getByText('54 ready-made requests and 145 motion scenes. Explore freely.')).toBeVisible();
@@ -82,7 +82,8 @@ test('the install request is the canonical one and can be copied', async ({ page
   await page.getByRole('button', { name: 'Copy install request' }).click();
   await expect(page.getByText('Install request copied ✓')).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain('First read skills/editonny/SKILL.md');
+  expect(copied).toContain('https://github.com/soumatheusgomes/editonny');
+  expect(copied).toContain('Read skills/editonny/SKILL.md');
   expect(copied).toContain('Ask before paid services or sending my media.');
 });
 

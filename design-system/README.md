@@ -29,7 +29,7 @@ Components by category:
 - `motion/`: Marquee, KineticText, Counter, Aurora, Reveal
 - `site/`: SiteHeader, LanguageSelect, CreatorChip, Highlight, Chip
 
-Fonts come from `skills/editonny/engine/assets/fonts/` (licenses in the engine's `THIRD_PARTY_NOTICES.md`); the web app serves Latin WOFF2 subsets of them from `web/src/app/fonts/` (loaded by `web/src/app/fonts.ts`; regenerate them after changing a source font, see `web/src/app/fonts/README.md`), and the Open Graph image reads the engine's TrueType Anton. Other assets already in the skill are referenced, not copied: footage stills from `skills/editonny/visuals/assets/visuals/img/`, and 3D objects from `skills/editonny/visuals/library/3d-objects/png/`. Exported SVGs keep their embedded content credentials unchanged.
+Fonts come from `skills/editonny/engine/assets/fonts/` (licenses in the engine's `THIRD_PARTY_NOTICES.md`); the web app serves Latin WOFF2 subsets of them from `web/src/app/fonts/` (loaded by `web/src/app/fonts.ts`; regenerate them after changing a source font, see `web/src/app/fonts/README.md`), and the localized Open Graph image (`web/src/app/[locale]/opengraph-image.tsx`, laid out after `assets/brand/og-image.png`) reads static TrueType instances from the same folder plus the engine's Anton. Other assets already in the skill are referenced, not copied: footage stills from `skills/editonny/visuals/assets/visuals/img/`, and 3D objects from `skills/editonny/visuals/library/3d-objects/png/`. Exported SVGs keep their embedded content credentials unchanged.
 
 ## Using the library
 

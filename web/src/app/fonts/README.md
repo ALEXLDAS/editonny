@@ -18,4 +18,19 @@ uvx --from 'fonttools[woff]==4.60.1' pyftsubset skills/editonny/engine/assets/fo
   --layout-features='*' --flavor=woff2 --output-file=web/src/app/fonts/<name>-latin.woff2
 ```
 
-Characters outside these ranges fall back to the system font stack in the tokens. The Open Graph image keeps reading the engine's TrueType Anton, because its renderer does not read WOFF2.
+Characters outside these ranges fall back to the system font stack in the tokens.
+
+The Open Graph renderer (Satori) reads neither WOFF2 nor variable axes, so `[locale]/opengraph-image.tsx` uses static TrueType instances with the same subset, plus the engine's static `Anton-Regular.ttf`:
+
+| File | Source | License |
+|---|---|---|
+| `figtree-800-latin.ttf`, `figtree-600-latin.ttf` | `figtree/Figtree-Variable.ttf` at `wght=800` and `wght=600` | SIL OFL 1.1 (`OFL-figtree.txt`) |
+| `jetbrains-mono-700-latin.ttf` | `engine/project-template/assets/fonts/JetBrainsMono.ttf` at `wght=700` | SIL OFL 1.1 (`OFL-jetbrains-mono.txt`) |
+
+```sh
+uvx --from 'fonttools[woff]==4.60.1' fonttools varLib.instancer <source>.ttf wght=<weight> -o /tmp/instance.ttf
+uvx --from 'fonttools[woff]==4.60.1' pyftsubset /tmp/instance.ttf --unicodes='<same ranges as above>' \
+  --layout-features='*' --output-file=web/src/app/fonts/<name>-<weight>-latin.ttf
+```
+
+The README art generator (`scripts/readme-art/`) embeds the WOFF2 subsets above in its SVGs and measures text with the static Figtree instances.

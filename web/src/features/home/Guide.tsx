@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { CopyButton, ExampleButton } from './GuideActions';
 import styles from './home.module.css';
 
-/** Four steps from the repository to the first request, the install request to paste, and the FAQ. */
+/** Four steps from opening the agent to the first request, the install request to paste, and the FAQ. */
 export function Guide({ firstVideo }: { firstVideo: string }) {
   const t = useTranslations('Home.guide');
   const install = useTranslations('Install');
@@ -31,8 +31,7 @@ export function Guide({ firstVideo }: { firstVideo: string }) {
           </div>
           <ol className={styles.guideSteps}>
             {step(1)}
-            {step(2)}
-            {step(3, (
+            {step(2, (
               <div className={styles.installCard} data-copy-source>
                 <div className={styles.installHead}>
                   <span className={styles.installKicker}>{t('askKicker')}</span>
@@ -43,6 +42,7 @@ export function Guide({ firstVideo }: { firstVideo: string }) {
                 <span className={styles.installNote}><Icon name="check" size={14} color="var(--accent-2-text)" />{t('installNote')}</span>
               </div>
             ))}
+            {step(3)}
             {step(4, <div className={styles.guideAction}><ExampleButton id="first-video">{t('firstVideo', { title: firstVideo })}</ExampleButton></div>)}
           </ol>
           <Link href="/install" className={styles.textLink}>{t('terminal')} <Icon name="arrow-up-right" size={16} /></Link>

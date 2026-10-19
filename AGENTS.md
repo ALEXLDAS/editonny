@@ -14,6 +14,7 @@ Open-source local video editing through conversation. One portable skill owns th
 - `web/src/features/request/`: shared request builder, brief options, and the default editing-cleanup policy per locale (English is canonical).
 - `web/src/features/examples/records.ts`: canonical example list (ids, categories, presets); its text lives in `web/content/examples/<locale>.json`. Scene text comes from `skills/editonny/visuals/catalog.json`, translated in `web/content/scenes/<locale>.json`.
 - `DESIGN.md`: visual contract and source of truth for design tokens (Google Labs DESIGN.md format).
+- `scripts/readme-art/`: generates the localized animated README banners in `docs/assets/readme/<locale>/` from `web/messages/` and `DESIGN.md` (`npm run readme:art`); `npm test` fails when they are stale. Each README carries the guide's install request (`Install.askRequest`) verbatim.
 - `design-system/`: React component library (workspace `@editonny/design-system`), tokens, preview templates, showcase (served at `/design-system` by the web app), lint plugin, and frozen reference HTML; map and component workflow in `design-system/README.md`.
 - `PRODUCT.md`, `docs/architecture.md`, `docs/design.md`: scope, structure, and interface.
 - `docs/installation.md`, `docs/validation.md`, `docs/setup.md`: onboarding, quality evidence, and development tooling. Do not create competing sources.
