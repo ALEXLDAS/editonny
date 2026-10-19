@@ -1,4 +1,4 @@
-"""Sample PNGs of every caption and hook style on a real frame of the cut (Contract 7).
+"""Sample PNGs of every caption and hook style on a real frame of the cut.
 
 Writes edit/samples/caption_<id>.png and edit/samples/hook_<id>.png at 540x960 (960x540 for a
 horizontal cut) plus edit/samples/index.json, and points state.json "samples" at the index.
@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     if face:
         caps = sorted(set(index["positions"]["caption"].values()))
         hooks = sorted(set(index["positions"]["hook"].values()))
-        span = lambda v: f'{v[0]}' if len(v) == 1 else f'{v[0]} a {v[-1]}'  # noqa: E731
+        span = lambda v: f'{v[0]}' if len(v) == 1 else f'{v[0]} to {v[-1]}'  # noqa: E731
         where = (f", face in {zone['y0']:.2f}-{zone['y1']:.2f} of frame height: captions at {span(caps)} px, hook at {span(hooks)} px, camera.focus_y suggested {index['suggest']['camera_focus_y']}")
     print(f"ok: {len(index['caption'])} caption samples and {len(index['hook'])} hook samples (frame at {t:.2f}s, color {accent}, {time.time() - started:.1f}s{where}) -> {samples / 'index.json'}")
     return 0

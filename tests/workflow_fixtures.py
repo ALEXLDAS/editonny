@@ -1,5 +1,4 @@
 """Small explicit contracts for filesystem and decision-boundary tests."""
-import copy
 from pathlib import Path
 
 

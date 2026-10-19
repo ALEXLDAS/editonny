@@ -81,7 +81,7 @@ def render(frame_index: int, fps: int, params: dict, box: E.Box) -> E.Canvas:
 
 def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     return [{"frame": E.frame_of(float(params["delay"]), fps), "name": "bass_drop", "volume": 0.9,
-             "why": "batida do carimbo"}]
+             "why": "stamp lands"}]
 
 
 def settle(params: dict, fps: int) -> float:

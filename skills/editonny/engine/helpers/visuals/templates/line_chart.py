@@ -1,5 +1,5 @@
-"""grafico_linha: a line that draws itself from left to right through the values, with a soft area under it,
-a dot that pops on the last point, and the value at the tip counting in the header (SPEC Contract 12).
+"""line_chart: a line that draws itself from left to right through the values, with a soft area under it,
+a dot that pops on the last point, and the value at the tip counting in the header.
 
 The curve is a monotone cubic (Fritsch-Carlson): smooth, and it never goes above or below the data between
 two points. The area under the line is filled column by column (faster than a polygon with many sides).
@@ -121,7 +121,7 @@ def _layout(params_json: str, box: E.Box) -> dict:
     n = len(vals)
     labels = [s.strip() for s in p["labels"]]
     if labels and len(labels) not in (2, n):
-        raise E.VisualError(f'grafico_linha.params.labels tem {len(labels)} nomes e values tem {n} values: supply first/last labels, one label per value, or no labels')
+        raise E.VisualError(f'line_chart.params.labels has {len(labels)} names and values has {n} values: supply first/last labels, one label per value, or no labels')
     dec = _decimals(p)
     prefix, suffix = p["prefix"].strip(), p["suffix"].strip()
     card = p["card"]
@@ -409,7 +409,7 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     if params["values"][0] != params["values"][-1]:
         for k in range(max(1, int(dur / 0.6 + 0.25))):
             cues.append({"at": start + k * 0.6, "name": "count", "volume": 1.3, "why": 'counting number'})
-    cues.append({"at": start + dur, "name": "pop", "volume": 0.9, "why": "ponto final"})
+    cues.append({"at": start + dur, "name": "pop", "volume": 0.9, "why": "last point"})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]
 
 

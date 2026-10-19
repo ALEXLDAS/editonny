@@ -1,4 +1,4 @@
-"""Acoustic speech/silence intervals of a video's audio (Contract 3).
+"""Acoustic speech/silence intervals of a video's audio.
 
 Speech = complement of the silences found by ffmpeg `silencedetect`. This is the
 source of truth for cut EDGES: Whisper word times drift, these do not.
@@ -68,7 +68,7 @@ def decode_audio(path: Path | str, sr: int = SAMPLE_RATE, start: float | None = 
     if end is not None:
         dur = end - (start or 0.0)
         if dur <= 0:
-            raise AudioError(f'empty interval: start {start} e fim {end}')
+            raise AudioError(f'empty interval: start {start} and end {end}')
         cmd += ["-t", f'{dur:.3f}']
     cmd += ["-map", "0:a:0", "-vn", "-ac", str(channels), "-ar", str(sr)]
     if af:
@@ -298,7 +298,7 @@ def regions_path(edit_dir: Path | str, stem: str) -> Path:
 def compute_regions(video: Path | str, noise: str | float = "auto", min_silence: float = 0.25,
                     start: float | None = None, end: float | None = None,
                     edit_dir: Path | str | None = None) -> dict:
-    """Contract 3 dict for a video (or a [start, end] part of it, times stay absolute).
+    """Speech-region dict for a video (or a [start, end] part of it, times stay absolute).
 
     For a part with --noise auto, the threshold comes from the whole file (a short
     part is a bad sample of the noise); a cached regions JSON is reused for that.
@@ -375,8 +375,8 @@ def print_regions(reg: dict) -> None:
     est = reg.get("noise_estimate") or {}
     how = f"automatic, noise {est['floor_db']} dB" if reg["noise_mode"] == "auto" and est.get("floor_db") is not None else reg["noise_mode"]
     span = f"{reg['start']:.2f}-{reg['end']:.2f}s" if "start" in reg else f"{reg['duration']:.2f}s"
-    print(f"{reg['stem']} ({span}) · limiar {reg['noise_db']} dB ({how}) · minimum pause {reg['min_silence']}s · {len(reg['speech'])} intervals from fala, {speech_total:.1f}s de fala")
-    items = [("fala ", s, e) for s, e in reg["speech"]] + [("pause", s, e) for s, e in reg["silences"]]
+    print(f"{reg['stem']} ({span}) · threshold {reg['noise_db']} dB ({how}) · minimum pause {reg['min_silence']}s · {len(reg['speech'])} speech intervals, {speech_total:.1f}s of speech")
+    items = [("speech", s, e) for s, e in reg["speech"]] + [("pause ", s, e) for s, e in reg["silences"]]
     for kind, s, e in sorted(items, key=lambda x: x[1]):
         print(f'  {kind} [{s:06.2f}-{e:06.2f}] {e - s:5.2f}s')
 
@@ -391,7 +391,7 @@ def main() -> None:
     ap.add_argument("--min-silence", type=float, default=0.25, help='minimum pause in seconds (default 0.25)', dest='min_silence')
     ap.add_argument("--start", type=float, default=None, help='optional interval start in seconds', dest='start')
     ap.add_argument("--end", type=float, default=None, help="optional interval end in seconds", dest='end')
-    ap.add_argument("--json", action="store_true", help="imprime o JSON em vez da lista", dest='json')
+    ap.add_argument("--json", action="store_true", help="print JSON instead of the list", dest='json')
     args = ap.parse_args()
 
     video = args.video.absolute()

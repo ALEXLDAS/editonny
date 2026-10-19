@@ -166,8 +166,12 @@ def main(argv=None):
         if argv and argv[0] == 'scene':
             return run([sys.executable, VISUALS / 'apply.py', *argv[1:]])
         if argv and argv[0] == 'helper':
+            if len(argv) > 1 and argv[1] in ('-h', '--help'):
+                names = sorted(p.stem for p in (ENGINE / 'helpers').glob('*.py') if '__main__' in p.read_text(encoding='utf-8'))
+                print('usage: editonny.py helper NAME [arguments]\nhelpers: ' + ', '.join(names))
+                return 0
             if len(argv) < 2:
-                raise ValueError('Use helper NAME [arguments]. See engine/helpers for available names.')
+                raise ValueError('Use helper NAME [arguments]. Run helper --help for available names.')
             name = argv[1].removesuffix('.py')
             if not re.fullmatch(r'[a-z][a-z0-9_]*', name) or not (ENGINE / 'helpers' / f'{name}.py').is_file():
                 raise ValueError(f'Unknown helper: {name}')

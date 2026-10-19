@@ -30,7 +30,6 @@ from common import (  # noqa: E402
     load_json,
     load_style_catalog,
     now_iso,
-    output_fps_for,
     require_binary,
     save_json,
 )
@@ -51,11 +50,11 @@ SFX_EVENT_MIN_KEPT = 0.9       # an sfx.events sound with less of its energy bef
 SFX_TRIM_FADE = 0.08           # s: fade at the end of a sound cut to its "length" (animation cues)
 SR = 48000
 MUSIC_VOLUME_DB = -15.0        # music.volume_db default: about 19 LU under continuous speech once ducked
-KB_DRIFT = 0.06                # Ken Burns scale drift (SPEC: at most 6%)
+KB_DRIFT = 0.06                # Ken Burns scale drift (at most 6%)
 PREVIEW_SHORT_SIDE = 540
 
 DEFAULT_DISCLAIMER = 'Individual results depend on execution. No earnings are guaranteed.'
-DEFAULT_CTA = "Toque em Saiba Mais"
+DEFAULT_CTA = "Tap Learn More"
 
 
 class ComposeError(Exception):
@@ -377,7 +376,7 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
     if timeline is None:
         plan.warnings.append('cut_timeline.json missing: treating the entire video as one interval')
     if timeline and abs(float(timeline.get("duration") or 0) - nf / fps) > 1.5 / fps:
-        plan.warnings.append(f"cut_timeline.json diz {timeline.get('duration')}s, but the base video has {nf / fps:.3f}s")
+        plan.warnings.append(f"cut_timeline.json reports {timeline.get('duration')}s, but the base video has {nf / fps:.3f}s")
     return plan
 
 
@@ -431,7 +430,7 @@ def plan_sfx_events(plan: Plan) -> list[dict]:
     """sfx.events: effects at a chosen time on the cut, not tied to a hook, insert, flash or CTA.
 
     Checked before anything renders. Returns events in the same shape build_tracks gives run_audio
-    ({name, frame, lead_frames 0, why "efeito"}) plus at, event (index), and volume and anchor_s when given.
+    ({name, frame, lead_frames 0, why "effect"}) plus at, event (index), and volume and anchor_s when given.
     """
     sec = _section(plan.data, "sfx")
     if not _enabled(sec) or sec.get("events") is None:
@@ -454,11 +453,11 @@ def plan_sfx_events(plan: Plan) -> list[dict]:
         if not isinstance(name, str) or not name.strip():
             raise ComposeError(f"""{where} requires "name": an effect ({', '.join(make_sfx.NAMES)}) or a local audio file""", 2)
         name = name.strip()
-        ev: dict = {"name": name, "frame": 0, "lead_frames": 0, "why": "efeito", "at": round(at, 4), "event": i}
+        ev: dict = {"name": name, "frame": 0, "lead_frames": 0, "why": "effect", "at": round(at, 4), "event": i}
         if item.get("volume") is not None:
             vol = _plain_number(item.get("volume"))
             if vol is None or vol < 0:
-                raise ComposeError(f"{where}.volume must be between 0.0 and {SFX_EVENT_MAX_VOLUME:.1f} (veio {_as_json(item.get('volume'))})", 2)
+                raise ComposeError(f"{where}.volume must be between 0.0 and {SFX_EVENT_MAX_VOLUME:.1f} (got {_as_json(item.get('volume'))})", 2)
             if vol > SFX_EVENT_MAX_VOLUME:
                 plan.warnings.append(f'{where}.volume {vol:g} exceeded the maximum and was limited to {SFX_EVENT_MAX_VOLUME:.1f}')
                 vol = SFX_EVENT_MAX_VOLUME
@@ -524,9 +523,9 @@ def denoise_line(rep: dict) -> str | None:
         return f'background noise: cleanup disabled (requested {denoise_mod.LABEL[mode]}; see the warning)'
     if applied == "mixed":
         lighter = [e["source"] for e in rep.get("sources") or [] if e.get("applied") == "light"]
-        what = f"{denoise_mod.LABEL[mode]}, leve em {', '.join(lighter)}"
+        what = f"{denoise_mod.LABEL[mode]}, light on {', '.join(lighter)}"
     elif applied != mode:
-        what = f'{denoise_mod.LABEL[applied]} no lugar de {denoise_mod.LABEL[mode]}'
+        what = f'{denoise_mod.LABEL[applied]} instead of {denoise_mod.LABEL[mode]}'
     else:
         what = denoise_mod.LABEL[applied]
     if rep.get("method") == "cut":
@@ -640,7 +639,7 @@ def segment_for(plan: Plan, f0: int, f1: int) -> dict | None:
 # ============================================================== inserts
 
 def plan_inserts(plan: Plan, person_cutout: bool = False) -> list[Insert]:
-    """tela_verde: split_top / split_bottom items become background items (to_bg, no panel, no seam)."""
+    """greenScreen: split_top / split_bottom items become background items (to_bg, no panel, no seam)."""
     raw = plan.data.get("inserts") or []
     if not isinstance(raw, list):
         raise ComposeError('inserts must be a list', 2)
@@ -768,7 +767,7 @@ def plan_inserts(plan: Plan, person_cutout: bool = False) -> list[Insert]:
             ow, oh = cw + 2 * border, ch + 2 * border
             corner = str(item.get("corner") or "top_right")
             if corner not in ("top_right", "top_left"):
-                raise ComposeError(f'inserts[{i}].corner is invalid: {corner!r}. Use top_right ou top_left', 2)
+                raise ComposeError(f'inserts[{i}].corner is invalid: {corner!r}. Use top_right or top_left', 2)
             margin_x = int(round(48 * s))
             ox = W - margin_x - ow if corner == "top_right" else margin_x
             oy = int(round(safe_top + 26 * s))
@@ -778,7 +777,7 @@ def plan_inserts(plan: Plan, person_cutout: bool = False) -> list[Insert]:
     for k, a in enumerate(out):
         for b in out[k + 1:]:
             if b.f0 < a.f1 and a.f0 < b.f1 and a.to_bg == b.to_bg:
-                plan.warnings.append(f'inserts {a.idx + 1} e {b.idx + 1} overlap ({fmt_time(max(a.f0, b.f0) / plan.fps)}): o {b.idx + 1} appears later in the list and is drawn on top')
+                plan.warnings.append(f'inserts {a.idx + 1} and {b.idx + 1} overlap ({fmt_time(max(a.f0, b.f0) / plan.fps)}): insert {b.idx + 1} appears later in the list and is drawn on top')
     return out   # list order = drawing order (a later insert is drawn over an earlier one)
 
 
@@ -869,7 +868,7 @@ def insert_backgrounds(plan: Plan, cfg, inserts: list[Insert]) -> None:
     if moved:
         names = ", ".join(str(i.idx + 1) for i in moved)
         kinds = sorted({TV.SPLIT_LABEL[i.type] for i in moved})
-        log(f"green screen: {('o insert' if len(moved) == 1 else 'os inserts')} {names} ({' e '.join(kinds)}) {('vai' if len(moved) == 1 else 'move')} as the background behind the speaker")
+        log(f"green screen: {('insert' if len(moved) == 1 else 'inserts')} {names} ({' and '.join(kinds)}) {('moves' if len(moved) == 1 else 'move')} to the background behind the speaker")
 
 
 def prepare_screen_green(plan: Plan, cfg) -> None:
@@ -882,11 +881,11 @@ def prepare_screen_green(plan: Plan, cfg) -> None:
     segs = []
     for cs in plan.cam_segs:
         has_face = bool(cs.get("face"))
-        mode = "pessoa" if (has_face or cfg.in_face == "cutout" or plan.faces is None) else "original"
+        mode = "person" if (has_face or cfg.in_face == "cutout" or plan.faces is None) else "original"
         push = cs["zoom_max"] / cs["zoom"] - 1.0 if cs["zoom_max"] > cs["zoom"] + 1e-9 else 0.0
         segs.append(TV.Segment(f0=cs["f0"], f1=cs["f1"], mode=mode, zoom=cs["zoom"], push=push,
                                focus_y=cs["focus_y"], face=cs.get("face") if has_face else None))
-    people = [i for i, sg in enumerate(segs) if sg.mode == "pessoa"]
+    people = [i for i, sg in enumerate(segs) if sg.mode == "person"]
     mset = None
     mattes: dict[int, object] = {}
     if people:
@@ -916,7 +915,7 @@ def prepare_screen_green(plan: Plan, cfg) -> None:
         plan.warnings.append(inner['warning'])
     for cs, sg in zip(plan.cam_segs, segs):
         cs["tv_zoom"], cs["tv_zoom_max"], cs["tv_mode"] = cs["zoom"], cs["zoom_max"], sg.mode
-        if sg.mode == "pessoa":
+        if sg.mode == "person":
             z = TV.screen_zones(cfg, sg, plan.W, plan.H)
             face = z["face"]
             cs["face"] = ({"zone": face["zone"], "core": face["core"], "face": {"eyes_y": face["eyes_y"]}}
@@ -1080,7 +1079,7 @@ def caption_room(plan: Plan):
         # a height written by hand keeps its place unless it lands on the face (then it is placed like auto)
         gap = GAP_FACE * plan.H
         faces = [(cs["face"]["zone"]["y0"] * plan.H - gap, cs["face"]["zone"]["y1"] * plan.H + gap)
-                 for cs in plan.cam_segs if cs.get("tv_mode") == "pessoa" and (cs.get("face") or {}).get("zone")]
+                 for cs in plan.cam_segs if cs.get("tv_mode") == "person" and (cs.get("face") or {}).get("zone")]
         if not any(manual - above < b and a < manual + below for a, b in faces):
             return None
     spans = []
@@ -1115,7 +1114,7 @@ def place_pips_screen_green(plan: Plan, inserts: list[Insert]) -> None:
         faces = []
         for cs in plan.cam_segs:
             face = cs.get("face")
-            if cs.get("tv_mode") != "pessoa" or not face or not face.get("zone") or cs["f1"] <= ins.f0 or cs["f0"] >= ins.f1:
+            if cs.get("tv_mode") != "person" or not face or not face.get("zone") or cs["f1"] <= ins.f0 or cs["f0"] >= ins.f1:
                 continue
             z = face["zone"]
             faces.append((z["x0"] * W, z["y0"] * plan.H, z["x1"] * W, z["y1"] * plan.H))
@@ -1133,7 +1132,7 @@ def place_pips_screen_green(plan: Plan, inserts: list[Insert]) -> None:
             plan.adjustments.append({"layer": f'insert {ins.idx + 1}', "action": "moved", "start": round(ins.f0 / plan.fps, 3),
                                      "end": round(ins.f1 / plan.fps, 3), "because": "face (green screen)",
                                      "corner_asked": asked, "corner": chosen})
-            plan.warnings.append(f"insert card {ins.idx + 1} picture-in-picture moved to corner {('esquerdo' if chosen == 'top_left' else 'direito')} to avoid the face")
+            plan.warnings.append(f"insert card {ins.idx + 1} picture-in-picture moved to the {('left' if chosen == 'top_left' else 'right')} corner to avoid the face")
         x = corners[chosen]
         border = ins.content[0] - ox
         ins.card = (x, oy, ow, oh)
@@ -1302,10 +1301,10 @@ def render_insert_clip(plan: Plan, ins: Insert) -> Path:
         enc.stdin.close()
         err = enc.stderr.read().decode("utf-8", "replace") if enc.stderr else ""
         if enc.wait() != 0:
-            raise ComposeError(f'falha ao codificar o insert {ins.idx + 1}: {err[-500:]}')
+            raise ComposeError(f'failed to encode insert {ins.idx + 1}: {err[-500:]}')
     except BrokenPipeError:
         err = enc.stderr.read().decode("utf-8", "replace") if enc.stderr else ""
-        raise ComposeError(f'falha ao codificar o insert {ins.idx + 1}: {err[-500:]}')
+        raise ComposeError(f'failed to encode insert {ins.idx + 1}: {err[-500:]}')
     finally:
         if ins.kind == "video":
             try:
@@ -1316,11 +1315,11 @@ def render_insert_clip(plan: Plan, ins: Insert) -> Path:
     return out
 
 
-# ============================================================== motion (animated texts and numbers, SPEC Contract 12)
+# ============================================================== motion (animated texts and numbers)
 
 MOTION_KEYS = ("template", "start", "end", "duration", "params", "region", "sfx", "enabled", "id", "note")
 MOTION_REGIONS = {"auto": None, "top": "top", "middle": "center", "center": "center", "bottom": "bottom",
-                  "top": "top", "center": "center", "bottom": "bottom", "top_band": "top_band", "screen": "screen"}
+                  "top_band": "top_band", "screen": "screen"}
 MOTION_EXAMPLE = '{"template": "checklist", "start": 12.3, "end": 15.0, "params": {"items": ["Instant access"]}}'
 MOTION_CAPTION_SHIFT = 150.0   # design px: an auto item steps aside from the captions only when that moves it this little
 MOTION_GAP = 23.0              # design px between an auto item and a face or a text above it in priority
@@ -1329,8 +1328,8 @@ MOTION_GAP = 23.0              # design px between an auto item and a face or a 
 def _of_names(names: list[str]) -> str:
     'Join unique labels into a readable list.'
     seen = list(dict.fromkeys(names))
-    parts = [("do " if n == "hook" else "da ") + n for n in seen]
-    return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " e " + parts[-1]
+    parts = ["the " + n for n in seen]
+    return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
 
 
 @dataclass
@@ -1363,7 +1362,7 @@ def _motion_items(data: dict) -> list | None:
             return None
         extra = sorted(set(raw) - {"enabled", "items", "theme", "count"})
         if extra:
-            raise ComposeError(f"""motion has unknown fields: {', '.join(extra)} (use "items", "enabled", "theme" e "count")""", 2)
+            raise ComposeError(f"""motion has unknown fields: {', '.join(extra)} (use "items", "enabled", "theme", and "count")""", 2)
         raw = raw.get("items", [])
     if not isinstance(raw, list):
         raise ComposeError(f'motion must be a list of animations, for example "motion": [{MOTION_EXAMPLE}])', 2)
@@ -1445,7 +1444,7 @@ def plan_motion(plan: Plan) -> list[Visual]:
         if entry.get("end") is not None:
             end = _plain_number(entry.get("end"))
             if end is None or end <= start:
-                raise ComposeError(f"{where}.end must be seconds greater than start ({start:g}) (veio {_as_json(entry.get('end'))})", 2)
+                raise ComposeError(f"{where}.end must be seconds greater than start ({start:g}) (got {_as_json(entry.get('end'))})", 2)
         if entry.get("duration") is not None:
             dur = _plain_number(entry.get("duration"))
             if dur is None or dur <= 0:
@@ -1503,7 +1502,7 @@ def plan_motion(plan: Plan) -> list[Visual]:
     for k, a in enumerate(out):
         for b in out[k + 1:]:
             if b.f0 < a.f1 and a.f0 < b.f1:
-                plan.warnings.append(f'animations {a.idx} e {b.idx} aparecem juntas ({fmt_time(max(a.f0, b.f0) / plan.fps)}): show one animation at a time')
+                plan.warnings.append(f'animations {a.idx} and {b.idx} appear together ({fmt_time(max(a.f0, b.f0) / plan.fps)}): show one animation at a time')
     return out
 
 
@@ -1538,7 +1537,7 @@ def place_motion(plan: Plan, motions: list[Visual], highs: list[tuple[str, int, 
         # Place captions outside the entire cut-out body when there is room.
         levels = [faces + texts + others, faces + texts, faces]
         gave = [[], others, texts + others]
-        body = [("pessoa", (a / k, b / k)) for a, b in person_bands(plan, m.f0, m.f1)]
+        body = [("person", (a / k, b / k)) for a, b in person_bands(plan, m.f0, m.f1)]
         if body:
             levels = [faces + body + texts + others] + levels
             gave = [[]] + gave
@@ -1558,11 +1557,11 @@ def place_motion(plan: Plan, motions: list[Visual], highs: list[tuple[str, int, 
                 dy = around
                 named += [("captions", band) for band in caps]
         if dy is None:
-            plan.warnings.append(f'a {m.name} found no space clear of faces and text between {fmt_time(m.f0 / fps)} e {fmt_time(m.f1 / fps)}: retained its default position. Choose another region or time')
+            plan.warnings.append(f'a {m.name} found no space clear of faces and text between {fmt_time(m.f0 / fps)} and {fmt_time(m.f1 / fps)}: retained its default position. Choose another region or time')
             continue
         given_up = [name for name, _ in gave[relaxed]]
         if given_up:
-            plan.warnings.append(f'a {m.name} found no unobstructed space between {fmt_time(m.f0 / fps)} e {fmt_time(m.f1 / fps)}: kept clear of the face but close to {_of_names(given_up)}. Change its timing to avoid sharing the screen')
+            plan.warnings.append(f'a {m.name} found no unobstructed space between {fmt_time(m.f0 / fps)} and {fmt_time(m.f1 / fps)}: kept clear of the face but close to {_of_names(given_up)}. Change its timing to avoid sharing the screen')
         if abs(dy) >= 0.5:
             ink = item.ink
             before = (item.box.y + (ink[1] + ink[3]) / 2.0) if ink else item.box.y
@@ -1574,7 +1573,7 @@ def place_motion(plan: Plan, motions: list[Visual], highs: list[tuple[str, int, 
             MR.move_item(item, dy)
             ko = min(plan.full_w, plan.full_h) / 1080.0          # design px -> px of the full output
             plan.adjustments.append({"layer": f'motion {m.idx}', "action": "moved", "start": round(m.f0 / fps, 3),
-                                     "end": round(m.f1 / fps, 3), "because": " e ".join(why) or "rosto ou texto",
+                                     "end": round(m.f1 / fps, 3), "because": " and ".join(why) or "face or text",
                                      "from_center_y": int(round(before * ko)),
                                      "center_y": int(round((before + dy) * ko))})
 
@@ -2172,7 +2171,7 @@ def build_tracks(plan: Plan, inserts: list[Insert], motions: list[Visual] | None
         except ValueError as e:
             raise ComposeError(str(e), 2)
         if isinstance(cues, dict) and cues.get("style") and cues.get("style") != style:
-            plan.warnings.append(f"captions.json was grouped for '{cues.get('style')}' while the video uses '{style}'. Se ficar estranho, rode captions.py --style {style}")
+            plan.warnings.append(f"captions.json was grouped for '{cues.get('style')}' while the video uses '{style}'. If it looks wrong, run captions.py --style {style}")
         font_scale = float(cap.get("font_scale", 1.0) or 1.0)
         manual = _center_value(cap, "center_y", "captions.center_y")
         hide = [(hk["f0"], hk["f1"])] if hk and cap.get("hide_during_hook", True) else []
@@ -2215,15 +2214,15 @@ def build_tracks(plan: Plan, inserts: list[Insert], motions: list[Visual] | None
 
     for ins in inserts:
         if hk and overlaps(ins.f0, ins.f1, hk["f0"], hk["f1"]):
-            plan.warnings.append(f"insert {ins.idx + 1} overlaps the hook ({fmt_time(max(ins.f0, hk['f0']) / fps)} a {fmt_time(min(ins.f1, hk['f1']) / fps)}): start the insert after the hook ends")
+            plan.warnings.append(f"insert {ins.idx + 1} overlaps the hook ({fmt_time(max(ins.f0, hk['f0']) / fps)} to {fmt_time(min(ins.f1, hk['f1']) / fps)}): start the insert after the hook ends")
         if ct and overlaps(ins.f0, ins.f1, ct["f0"], ct["f1"]):
-            plan.warnings.append(f"insert {ins.idx + 1} overlaps the call to action ({fmt_time(max(ins.f0, ct['f0']) / fps)} a {fmt_time(min(ins.f1, ct['f1']) / fps)}): finish the insert before the call to action")
+            plan.warnings.append(f"insert {ins.idx + 1} overlaps the call to action ({fmt_time(max(ins.f0, ct['f0']) / fps)} to {fmt_time(min(ins.f1, ct['f1']) / fps)}): finish the insert before the call to action")
 
     for m in motions:
         if hk and overlaps(m.f0, m.f1, hk["f0"], hk["f1"]):
-            plan.warnings.append(f"a {m.name} overlaps the hook ({fmt_time(max(m.f0, hk['f0']) / fps)} a {fmt_time(min(m.f1, hk['f1']) / fps)}): start the animation after the hook ends")
+            plan.warnings.append(f"a {m.name} overlaps the hook ({fmt_time(max(m.f0, hk['f0']) / fps)} to {fmt_time(min(m.f1, hk['f1']) / fps)}): start the animation after the hook ends")
         if ct and overlaps(m.f0, m.f1, ct["f0"], ct["f1"]):
-            plan.warnings.append(f"a {m.name} overlaps the call to action ({fmt_time(max(m.f0, ct['f0']) / fps)} a {fmt_time(min(m.f1, ct['f1']) / fps)}): finish the animation before the call to action")
+            plan.warnings.append(f"a {m.name} overlaps the call to action ({fmt_time(max(m.f0, ct['f0']) / fps)} to {fmt_time(min(m.f1, ct['f1']) / fps)}): finish the animation before the call to action")
 
     def caption_windows() -> list[dict]:
         return ([{"start": a / fps, "end": b / fps, "center_y": cy} for a, b, cy in cp["base"]] + cp["seams"] + cp["moves"])
@@ -2382,7 +2381,7 @@ def build_tracks(plan: Plan, inserts: list[Insert], motions: list[Visual] | None
         place_motion(plan, motions, highs_mo,
                      lambda a, b: caption_bands(a, b) if cp and cp["has_cues"] else [])
         cached = sum(1 for m in motions if m.clip and m.clip.get("cached"))
-        log(f"animations ready ({len(motions)}{(f', {cached} do cache' if cached else '')}) em {time.time() - t_mo:.1f}s")
+        log(f"animations ready ({len(motions)}{(f', {cached} cached' if cached else '')}) in {time.time() - t_mo:.1f}s")
         motions = [m for m in motions if m.ink is not None]
         above_motion = []
         if ct:
@@ -2499,7 +2498,7 @@ def build_tracks(plan: Plan, inserts: list[Insert], motions: list[Visual] | None
             for a, b, c in spans:
                 if abs(c - pref) > 0.5:
                     plan.adjustments.append({"layer": "disclaimer", "action": "moved", "start": round(a / fps, 3),
-                                             "end": round(b / fps, 3), "because": "rosto ou outro texto",
+                                             "end": round(b / fps, 3), "because": "face or other text",
                                              "from_center_y": to_out(pref), "center_y": to_out(c)})
         dc["imgs"] = {}
         for _, _, c in spans:
@@ -2563,7 +2562,7 @@ def build_tracks(plan: Plan, inserts: list[Insert], motions: list[Visual] | None
             hidden_share = 1.0 - sum(span[1] - span[0] for span in kept) / max(1, before)
             if low == "disclaimer" and hidden_share > DISCLAIMER_HIDDEN_WARN:
                 names = [OF_LABELS[h] for h in PRIORITY if h in hits]
-                behind = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " e " + names[-1]
+                behind = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
                 plan.warnings.append(f'the disclaimer was hidden for {round(hidden_share * 100)}% of its duration to avoid overlapping {behind}. Set disclaimer.center_y to "auto" or choose another height')
 
     # ---------------- 8. text still over a face (manual heights, or no free spot)
@@ -2730,8 +2729,8 @@ def face_report(plan: Plan, drawn: dict, cfgs: dict, lay: dict, disc_hi: float) 
         for a, b, share in merged[:20]:
             plan.face_checks.append({"layer": layer, "start": round(a / fps, 3), "end": round(b / fps, 3),
                                      "cover": round(share, 3), "suggest_center_y": suggest})
-        where = (f'em {fmt_time(worst[0] / fps)}' if worst[1] - worst[0] <= fps
-                 else f'between {fmt_time(worst[0] / fps)} e {fmt_time(worst[1] / fps)}')
+        where = (f'at {fmt_time(worst[0] / fps)}' if worst[1] - worst[0] <= fps
+                 else f'between {fmt_time(worst[0] / fps)} and {fmt_time(worst[1] / fps)}')
         on_seam = layer == "captions" and any(
             plan.fr(sm["start"]) < worst[1] and worst[0] < plan.fr(sm["end"]) for sm in cfg.get("seams") or [])
         if on_seam:
@@ -2739,10 +2738,10 @@ def face_report(plan: Plan, drawn: dict, cfgs: dict, lay: dict, disc_hi: float) 
         elif cfg.get("manual") is None:
             tip = ('No face-safe space remains with the other text: shorten or remove a text element in this interval')
         elif suggest is not None:
-            tip = f'Use {CENTER_KEYS[layer]} perto de {suggest} (ou "auto")'
+            tip = f'Use {CENTER_KEYS[layer]} near {suggest} (or "auto")'
         else:
             tip = 'No face-safe space remains: shorten text or use a split screen'
-        plan.warnings.append(f'{LABELS[layer]} cobre o rosto {where} ({round(worst[2] * 100)}%). {tip}')
+        plan.warnings.append(f'{LABELS[layer]} covers the face {where} ({round(worst[2] * 100)}%). {tip}')
 
 
 def motion_cues(m: Visual) -> list[dict]:
@@ -2785,7 +2784,7 @@ def resolve_motion_windows(plan: Plan, motions: list[Visual], highs: list[tuple]
             for a, b in merge_windows(hits.get(high, [])):
                 plan.adjustments.append({"layer": f'motion {m.idx}', "action": "hidden", "start": round(a / fps, 3),
                                          "end": round(b / fps, 3), "because": high})
-                plan.warnings.append(f'a {m.name} was hidden from {fmt_time(a / fps)} a {fmt_time(b / fps)} to avoid overlapping {OF_LABELS[high]}. Change start, end, or region')
+                plan.warnings.append(f'a {m.name} was hidden from {fmt_time(a / fps)} to {fmt_time(b / fps)} to avoid overlapping {OF_LABELS[high]}. Change start, end, or region')
 
 
 def motion_face_report(plan: Plan, motions: list[Visual]) -> None:
@@ -2815,7 +2814,7 @@ def motion_face_report(plan: Plan, motions: list[Visual]) -> None:
             tip = 'No face-safe space remains: use fewer items, another region, or another interval'
         else:
             tip = 'Use "region": "auto" for face avoidance'
-        plan.warnings.append(f'a {m.name} covers the face between {fmt_time(hits[0][0] / fps)} e {fmt_time(hits[-1][1] / fps)} ({round(worst[2] * 100)}%). {tip}')
+        plan.warnings.append(f'a {m.name} covers the face between {fmt_time(hits[0][0] / fps)} and {fmt_time(hits[-1][1] / fps)} ({round(worst[2] * 100)}%). {tip}')
 
 
 def motion_layers(plan: Plan, motions: list[Visual]) -> None:
@@ -2979,17 +2978,17 @@ def _sound_share_kept(path: Path, n_keep: int) -> tuple[float, float] | None:
     return float(np.sum(x[: max(0, n_keep)] ** 2)) / whole, len(x) / SR
 
 
-SFX_WHY_LABELS = {'hook': "of the hook", "callout": "of the call to action", "flash": "do flash"}
+SFX_WHY_LABELS = {'hook': "of the hook", "callout": "of the call to action", "flash": "of the flash"}
 
 
 def _anchor_warning(e: dict, anchor: float, late: int, fps: int) -> str:
     """Warning for an anchored effect that had to start at 0 and so hits after its frame."""
-    if e["why"] == "efeito":
-        label = f"sfx.events[{e['event']}] ('{e['name']}' em {fmt_time(e['at'])})"
+    if e["why"] == "effect":
+        label = f"sfx.events[{e['event']}] ('{e['name']}' at {fmt_time(e['at'])})"
     else:
-        of = SFX_WHY_LABELS.get(e["why"]) or (("da " if e["why"].startswith('animation') else "do ") + e["why"])
-        label = f"efeito '{e['name']}' {of} em {fmt_time(e['frame'] / fps)}"
-    return (f'{label}: o ponto forte fica {anchor:.2f} seconds after the sound starts, so the sound would begin before the video. It starts at zero and its peak arrives {late / SR:.2f} s atrasado')
+        of = SFX_WHY_LABELS.get(e["why"]) or ("of the " + e["why"])
+        label = f"effect '{e['name']}' {of} at {fmt_time(e['frame'] / fps)}"
+    return (f'{label}: its peak comes {anchor:.2f} seconds after the sound starts, so the sound would begin before the video. It starts at zero and its peak arrives {late / SR:.2f} s late')
 
 
 def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav: Path, report: dict,
@@ -3112,7 +3111,7 @@ def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav
                 entry["late_s"] = round(late / SR, 4)
             if "event" in e:
                 if kept is not None and kept[0] < SFX_EVENT_MIN_KEPT:
-                    plan.warnings.append(f"""sfx.events[{e['event']}] ('{e['name']}' em {fmt_time(e['at'])}) is truncated by the video ending; only {(total - start) / SR:.2f} s dos {kept[1]:.2f} seconds of sound. Move "at" earlier to hear the complete effect""")
+                    plan.warnings.append(f"""sfx.events[{e['event']}] ('{e['name']}' at {fmt_time(e['at'])}) is truncated by the video ending; only {(total - start) / SR:.2f} s of the {kept[1]:.2f} seconds of sound. Move "at" earlier to hear the complete effect""")
                 if past_end:
                     plan.warnings.append(f"sfx.events[{e['event']}].anchor_s {e['anchor_s']:g} exceeds the sound ending ({kept[1]:.2f} s): the entire sound played before {fmt_time(e['at'])}")
             placed.append(entry)
@@ -3191,7 +3190,7 @@ def run_audio(plan: Plan, inserts: list[Insert], sfx_events: list[dict], out_wav
             raise ComposeError('Normalization needs a finite measured voice track; select preserve for silence')
         ffmpeg_cmd(["-v", "error", "-y", "-i", mix, "-af",
                     f'{af},aresample={SR},apad=whole_len={total},atrim=end_sample={total}',
-                    "-c:a", "pcm_f32le", "-ar", SR, "-ac", 2, str(out_wav)], "normalizar o volume")
+                    "-c:a", "pcm_f32le", "-ar", SR, "-ac", 2, str(out_wav)], "normalize volume")
     report["loudnorm_input"] = measured
     report["voice_i"] = voice_i
     if not plan.data.get("_keep_temp") and mix.exists():
@@ -3269,7 +3268,7 @@ def _compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: bo
     if plan.music_choice:
         c = plan.music_choice
         why = 'same as the previous composition for this edit' if c.get("from") == "previous selection" else c.get("why")
-        log(f'''music for mood {c.get('mood')}: {c.get('track_id')} "{c.get('title')}" em {c.get('file')} ({why})''')
+        log(f'''music for mood {c.get('mood')}: {c.get('track_id')} "{c.get('title')}" in {c.get('file')} ({why})''')
 
     load_faces(plan)
     cam = camera_filter(plan)
@@ -3327,7 +3326,7 @@ def _compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: bo
                                                 if ins.speaker else None),
                             "seam_y": ins.seam_y, "sfx": ins.sfx})
     if drawn:
-        log(f'inserts prontos ({len(drawn)}) em {time.time() - t0:.1f}s')
+        log(f'inserts ready ({len(drawn)}) in {time.time() - t0:.1f}s')
 
     t0 = time.time()
     tracks = build_tracks(plan, drawn, motions)
@@ -3459,23 +3458,23 @@ def _compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: bo
     parts = [f'{v} {k}' for k, v in counts.items() if k != "camera"]
     cam_layer = next((layer for layer in plan.layers if layer["type"] == "camera"), {})
     if cam_layer.get("zoom_cuts"):
-        parts.append("zoom nos cortes")
+        parts.append("zoom on cuts")
     if cam_layer.get("push_in"):
         parts.append('slow push-in')
-    log(f"camadas: {(', '.join(parts) if parts else 'none beyond the base')}")
+    log(f"layers: {(', '.join(parts) if parts else 'none beyond the base')}")
     moved = [a for a in plan.adjustments if a.get("action") == "moved"]
     hidden = [a for a in plan.adjustments if a.get("action") == "hidden"]
     if moved or hidden:
-        names = {"captions": ("captions", "escondida"), "disclaimer": ('warning', "escondido"), "hook": ("hook", "escondido"),
-                 "cta": ("callout", "escondida")}
+        names = {"captions": ("captions", "hidden"), "disclaimer": ('warning', "hidden"), "hook": ("hook", "hidden"),
+                 "cta": ("callout", "hidden")}
         for a in moved + hidden:
             if a["layer"].startswith("motion ") and a["layer"] not in names:
-                names[a["layer"]] = (a["layer"].replace("motion", 'animation'), "escondida")
-        bits = [f"{names.get(a['layer'], (a['layer'], 'escondido'))[0]} {('changed vertical position' if a['action'] == 'moved' else names.get(a['layer'], ('', 'escondido'))[1])} {fmt_time(a['start'])}-{fmt_time(a['end'])}" for a in (moved + hidden)[:6]]
-        more = f' e mais {len(moved) + len(hidden) - 6}' if len(moved) + len(hidden) > 6 else ""
+                names[a["layer"]] = (a["layer"].replace("motion", 'animation'), "hidden")
+        bits = [f"{names.get(a['layer'], (a['layer'], 'hidden'))[0]} {('changed vertical position' if a['action'] == 'moved' else names.get(a['layer'], ('', 'hidden'))[1])} {fmt_time(a['start'])}-{fmt_time(a['end'])}" for a in (moved + hidden)[:6]]
+        more = f' and {len(moved) + len(hidden) - 6} more' if len(moved) + len(hidden) > 6 else ""
         log(f"text-overlap adjustments: {'; '.join(bits)}{more} (see adjustments in the report)")
     if final_loud:
-        log(f"volume final: {final_loud['input_i']:.1f} LUFS, peak {final_loud['input_tp']:.1f} dBTP")
+        log(f"final volume: {final_loud['input_i']:.1f} LUFS, peak {final_loud['input_tp']:.1f} dBTP")
     line = denoise_line(denoise_report)
     if line:
         log(line)

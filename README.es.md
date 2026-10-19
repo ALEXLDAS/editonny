@@ -162,10 +162,11 @@ npm run test:engine
 npm run test:browser
 npm run test:preview
 npm run test:scenes
+npm run test:three
 python3 scripts/smoke_engine.py
 ```
 
-`npm run test:browser` genera la guía y ejecuta Playwright (instala su Chromium una vez con `npx playwright install chromium`). La prueba de navegador del preview (`npm run test:preview`) requiere `agent-browser`. El render requiere FFmpeg y puede necesitar red en el primer uso. Revisa las muestras antes de borrar los temporales de `.work/`. [Resultados y limitaciones](docs/validation.md).
+`npm run test:browser` genera la guía y ejecuta Playwright (instala su Chromium una vez con `npx playwright install chromium`). Las pruebas de navegador del preview y del 3D (`npm run test:preview`, `npm run test:three`) requieren `agent-browser`. El render requiere FFmpeg y puede necesitar red en el primer uso. Revisa las muestras antes de borrar los temporales de `.work/`. [Resultados y limitaciones](docs/validation.md).
 
 El repositorio es un workspace npm: `web/` (`@editonny/web`) y `design-system/` (`@editonny/design-system`). `npm run build` genera la guía; `npm run check` ejecuta lint, comprobación de tipos, pruebas unitarias y la verificación del registro de íconos (`npm run icons` lo regenera desde `design-system/assets/icons/`). Abre `/design-system` en la guía en ejecución para ver todos los componentes y estados en los dos temas; las nuevas interfaces siguen el [DESIGN.md](DESIGN.md) y el [mapa de la biblioteca](design-system/README.md).
 

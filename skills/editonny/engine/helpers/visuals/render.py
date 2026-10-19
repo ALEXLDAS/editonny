@@ -1,7 +1,7 @@
 """Renderer: one motion item (template + params + place + length) -> frames, an alpha clip for the
-compose, previews and a contact sheet (SPEC Contract 12).
+compose, previews and a contact sheet.
 
-Transport into compose_final (chosen by measurement, see SPEC): one QuickTime Animation (qtrle, ARGB,
+Transport into compose_final (chosen by measurement): one QuickTime Animation (qtrle, ARGB,
 lossless) .mov per item, sized to the item's rectangle, placed with overlay at even x/y and started
 with `setpts=N+<start frame>` like the insert clips. Frame-exact, cacheable by content, tiny for held
 frames (qtrle only stores the lines that changed).
@@ -117,7 +117,7 @@ def plan_item(template_id: str, params: dict | None = None, *, fps: int = 30,
     warnings: list[str] = []
     sx0, sy0, sx1, sy1 = E.safe_area(canvas)
     if not isinstance(spec, str) and (y < sy0 - 0.5 or y + h > sy1 + 0.5):
-        warnings.append(f"'{tpl.id}': region [{x:g}, {y:g}, {w:g}, {h:g}] exceeds the safe area from {sy0:.0f} a {sy1:.0f} of height): the Reels interface may cover part of it")
+        warnings.append(f"'{tpl.id}': region [{x:g}, {y:g}, {w:g}, {h:g}] exceeds the safe area ({sy0:.0f} to {sy1:.0f} px of height): the Reels interface may cover part of it")
     # without a card the text sits on the video: white letters with a dark outline read there, the dark letters
     # of the light card do not, so "theme" only matters when there is a card
     theme_value = resolved.get("theme", "dark") if resolved.get("card", True) is not False else "dark"
@@ -232,7 +232,7 @@ def _normalize(item: VisualItem, out: Any, i: int) -> Frame:
         bw, bh = int(round(b.w * b.scale)), int(round(b.h * b.scale))
         if abs(img.width - bw) <= 1 and abs(img.height - bh) <= 1:
             return Frame(img, int(round(b.x * b.scale)), int(round(b.y * b.scale)))
-        raise VisualError(f"'{item.template.id}': render frame {i} devolveu {img.size}; expected canvas {tuple(b.canvas)}, a caixa ({bw}, {bh}) ou um Canvas")
+        raise VisualError(f"'{item.template.id}': render frame {i} returned {img.size}; expected canvas {tuple(b.canvas)}, the box ({bw}, {bh}), or a Canvas")
     raise VisualError(f"'{item.template.id}': render must return a Canvas or RGBA image (received {type(out).__name__})")
 
 

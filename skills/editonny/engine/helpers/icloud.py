@@ -90,7 +90,7 @@ def ensure_local(paths, download_value: bool = True, wait_value: float = WAIT_S,
         missing_value = [p for p in missing_value if only_in_cloud(p)]
     if missing_value:
         raise CloudOnly(missing_value, attempted=True)
-    notify("baixados do iCloud; seguindo.")
+    notify("Downloaded from iCloud; continuing.")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -101,7 +101,7 @@ def check_name_clash(out_path: Path, video: Path) -> None:
     if other == video or not other.exists() or same_video(other, video):
         return
     raise NameClashError(
-        f'{video.name} e {other.name} share a filename stem, so one transcript would overwrite another ({out_path.name}). Renomeie um deles (ex.: {video.stem}_2{video.suffix}) e rode de novo.')
+        f'{video.name} and {other.name} share a filename stem, so one transcript would overwrite another ({out_path.name}). Rename one of them (for example {video.stem}_2{video.suffix}) and run again.')
 
 
 # ---------------------------------------------------------------- engines
@@ -493,7 +493,7 @@ def build_segments(words: list[dict]) -> list[dict]:
 def notice_sparse_speech(words: list[dict], speech_s: float, prompt: str | None) -> str | None:
     """Warning when the transcript has far fewer words than the measured voice asks for.
 
-    Normal speech is 2 to 3 words per second. Under POUCA_FALA_WPS, Whisper most likely returned the prompt
+    Normal speech is 2 to 3 words per second. Under SPARSE_SPEECH_WPS, Whisper most likely returned the prompt
     (its fillers) or skipped a stretch: seen on a clip that started in the middle of a sentence.
     """
     if speech_s < SPARSE_SPEECH_MIN_S:
@@ -504,7 +504,7 @@ def notice_sparse_speech(words: list[dict], speech_s: float, prompt: str | None)
         return None
     vocab = {_normal(x) for x in re.findall(r"\w+", f"{DEFAULT_PROMPT} {prompt or ''}")} - {""}
     eco = [w["text"] for w in words if _normal(w["text"]) in vocab]
-    msg = (f'only {n} words for {speech_s:.0f} s de voz medida ({wps:.1f} per second; typical speech is two to three). ')
+    msg = (f'only {n} words for {speech_s:.0f} s of measured speech ({wps:.1f} per second; typical speech is two to three). ')
     if n and len(eco) * 2 >= n:
         msg += f'''Most recognized text matches the prompt ("{' '.join(eco[:8])}"): Whisper returned the prompt rather than recorded speech. '''
     msg += ('If this is an excerpt from a longer recording, copy it again from a natural pause before a complete phrase and retranscribe. Otherwise retry with --no-prompt --force. Ignore this warning only if the interval contains no speech')
@@ -563,7 +563,7 @@ def transcribe_one(video: Path | str, edit_dir: Path | str | None = None, langua
     if not force and is_cached(out_path, video, engine, model, language, prompt):
         if verbose:
             data = load_json(out_path)
-            print(f"{video.stem}: em cache ({len(data.get('words', []))} words); {out_path}")
+            print(f"{video.stem}: cached ({len(data.get('words', []))} words); {out_path}")
             if data.get('warning'):
                 print(f"{video.stem}: WARNING: {data['warning']}", flush=True)
         return out_path
@@ -578,7 +578,7 @@ def transcribe_one(video: Path | str, edit_dir: Path | str | None = None, langua
     if duration <= 0:
         duration = len(mono) / SAMPLE_RATE
     if verbose and audio_desc.get("reason"):
-        side = {"left": "esquerdo", "right": "direito"}.get(audio_desc["used"], audio_desc["used"])
+        side = {"left": "left", "right": "right"}.get(audio_desc["used"], audio_desc["used"])
         print(f"{video.stem}: using only channel {side} ({audio_desc['reason']})", flush=True)
 
     est = estimate_noise(mono)

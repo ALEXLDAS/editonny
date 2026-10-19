@@ -1337,7 +1337,7 @@ def _parse_marked(text: str, upper: bool, font_key: str | None = None) -> tuple[
 
 
 _TEXT_FONTS = {"cta": "sans_black", "cta_sub": "text_bold", "disclaimer": "text_semibold"}
-_TEXT_LABELS = {"hook": "hook", "cta": "callout", "cta_sub": "linha de apoio da chamada",
+_TEXT_LABELS = {"hook": "hook", "cta": "callout", "cta_sub": "callout supporting text",
                 "disclaimer": 'disclaimer text', "caption": "captions"}
 
 
@@ -1989,9 +1989,9 @@ def main(argv: list[str] | None = None) -> int:
             issues = text_issues("hook", args.text, args.style)
             cy = layout_defaults(canvas)["hook"] if args.center_y is None else args.center_y
             _save_with_bg(render_hook(args.text, args.style, args.accent, canvas, cy), args.output, args.bg)
-            print(f"linhas: {' / '.join(fit['lines'])} · letra {fit['size']}px")
+            print(f"lines: {' / '.join(fit['lines'])} · font size {fit['size']}px")
             if fit["too_long"]:
-                print(f"notice: the hook is long and required small lettering ({fit['size']}px, ideal a partir de {fit['min_size']}px). Shorten the text.")
+                print(f"notice: the hook is long and required small lettering ({fit['size']}px, ideal from {fit['min_size']}px). Shorten the text.")
         elif args.cmd == "caption":
             spec = _caption_spec(args.style)
             words = display_words(args.text.split(), args.style)

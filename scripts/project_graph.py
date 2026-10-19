@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['check', 'update', 'code', 'exports', 'serve', 'watch'])
+    parser.add_argument('command', choices=['check', 'update', 'code', 'exports', 'serve', 'watch', 'test'])
     args = parser.parse_args(argv)
     python = interpreter()
     env = subscription_env(ROOT, os.environ)
@@ -29,6 +29,10 @@ def main(argv=None):
         raise ValueError(f'This workflow requires Graphifyy {VERSION}')
     if args.command == 'serve':
         os.execve(python, server_command(ROOT, python), env)
+    if args.command == 'test':
+        import unittest
+        suite = unittest.defaultTestLoader.discover(str(ROOT / 'tests/integration_graph'))
+        return 0 if unittest.TextTestRunner().run(suite).wasSuccessful() else 1
     if args.command == 'watch':
         from graph_runtime import run_watch
         run_watch(ROOT)

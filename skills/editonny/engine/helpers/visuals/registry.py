@@ -1,5 +1,5 @@
 """Template registry: finds the templates in helpers/visuals/templates/*.py, checks their TEMPLATE
-description and turns the params written by the agent into complete, validated values (SPEC Contract 12).
+description and turns the params written by the agent into complete, validated values.
 
 A broken template never breaks the others: its problem goes to `errors()` (PT-BR) and it is left out.
 """
@@ -143,7 +143,7 @@ def check_description(tid: str, desc: Any, path: Path) -> list[str]:
     if probs:
         return probs
     if desc["id"] != tid or not ID_RE.match(str(desc["id"])):
-        probs.append(f"{path.name}: TEMPLATE['id'] must match its filename ({tid}) e usar a-z, 0-9 e _")
+        probs.append(f"{path.name}: TEMPLATE['id'] must match its filename ({tid}) and use a-z, 0-9, and _")
     for key in ("label", "description"):
         if not isinstance(desc[key], str) or not desc[key].strip():
             probs.append(f"{tid}: '{key}' must be text")
@@ -168,7 +168,7 @@ def check_description(tid: str, desc: Any, path: Path) -> list[str]:
         probs.append(f'{tid}: invalid default_region ({e})')
     probs += check_sfx_list(tid, desc["sfx"])
     if desc.get("exit", "fade") not in EXIT_MODES:
-        probs.append(f"{tid}: exit must be {' ou '.join(EXIT_MODES)}")
+        probs.append(f"{tid}: exit must be {' or '.join(EXIT_MODES)}")
     bleed = desc.get("bleed", E.DEFAULT_BLEED)
     if isinstance(bleed, bool) or not isinstance(bleed, (int, float)) or not 0 <= bleed <= 400:
         probs.append(f'{tid}: bleed must be between 0 and 400')
@@ -256,7 +256,7 @@ def discover(dirs: list[Path] | None = None, refresh: bool = False) -> tuple[dic
                 if not callable(getattr(mod, "render", None)):
                     probs.append(f'{path.name}: missing render(frame_index, fps, params, box)')
                 if tid in found:
-                    probs.append(f"{path.name}: template already exists: '{tid}' em {found[tid].path}")
+                    probs.append(f"{path.name}: template already exists: '{tid}' in {found[tid].path}")
                 if probs:
                     errors.extend(probs)
                     continue
@@ -287,7 +287,7 @@ def get(tid: str, dirs: list[Path] | None = None) -> Template:
         return found[tid]
     broken = [e for e in errs if e.startswith(f'{tid}.py') or e.startswith(f'{tid}:')]
     if broken:
-        raise VisualError(f"o modelo '{tid}' is invalid: {broken[0]}")
+        raise VisualError(f"template '{tid}' is invalid: {broken[0]}")
     near = difflib.get_close_matches(str(tid), list(found), n=1, cutoff=0.6)
     hint = f" Did you mean '{near[0]}'?" if near else ""
     raise VisualError(f"visual template '{tid}' does not exist{hint} Modelos: {', '.join(sorted(found)) or 'none'}")
@@ -336,16 +336,16 @@ def coerce(spec: dict, value: Any, where: str) -> Any:
         v = _num(value)
         if v is None or (typ == "integer" and abs(v - round(v)) > 1e-9):
             kind = 'an integer' if typ == "integer" else 'a number'
-            raise VisualError(f'{where} must be {kind} (veio {_show(value)})')
+            raise VisualError(f'{where} must be {kind} (got {_show(value)})')
         lo, hi = spec.get("min"), spec.get("max")
         if (lo is not None and v < lo) or (hi is not None and v > hi):
             if lo is not None and hi is not None:
-                rule = f'stay between {_fmt(lo)} e {_fmt(hi)}'
+                rule = f'a value between {_fmt(lo)} and {_fmt(hi)}'
             elif lo is not None:
-                rule = f'ser {_fmt(lo)} ou mais'
+                rule = f'{_fmt(lo)} or more'
             else:
-                rule = f'ser {_fmt(hi)} ou menos'
-            raise VisualError(f'{where} requires {rule} (veio {_fmt(v)})')
+                rule = f'{_fmt(hi)} or less'
+            raise VisualError(f'{where} requires {rule} (got {_fmt(v)})')
         return int(round(v)) if typ == "integer" else v
     if typ == "text":
         if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -355,7 +355,7 @@ def coerce(spec: dict, value: Any, where: str) -> Any:
         text = " ".join(value.replace("\n", " ").split()) if not spec.get("multiline") else value.strip()
         mx = spec.get("max_len")
         if mx is not None and len(text) > mx:
-            raise VisualError(f'{where} tem {len(text)} characters; maximum {mx}. Encurte o texto')
+            raise VisualError(f'{where} has {len(text)} characters; maximum {mx}. Shorten the text')
         if spec.get("required_text") and not text:
             raise VisualError(f'{where} cannot remain empty')
         return text
@@ -374,14 +374,14 @@ def coerce(spec: dict, value: Any, where: str) -> Any:
             for c in choices:
                 if isinstance(c, str) and c.lower() == low:
                     return c
-        raise VisualError(f"{where} must be {', '.join(map(str, choices))} (veio {_show(value)})")
+        raise VisualError(f"{where} must be {', '.join(map(str, choices))} (got {_show(value)})")
     if typ == "color":
         if isinstance(value, str) and value.strip().lower() in E.COLOR_NAMES:
             return value.strip().lower()
         try:
             r, g, b, a = E.rgba(value)
         except (VisualError, ValueError):
-            raise VisualError(f"{where} must be #RRGGBB or a supported color name ({', '.join(sorted(E.COLOR_NAMES))}) (veio {_show(value)})") from None
+            raise VisualError(f"{where} must be #RRGGBB or a supported color name ({', '.join(sorted(E.COLOR_NAMES))}) (got {_show(value)})") from None
         return f'#{r:02X}{g:02X}{b:02X}' + (f'{a:02X}' if a != 255 else "")
     if typ == "box":
         if not isinstance(value, (list, tuple)) or len(value) != 4:
@@ -399,15 +399,15 @@ def coerce(spec: dict, value: Any, where: str) -> Any:
             raise VisualError(f'{where} must be a list (received {_show(value)})')
         lo, hi = spec.get("min_items"), spec.get("max_items")
         if lo is not None and len(value) < lo:
-            raise VisualError(f'{where} requires at least {lo} itens (veio {len(value)})')
+            raise VisualError(f'{where} requires at least {lo} items (got {len(value)})')
         if hi is not None and len(value) > hi:
-            raise VisualError(f'{where} accepts at most {hi} itens (veio {len(value)})')
+            raise VisualError(f'{where} accepts at most {hi} items (got {len(value)})')
         return [coerce(spec["item"], v, f'{where}[{i}]') for i, v in enumerate(value)]
     if typ == "object":
         if not isinstance(value, dict):
             raise VisualError(f'{where} must be an object (received {_show(value)})')
         return resolve_fields(spec["fields"], value, where)
-    raise VisualError(f'{where}: tipo desconhecido {typ!r}')
+    raise VisualError(f'{where}: unknown type {typ!r}')
 
 
 def resolve_fields(fields: dict[str, dict], given: dict, where: str) -> dict:

@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     n_mov = sum(1 for r in res if abs(r["dif"]) >= SHOW_S)
     print(f'{video.name}: {len(res)} words, {n_mov} with onset at least 0.05 seconds from Whisper timing; pause threshold {th:.0f} dB) · {output_value}')
     if lines_value:
-        print(f"  {'onda':>8s}  {'whisper':>8s}  {'dif':>6s}  {'method':7s}  palavra")
+        print(f"  {'waveform':>8s}  {'whisper':>8s}  {'diff':>6s}  {'method':7s}  word")
     for r in lines_value:
         print(f"  {fmt_time(r['start']):>8s}  {fmt_time(r['whisper']):>8s}  {r['dif']:+.2f}  {r['method']:7s}  {r['text']}")
     if target_value and not lines_value:

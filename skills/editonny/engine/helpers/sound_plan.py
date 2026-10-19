@@ -27,7 +27,7 @@ LIBRARY = Path(os.environ.get("EDITONNY_EFFECTS_LIBRARY")
 VOICE_REF_LUFS = -14.0      # Table levels assume speech near -14 LUFS.
 # Actual sample peaks measured in calibration: prominent effects near -12 dBFS,
 # subtle effects near -18 dBFS, with speech at -14 LUFS.
-LEVELS = {"accent": -12.0, "strong": -12.0, "medium": -15.0, 'medium': -15.0, "subtle": -18.0, "weak": -18.0,
+LEVELS = {"accent": -12.0, "strong": -12.0, "medium": -15.0, "subtle": -18.0, "weak": -18.0,
           "bottom": -20.0}
 GAIN_MAX_DB = 12.0
 
@@ -416,7 +416,7 @@ def deviation_synchronization(ref: str, out: str, windows_value: int = 10, sr: i
     return round(worst_value, 2)
 
 
-# ------------------------------------------------------------------ montar o plano
+# ------------------------------------------------------------------ assemble the plan
 def level_of_event(ev: dict, default_value: float) -> float:
     'Use the event level, then its suggested dB value, then the event-type default.'
     nv = ev.get("level")
@@ -810,7 +810,7 @@ def main(argv=None):
         # Project duration includes the cut, endHold, and end card.
         dur = (proj["vdur"] or dur) + proj["tail"]
     if proj and window_value and proj["vdur"] and (window_value[0] > 0.05 or window_value[1] < proj["vdur"] - 0.05):
-        print(f'notice: suggested_sounds.json covers a sample ({window_value[0]:.2f} a {window_value[1]:.2f} seconds). Plan cues outside that window are preserved. For the complete video, run python3 build.py compose and retry')
+        print(f'notice: suggested_sounds.json covers a sample ({window_value[0]:.2f} to {window_value[1]:.2f} seconds). Plan cues outside that window are preserved. For the complete video, run python3 build.py compose and retry')
     plan_value = assemble(events_value, dur, a.mode_value, a.max, a.space_value, a.vary, adjustment)
     chk = audit_peaks(plan_value, dur)
     plan_value["verification"] = chk

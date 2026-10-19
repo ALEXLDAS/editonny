@@ -1,4 +1,4 @@
-"""destaque: a marker stroke that draws itself at a place on the screen: a circle around it, an underline
+"""highlight: a marker stroke that draws itself at a place on the screen: a circle around it, an underline
 under it or an arrow pointing at it, with an optional handwritten note.
 
 The place is `target` = [x, y, w, h] in design px of the output canvas (1080x1920 for vertical video),
@@ -55,7 +55,7 @@ def _check_target(target, design) -> None:
     x, y, w, h = target
     dw, dh = design
     if x + w <= 0 or y + h <= 0 or x >= dw or y >= dh:
-        raise VisualError(f'destaque.params.target [{x:g}, {y:g}, {w:g}, {h:g}] lies outside the canvas ({dw:.0f}x{dh:.0f}); measure the target in a video frame')
+        raise VisualError(f'highlight.params.target [{x:g}, {y:g}, {w:g}, {h:g}] lies outside the canvas ({dw:.0f}x{dh:.0f}); measure the target in a video frame')
 
 
 def _pick_side(side: str, target, safe) -> tuple[str, dict]:
@@ -208,8 +208,8 @@ def render(frame_index: int, fps: int, params: dict, box: E.Box) -> E.Canvas:
 def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     dur = params["duration"]
     if params["mode"] == "arrow":
-        cues = [{"at": dur * 0.2, "name": "whoosh", "volume": 0.7, "why": "seta se desenhando"},
-                {"at": dur * 0.72, "name": "pop", "volume": 0.8, "why": "ponta da seta"}]
+        cues = [{"at": dur * 0.2, "name": "whoosh", "volume": 0.7, "why": "arrow drawing"},
+                {"at": dur * 0.72, "name": "pop", "volume": 0.8, "why": "arrow tip"}]
     else:
         cues = [{"at": dur * 0.25, "name": "whoosh", "volume": 0.7, "why": 'drawing stroke'}]
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]

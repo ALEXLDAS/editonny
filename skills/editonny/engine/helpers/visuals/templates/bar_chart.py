@@ -1,5 +1,5 @@
-"""grafico_barras: 2 to 6 bars growing one after the other, the value counting over each bar and its name
-under it (SPEC Contract 12, catalog). Two looks: "columns" (standing bars) and "bars" (lying bars, better
+"""bar_chart: 2 to 6 bars growing one after the other, the value counting over each bar and its name
+under it. Two looks: "columns" (standing bars) and "bars" (lying bars, better
 for longer names). The highlighted bar gets the accent color and a short glow when it lands.
 
 A bar is a rounded rect cut at the axis (`E.clip_mask`), so it is rounded on the free end and flat on the
@@ -448,7 +448,7 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     cues = [{"at": 0.0, "name": "pop", "why": "input"}]
     for i in range(len(params["bars"])):
         cues.append({"at": params["delay"] + i * params["stagger"], "name": "tick", "volume": 0.8,
-                     "why": f'barra {i + 1}'})
+                     "why": f'bar {i + 1}'})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]
 
 

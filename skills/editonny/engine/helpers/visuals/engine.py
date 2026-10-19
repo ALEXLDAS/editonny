@@ -1,4 +1,4 @@
-"""Visual design engine: drawing, easing and timing for the animated templates (SPEC Contract 12).
+"""Visual design engine: drawing, easing and timing for the animated templates.
 
 Everything is drawn with Pillow + numpy. Shapes get analytic anti-aliasing from signed distance
 fields (exact coverage per pixel, sub-pixel positions, no supersampling); text is FreeType through
@@ -153,10 +153,10 @@ PAPER_FONTS = (("text_bold", "sans_extrabold"), ("text_semibold", "sans_bold"), 
                    ("display_condensed", "sans_black"))
 POP_ACCENT, NEON_ACCENT = "#E8412C", "#22D3EE"
 COLOR_NAMES = {  # names a template (or a "color" param) may use instead of #RRGGBB
-    "accent": "accent", "accent": "accent", "on_accent": "on_accent", "card": "card", "card_border": "card_border",
-    "text": "text", "text": "text", "muted": "muted", "ink": "ink", "track": "track", "danger": "danger",
+    "accent": "accent", "on_accent": "on_accent", "card": "card", "card_border": "card_border",
+    "text": "text", "muted": "muted", "ink": "ink", "track": "track", "danger": "danger",
     "red": "danger", "success": "success", "green": "success",
-    "shadow": "shadow", "white": "white", "white": "white", "black": "black",
+    "shadow": "shadow", "white": "white", "black": "black",
 }
 
 
@@ -192,7 +192,7 @@ def make_theme(accent=DEFAULT_ACCENT, name: str = "dark") -> Theme:
                      ink=(17, 17, 17, 255), track=(17, 17, 17, 34), danger=(235, 45, 45, 255),
                      success=(22, 163, 74, 255), shadow=(0, 0, 0, 255), dark=False)
     if name != "dark":
-        raise VisualError(f"theme '{name}' does not exist; use {' ou '.join(THEME_NAMES)})")
+        raise VisualError(f"theme '{name}' does not exist; use {', '.join(THEME_NAMES)}")
     return Theme(name="dark", accent=acc, on_accent=readable_on(acc), card=(18, 18, 20, 226),
                  card_border=(255, 255, 255, 30), text=(255, 255, 255, 255), muted=(255, 255, 255, 196),
                  ink=(17, 17, 17, 255), track=(255, 255, 255, 44), danger=(255, 69, 58, 255),
@@ -264,7 +264,7 @@ def region_box(spec, canvas: Sequence[int] = (1080, 1920)) -> tuple[float, float
     try:
         x, y, w, h = (float(v) for v in spec)
     except (TypeError, ValueError):
-        raise VisualError(f'invalid region: {spec!r} (use um nome or [x, y, width, height])') from None
+        raise VisualError(f'invalid region: {spec!r} (use a name or [x, y, width, height])') from None
     if not all(math.isfinite(v) for v in (x, y, w, h)) or w < 20 or h < 20:
         raise VisualError(f'invalid region: {spec!r}; width and height must be at least 20')
     if x + w <= 0 or y + h <= 0 or x >= dw or y >= dh:

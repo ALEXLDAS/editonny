@@ -71,7 +71,7 @@ def require_binary(name: str) -> str:
     path = shutil.which(name)
     if not path:
         hint = {
-            "ffmpeg": "instale FFmpeg no sistema · macOS: brew install ffmpeg · Windows: winget install Gyan.FFmpeg",
+            "ffmpeg": "install FFmpeg on the system · macOS: brew install ffmpeg · Windows: winget install Gyan.FFmpeg",
             "ffprobe": 'included with FFmpeg',
             "node": "macOS: brew install node · Windows: winget install OpenJS.NodeJS.LTS",
         }.get(name, "")
@@ -386,7 +386,7 @@ def load_style_catalog() -> dict:
 if __name__ == "__main__":
     import pprint
 
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and sys.argv[1] not in ("-h", "--help"):
         pprint.pprint(probe_video(sys.argv[1]))
     else:
-        print("uso: uv run python helpers/common.py <video>")
+        print("usage: uv run python helpers/common.py <video>")

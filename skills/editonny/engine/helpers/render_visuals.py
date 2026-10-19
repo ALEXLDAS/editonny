@@ -1,12 +1,12 @@
 """Renders one animated template (helpers/visuals) to check it: transparent .mov, PNG frames, an .mp4 over a
-background and a contact sheet. The compose uses the same renderer (SPEC Contract 12).
+background and a contact sheet. The compose uses the same renderer.
 
 Usage:
     uv run python helpers/render_visuals.py --list [--json]
-    uv run python helpers/render_visuals.py --describe contador
-    uv run python helpers/render_visuals.py --template contador --params '{"value": 1904152.87, "prefix": "R$"}' \\
+    uv run python helpers/render_visuals.py --describe counter
+    uv run python helpers/render_visuals.py --template counter --params '{"value": 1904152.87, "prefix": "R$"}' \\
         --out DIR [--format mov,sheet,mp4,png,clip] [--duration 3] [--fps 30] [--size 1080x1920] \\
-        [--color '#FFC400'] [--regiao centro | --regiao 140,640,800,640] [--background frame.png] [--quadros 8]
+        [--color '#FFC400'] [--region center | --region 140,640,800,640] [--background frame.png] [--frames 8]
     --params-file F  reads the params from a JSON file (easier with R$ and quotes).
 
 The last stdout line is a JSON object with the files, the frames and the sound cues.
@@ -42,7 +42,7 @@ def parse_size(text: str) -> tuple[int, int]:
     try:
         w, h = (int(v) for v in str(text).lower().split("x"))
     except ValueError:
-        raise VisualError(f'invalid --size: {text!r} (ex.: 1080x1920)') from None
+        raise VisualError(f'invalid --size: {text!r} (for example 1080x1920)') from None
     if w < 16 or h < 16 or w > 4096 or h > 4096:
         raise VisualError(f'--size outside the allowed range: {text!r}')
     return w, h
@@ -104,11 +104,11 @@ def _limits(spec: dict) -> list[str]:
     if "min" in spec or "max" in spec:
         lo = E.format_number(spec["min"], E.auto_decimals(spec["min"])) if "min" in spec else "-"
         hi = E.format_number(spec["max"], E.auto_decimals(spec["max"])) if "max" in spec else "-"
-        extra.append(f'de {lo} a {hi}')
+        extra.append(f'from {lo} to {hi}')
     if "max_len" in spec:
         extra.append(f"up to {spec['max_len']} letras")
     if "min_items" in spec or "max_items" in spec:
-        extra.append(f"de {spec.get('min_items', 0)} a {spec.get('max_items', '?')} itens")
+        extra.append(f"{spec.get('min_items', 0)} to {spec.get('max_items', '?')} items")
     if spec.get("nullable"):
         extra.append("may be null")
     return extra
@@ -119,7 +119,7 @@ def cmd_describe(tid: str) -> int:
     print(f'{t.id}: {t.label}')
     print(t.description)
     if t.use_when:
-        print(f'Quando usar: {t.use_when}')
+        print(f'When to use: {t.use_when}')
     if t.notes:
         print(f'Attention: {t.notes}')
     region = t.default_region if isinstance(t.default_region, str) else list(t.default_region)
@@ -136,14 +136,14 @@ def cmd_describe(tid: str) -> int:
                     fextra = _limits(fspec)
                     fdefault = (json.dumps(fspec["default"], ensure_ascii=False) if "default" in fspec
                                 else 'required')
-                    print(f"    cada item.{fname} ({fspec['type']}, default {fdefault}){(' · ' + '; '.join(fextra) if fextra else '')}: {fspec.get('label', '')}")
+                    print(f"    each item.{fname} ({fspec['type']}, default {fdefault}){(' · ' + '; '.join(fextra) if fextra else '')}: {fspec.get('label', '')}")
             else:
                 iextra = _limits(item)
                 if iextra:
-                    print(f"    cada item ({item['type']}): {'; '.join(iextra)}")
-    print("Sounds: " + (", ".join(f"{c['name']} em {c.get('at', 0):g} s" for c in t.sfx) or "none"))
+                    print(f"    each item ({item['type']}): {'; '.join(iextra)}")
+    print("Sounds: " + (", ".join(f"{c['name']} at {c.get('at', 0):g} s" for c in t.sfx) or "none"))
     if t.example:
-        print("Exemplo de params: " + json.dumps(t.example, ensure_ascii=False))
+        print("Example parameters: " + json.dumps(t.example, ensure_ascii=False))
     return 0
 
 
@@ -153,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--list", action="store_true", help='list available templates', dest='list')
     ap.add_argument("--json", action="store_true", help='with --list: emit JSON', dest='json')
     ap.add_argument("--describe", metavar="ID", help="describe a template's parameters", dest='describe')
-    ap.add_argument("--template", "-t", help="id do modelo (veja --list)", dest='template')
+    ap.add_argument("--template", "-t", help="template ID (see --list)", dest='template')
     ap.add_argument("--params", help='JSON parameters, for example \'{"value": 37}\'', dest='params')
     ap.add_argument("--params-file", help='JSON file containing parameters', dest='params_file')
     ap.add_argument("--out", "-o", help='output folder', dest='out')
@@ -198,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
                         "duration": round(item.frames / item.fps, 4), "canvas": list(item.canvas),
                         "region": [round(v, 2) for v in item.region], "params": item.params,
                         "sfx": R.sfx_cues(item, check_names=True), "files": {}}
-        print(f'{item.template.label}: {item.frames} frames ({E.format_number(item.frames / item.fps, 2)} s) em {item.canvas[0]}x{item.canvas[1]}')
+        print(f'{item.template.label}: {item.frames} frames ({E.format_number(item.frames / item.fps, 2)} s) at {item.canvas[0]}x{item.canvas[1]}')
         if "mov" in formats:
             result["files"]["mov"] = str(R.write_mov(item, out / f'{base}.mov'))
         if "clip" in formats:
@@ -206,8 +206,8 @@ def main(argv: list[str] | None = None) -> int:
             result["files"]["clip"] = clip["file"]
             result["clip"] = {k: clip[k] for k in ("x", "y", "w", "h", "ink")}
         if "png" in formats:
-            pngs = R.write_pngs(item, out / f'{base}_quadros')
-            result["files"]["png"] = str(out / f'{base}_quadros')
+            pngs = R.write_pngs(item, out / f'{base}_frames')
+            result["files"]["png"] = str(out / f'{base}_frames')
             result["png_count"] = len(pngs)
         if "mp4" in formats:
             result["files"]["mp4"] = str(R.write_mp4(item, out / f'{base}.mp4', args.background_value))

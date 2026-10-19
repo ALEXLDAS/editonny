@@ -1,4 +1,4 @@
-"""Local web preview + JSON API for one edit session (SPEC Contract 9).
+"""Local web preview + JSON API for one edit session.
 
 Serves the preview UI (preview/index.html, app.js, app.css), the media inside the
 edit dir with HTTP Range support (so the player can scrub), cached waveform and
@@ -883,7 +883,7 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 return self._error(400, 'Invalid Content-Length')
             if length < 0 or length > MAX_BODY:
-                return self._error(413 if length > MAX_BODY else 400, "corpo vazio ou grande demais")
+                return self._error(413 if length > MAX_BODY else 400, "empty or oversized body")
             raw = self.rfile.read(length) if length else b""  # read it all before any refusal
             if not self._host_ok() or not self._origin_ok() or not self._site_ok():
                 return self._error(403, 'Origin not allowed')
@@ -895,7 +895,7 @@ class Handler(BaseHTTPRequestHandler):
             if ctype != "application/json":
                 return self._error(415, "Send JSON (Content-Type: application/json)")
             if not raw:
-                return self._error(400, "corpo vazio ou grande demais")
+                return self._error(400, "empty or oversized body")
             try:
                 body = json.loads(raw.decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError):
@@ -1188,14 +1188,14 @@ def main() -> int:
                 return 0
             port += 1
     if httpd is None:
-        return fail(f'as portas {args.port} a {port - 1} are occupied. Use --port to select another port.')
+        return fail(f'ports {args.port} to {port - 1} are occupied. Use --port to select another port.')
 
     httpd.daemon_threads = True
     httpd.verbose = args.verbose  # type: ignore[attr-defined]
     session.port = port
     shown_host = "127.0.0.1" if args.host in ("0.0.0.0", "::") else args.host
     url = f'http://{shown_host}:{port}'
-    note = f' (a porta {args.port} estava ocupada)' if port != args.port else ""
+    note = f' (port {args.port} was occupied)' if port != args.port else ""
     info = {"status": "running", "url": url, "port": port, "host": args.host, "pid": os.getpid(),
             "edit_dir": str(session.edit_dir), "started_at": now_iso_ms()}
     if not session.loopback:
@@ -1204,11 +1204,11 @@ def main() -> int:
         info["url"] = url
         info["lan_urls"] = [f'http://{ip}:{port}/?t={session.token}' for ip in lan]
     write_server_info(edit_dir, info)
-    log(f'Preview rodando em {url}{note}')
+    log(f'Preview running at {url}{note}')
     if not session.loopback:
         log(f'Warning: this preview is accessible on the network ({args.host}). Devices on the same network with this link can view and approve the video. Use only a trusted network and stop with Ctrl+C when finished.')
         for lan_url in info["lan_urls"]:
-            log(f'No celular (mesma rede): {lan_url}')
+            log(f'On a phone (same network): {lan_url}')
     log(f'Edit folder: {session.edit_dir}')
     if not catalog_path.is_file():
         log('Warning: helpers/style_catalog.json is missing; the Style tab stays empty until it exists.')
@@ -1226,7 +1226,7 @@ def main() -> int:
     try:
         httpd.serve_forever(poll_interval=0.5)
     except KeyboardInterrupt:
-        log("Preview parado.")
+        log("Preview stopped.")
     finally:
         httpd.server_close()
         write_server_info(edit_dir, {**info, "status": "stopped"})

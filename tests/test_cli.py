@@ -30,6 +30,12 @@ class CLITests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn('Traceback', result.stderr)
 
+    def test_helper_help_lists_runnable_helpers(self):
+        result = self.run_cli('helper', '--help')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('transcribe', result.stdout)
+        self.assertNotIn('workspace', result.stdout.split('helpers:')[1])
+
     def test_scene_requires_a_project(self):
         result = self.run_cli('scene')
         self.assertNotEqual(result.returncode, 0)

@@ -1,8 +1,8 @@
-"""comentario_cta: a generic comment bar where a keyword is typed letter by letter, then sent with a tap.
+"""comment_cta: a generic comment bar where a keyword is typed letter by letter, then sent with a tap.
 
 The look is a neutral social app (no logo, name or icon of a real platform): a round avatar with a generic
 silhouette, a pill-shaped field with the placeholder, a blinking cursor, and a send button with a paper-plane
-glyph (or the word "Enviar"). After the tap the comment shows up above the bar and the call-to-action text
+glyph (or the word "Send"). After the tap the comment shows up above the bar and the call-to-action text
 moves up to make room, like a real comment list.
 """
 
@@ -15,7 +15,7 @@ from functools import lru_cache
 from visuals import engine as E
 from visuals.engine import VisualError
 
-TEMPLATE = {'id': 'comment_cta', 'label': 'Comment Cta', 'description': 'A generic comment field types a keyword, activates the send button, and displays the submitted comment. No real service branding is used.', 'use_when': 'Use when this visual directly supports the recorded phrase. Align its timing to measured words and verify the sample.', 'notes': 'Validate the parameters, keep text readable, and inspect the exported entrance and exit.', 'category': 'graphics', 'version': 1, 'params': {'keyword': {'type': 'text', 'default': 'IDEA', 'max_len': 20, 'required_text': True, 'label': 'Keyword'}, 'prompt_text': {'type': 'text', 'default': 'Comment the word', 'max_len': 48, 'label': 'Prompt Text'}, 'placeholder': {'type': 'text', 'default': 'Add a comment...', 'max_len': 32, 'label': 'Placeholder'}, 'user_name': {'type': 'text', 'default': 'you', 'max_len': 20, 'label': 'User Name'}, 'upper': {'type': 'bool', 'default': True, 'label': 'Upper'}, 'delay': {'type': 'number', 'default': 0.7, 'min': 0.3, 'max': 5, 'label': 'Delay (0.3–5)'}, 'typing_speed': {'type': 'number', 'default': 7.0, 'min': 2, 'max': 30, 'label': 'Typing Speed (2–30)'}, 'button': {'type': 'choice', 'choices': ['icon', 'text'], 'default': 'icon', 'label': 'Button'}, 'show_sent': {'type': 'bool', 'default': True, 'label': 'Show Sent'}, 'size': {'type': 'choice', 'choices': ['normal', 'large'], 'default': 'normal', 'label': 'Size'}}, 'default_duration': 3.8, 'default_region': 'bottom', 'sfx': [{'at': 0.0, 'name': 'pop', 'volume': 0.8, 'why': 'barra aparece'}, {'at': 0.7, 'name': 'keyboard', 'volume': 0.9, 'why': 'digitando'}, {'at': 1.76, 'name': 'mouse_click', 'why': 'toque em enviar'}, {'at': 1.84, 'name': 'pop', 'volume': 0.7, 'why': 'comment submitted'}], 'example': {'keyword': 'IDEA', 'prompt_text': 'Comment *{keyword}* to receive the link'}}
+TEMPLATE = {'id': 'comment_cta', 'label': 'Comment Cta', 'description': 'A generic comment field types a keyword, activates the send button, and displays the submitted comment. No real service branding is used.', 'use_when': 'Use when this visual directly supports the recorded phrase. Align its timing to measured words and verify the sample.', 'notes': 'Validate the parameters, keep text readable, and inspect the exported entrance and exit.', 'category': 'graphics', 'version': 1, 'params': {'keyword': {'type': 'text', 'default': 'IDEA', 'max_len': 20, 'required_text': True, 'label': 'Keyword'}, 'prompt_text': {'type': 'text', 'default': 'Comment the word', 'max_len': 48, 'label': 'Prompt Text'}, 'placeholder': {'type': 'text', 'default': 'Add a comment...', 'max_len': 32, 'label': 'Placeholder'}, 'user_name': {'type': 'text', 'default': 'you', 'max_len': 20, 'label': 'User Name'}, 'upper': {'type': 'bool', 'default': True, 'label': 'Upper'}, 'delay': {'type': 'number', 'default': 0.7, 'min': 0.3, 'max': 5, 'label': 'Delay (0.3–5)'}, 'typing_speed': {'type': 'number', 'default': 7.0, 'min': 2, 'max': 30, 'label': 'Typing Speed (2–30)'}, 'button': {'type': 'choice', 'choices': ['icon', 'text'], 'default': 'icon', 'label': 'Button'}, 'show_sent': {'type': 'bool', 'default': True, 'label': 'Show Sent'}, 'size': {'type': 'choice', 'choices': ['normal', 'large'], 'default': 'normal', 'label': 'Size'}}, 'default_duration': 3.8, 'default_region': 'bottom', 'sfx': [{'at': 0.0, 'name': 'pop', 'volume': 0.8, 'why': 'bar appears'}, {'at': 0.7, 'name': 'keyboard', 'volume': 0.9, 'why': 'typing'}, {'at': 1.76, 'name': 'mouse_click', 'why': 'send tap'}, {'at': 1.84, 'name': 'pop', 'volume': 0.7, 'why': 'comment submitted'}], 'example': {'keyword': 'IDEA', 'prompt_text': 'Comment *{keyword}* to receive the link'}}
 
 ENTER = 0.40          # entrance of the bar
 TAP_AFTER = 0.45      # pause between the last letter and the tap
@@ -107,7 +107,7 @@ def _layout(params_json: str, box: E.Box) -> dict:
     pad = 34.0 * k
     btn_cx = W - 14.0 * k - btn_r
     text_w_max = field_w - pad - (2 * btn_r + 30.0 * k)
-    send_label = "Enviar"
+    send_label = "Send"
     if p["button"] == "text":
         send_size = 38.0 * k
         send_w = E.measure(send_label, "text_bold", send_size).width
@@ -318,10 +318,10 @@ def render(frame_index: int, fps: int, params: dict, box: E.Box) -> E.Canvas:
 
 def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     T = _timeline(json.dumps(params, sort_keys=True))
-    cues = [{"at": 0.0, "name": "pop", "volume": 0.8, "why": "barra aparece"},
-            {"at": T["type"], "name": "keyboard", "volume": 0.9, "why": "digitando",
+    cues = [{"at": 0.0, "name": "pop", "volume": 0.8, "why": "bar appears"},
+            {"at": T["type"], "name": "keyboard", "volume": 0.9, "why": "typing",
              "length": round(T["type_end"] - T["type"] + 0.2, 3)},
-            {"at": T["tap"], "name": "mouse_click", "volume": 1.0, "why": "toque em enviar"}]
+            {"at": T["tap"], "name": "mouse_click", "volume": 1.0, "why": "send tap"}]
     if params["show_sent"]:
         cues.append({"at": T["sent"], "name": "pop", "volume": 0.7, "why": 'comment submitted'})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]

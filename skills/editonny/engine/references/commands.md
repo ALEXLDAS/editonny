@@ -16,9 +16,8 @@ uv run --directory '<ENGINE>' python helpers/<helper>.py --help
 - `common.py`
 - `compose_final.py`
 - `contact_sheet.py`
-- `denoise.py`
 - `effects.py`
-- `elevenlabs_api.py`
+- `export_subtitles.py`
 - `face_layout.py`
 - `fetch_images.py`
 - `filmstrip.py`
@@ -32,19 +31,17 @@ uv run --directory '<ENGINE>' python helpers/<helper>.py --help
 - `matte.py`
 - `measure_reference.py`
 - `mix_music.py`
-- `render_visuals.py`
 - `music_library.py`
 - `noise_check.py`
 - `pack_transcripts.py`
-- `person_cutout.py`
 - `precise_edges.py`
 - `preview_server.py`
 - `quality_gate.py`
 - `render_cut.py`
+- `render_visuals.py`
 - `screen_text.py`
 - `sound_plan.py`
 - `speech_regions.py`
-- `spoken_numbers.py`
 - `style_samples.py`
 - `suggest_visuals.py`
 - `sync_cameras.py`
@@ -59,5 +56,7 @@ uv run --directory '<ENGINE>' python helpers/<helper>.py --help
 - `voice_levels.py`
 - `watch_preview.py`
 - `waveform_cut.py`
+
+These modules have no command line; the helpers above and the CLI import them: `denoise.py`, `elevenlabs_api.py`, `fidelity.py`, `intake.py`, `media_policy.py`, `person_cutout.py`, `project_contract.py`, `render_vfr.py`, `spoken_numbers.py`, `transcript_corrections.py`, `workspace.py`.
 
 The generated project has a separate build CLI, documented in [project-template/README.md](../project-template/README.md).

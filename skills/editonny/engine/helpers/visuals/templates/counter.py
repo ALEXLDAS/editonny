@@ -1,6 +1,6 @@
-"""contador: a number that counts up (or down) to its value, with prefix, suffix and a label.
+"""counter: a number that counts up (or down) to its value, with prefix, suffix and a label.
 
-REFERENCE TEMPLATE. Copy this file to write a new one (SPEC Contract 12):
+REFERENCE TEMPLATE. Copy this file to write a new one:
   1. TEMPLATE describes the template (id = file name) and its params; the registry checks it.
   2. render(frame_index, fps, params, box) draws ONE frame on a fresh Canvas and returns it.
      Time is frame_index / fps. `params` is already complete and checked. `box` gives the place
@@ -174,7 +174,7 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
         # the ticking follows the count: once for the fast "smooth" count, every 0.6 s for a linear one
         steps = 1 if params["ease"] != "linear" else max(1, int(dur / 0.6 + 0.5))
         for k in range(steps):
-            cues.append({"at": start + k * 0.6, "name": "count", "volume": 1.3, "why": "contagem"})
+            cues.append({"at": start + k * 0.6, "name": "count", "volume": 1.3, "why": "counting"})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]
 
 

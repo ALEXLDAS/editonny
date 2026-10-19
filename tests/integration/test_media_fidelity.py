@@ -1,6 +1,5 @@
 """Source appearance must survive an unrequested no-effect cut."""
 import hashlib
-import json
 from pathlib import Path
 import shutil
 import subprocess

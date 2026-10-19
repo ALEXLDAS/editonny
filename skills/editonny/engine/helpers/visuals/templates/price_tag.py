@@ -1,6 +1,6 @@
-"""etiqueta_preco: a price tag that pops in with a spring and settles slightly tilted, with the cents raised
-like a shop price, an optional old price crossed out above it and a shine that sweeps the tag once
-(SPEC Contract 12). Two looks: "tag" (hang tag with a hole) and "badge" (round scalloped seal).
+"""price_tag: a price tag that pops in with a spring and settles slightly tilted, with the cents raised
+like a shop price, an optional old price crossed out above it and a shine that sweeps the tag once.
+Two looks: "tag" (hang tag with a hole) and "badge" (round scalloped seal).
 
 `_add_shine` is a soft diagonal light band on an image and `_transform` scales and rotates the small cached
 tag sprite in one resampling step (a rotated group would redraw and resample its layer on every frame).

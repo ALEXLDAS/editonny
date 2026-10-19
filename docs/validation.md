@@ -168,6 +168,29 @@ On 2026-10-19 the guide's home page was replaced by the owner's Claude Design la
 
 Limits: Chromium only, on this machine; no real devices, screen readers, Lighthouse, or Vercel deployment. The marketing comparison (editor costs, 96 videos per workday) is the owner's illustrative copy, labelled as such on the page, not a measurement. Spanish and English landing copy comes from the artifact and has not had a native-speaker review.
 
+## Repository sanitation pass
+
+On 2026-10-19 a cleanup pass on `main` (baseline `4e672c8`, clean checkout whose canonical checks all passed) fixed what was unfinished or misleading without removing working capability:
+
+- **Dead code.** Pyflakes rules (`uvx ruff@0.14.0 check --select F`, not a project dependency) found unused imports and locals, duplicate dictionary keys left by the English migration (identical values, so no behavior change) and a placeholder-less f-string; all are gone. Two locals hid defects: the hand-leaving-frame warning in `build.py` computed a scene-specific fix and printed a generic one (it now prints the computed one), and `copy_video` crashed on a dangling symlink at the destination (it now replaces it; `test_cut_copy_replaces_a_dangling_link` failed before the fix).
+- **English contract.** About 250 engine messages, help texts, report notes, sound-cue reasons, defaults and generated names were still Portuguese or half translated. They are English now, including `cut_speech.md` (the help text already promised it while the code wrote `fala_do_cut.md`), `<name>_frames` PNG folders, the `Send` button default, the internal `person` mode and the `step-arrow` CSS class. Speech lexicons, hallucination filters, blocklists and on-screen text derived from detected Portuguese speech stay as data. A second pass after the first independent review translated about 70 more diagnostics and labels. `ocr_vision.swift` was rewritten in English, compiled, and read a synthetic frame correctly. Docstrings no longer cite a nonexistent `SPEC.md`.
+- **Defects found on the way.** Spoken "comenta a palavra …" suggested `prompt_text` "Comente *{palavra}*", but `comment_cta` substitutes only `{keyword}`, so the placeholder would render literally (`test_comment_suggestion_renders_its_keyword` reproduced it). `helpers/common.py --help` treated `--help` as a video path; `editonny.py helper --help` failed with "Unknown helper"; the `render_visuals.py` usage cited removed flags and template IDs. The preview watcher told the agent to set `motion.quantidade`, which composition rejects as an unknown field (it now names `motion.count`; `test_style_report_names_a_motion_field_compose_accepts` failed before the fix), and an enabled call to action without text rendered the Portuguese default "Toque em Saiba Mais" on any video (now "Tap Learn More"). All fixed, the CLI case with a test.
+- **Organization.** `engine/references/commands.md` listed library modules as commands and omitted `export_subtitles.py`; it now separates both lists and a test keeps it in sync with `helpers/`. `engine/WORKFLOW.md` indexes every reference and worksheet, most of which nothing linked. `scripts/smoke_three.mjs` and `tests/integration_graph/` worked but nothing ran them; they are now `npm run test:three` and `npm run graph:test`.
+
+After the changes: `npm run check` passed (lint, both typechecks, 93 Python, 20 Node, 142 Vitest tests, icons); `npm run test:engine` 82 tests with the usual native skip; `npm run build`; `npm run test:browser` 183 passed, 27 skipped by project; `npm run test:preview`, `npm run test:scenes`, `npm run test:three` and `npm run graph:test` (7 tests) passed; `python3 scripts/smoke_engine.py` produced a 3.000-second H.264 1080×1920/24 FPS MP4 with 48 kHz stereo AAC, and its 1, 1.5 and 2-second frames showed readable captions and the glow transition. Every runnable helper answers `--help`.
+
+Five sequential read-only native Codex reviews (`gpt-6-astra`, ChatGPT authentication) examined the working tree on `4e672c8`, each with a different focus. Every finding was verified against the source before it was fixed.
+
+| Cycle | Focus | Result |
+|---|---|---|
+| 1 | Behavior of every changed engine line and its callers | No findings |
+| 2 | English contract across all first-party source | 19 groups fixed, including the `motion.count` hint and the CTA default |
+| 3 | Tests, npm scripts, `graph:test`, CLI help, packaging | No findings |
+| 4 | Documentation accuracy | WORKFLOW index omitted `references/example-events.json`; fixed |
+| 5 | Holistic final pass, closure, security boundaries | Four leftover messages and the Portuguese redaction marker (`[chave]`, now `[redacted]`; redaction unchanged); fixed |
+
+The fifth cycle's fixes are string translations checked by a scanner that flagged 45 message strings at the baseline and none afterwards, plus the gates above, rerun on the final tree; they had no further independent review. The pass does not change the guide, the request builder, dependencies, or the project schema.
+
 ## Reproduce and invalidate
 
 ```sh
@@ -180,10 +203,12 @@ npm run test:engine
 npm run test:browser
 npm run test:preview
 npm run test:scenes
+npm run test:three
+npm run graph:test
 python3 scripts/smoke_engine.py
 python3 scripts/package.py
 ```
 
-`npm run test:browser` requires Playwright's Chromium (`npx playwright install chromium`); the preview and scene browser checks require agent-browser and its browser on PATH. Render checks require FFmpeg/ffprobe and may download the pinned package/browser on first use. Engine tests use the locked uv environment. Test installers with a temporary home; preserve footage, secrets, and personal installations. Inspect generated samples before removing task-owned `.work/` output.
+`npm run test:browser` requires Playwright's Chromium (`npx playwright install chromium`); the preview, scene, and 3D browser checks require agent-browser and its browser on PATH; `graph:test` requires the isolated Graphify install described in [setup](setup.md). Render checks require FFmpeg/ffprobe and may download the pinned package/browser on first use. Engine tests use the locked uv environment. Test installers with a temporary home; preserve footage, secrets, and personal installations. Inspect generated samples before removing task-owned `.work/` output.
 
 Dependency, source, schema, asset, or interface changes invalidate the corresponding evidence and require focused verification. A structural audit or successful selected-scene test does not render every scene. Local checks do not prove Windows/Linux behavior, long-video performance, remote CI, client restart discovery, external generation, or real recording quality. Remote CI and publication must be verified separately after the push.

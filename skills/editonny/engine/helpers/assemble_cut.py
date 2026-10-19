@@ -163,7 +163,7 @@ def main() -> int:
         envs[stem] = lv
         sources[stem] = src
         if lv is None:
-            print(f'{stem}: entra inteiro, revise.')
+            print(f'{stem}: kept whole; review it.')
             allb.append({"stem": stem, "a": 0.0, "b": float(tr.get("duration") or 0), "text": "", "toks": ["?"],
                          "whole": True})
             continue
@@ -204,7 +204,7 @@ def main() -> int:
                 later = allb[j + k]
                 onde = later["a"] if later["stem"] == bl["stem"] else f"{later['stem']} {later['a']:.2f}"
                 bl["keep"] = False
-                bl["why"] = (f'''tomada repetida ({r:.0%} from its beginning at {(onde if isinstance(onde, str) else f'{onde:.2f}')}s: "{later['text'][:60]}")''')
+                bl["why"] = (f'''repeated take ({r:.0%} from its beginning at {(onde if isinstance(onde, str) else f'{onde:.2f}')}s: "{later['text'][:60]}")''')
                 break
 
     # a take abandoned at the end of a block with no pause before the retake: "... da Shopee e um
@@ -221,7 +221,7 @@ def main() -> int:
                 if t0 - bl["a"] > 0.3:
                     dropped.append((bl["stem"], {"a": t0, "b": bl["b"], "text": " ".join(
                         str(w.get("text", "")).strip() for w in bl["words"][-k:])},
-                        f"fim de tomada abandonada, refeita em {nb['a']:.2f}s"))
+                        f"end of an abandoned take, redone at {nb['a']:.2f}s"))
                     bl["b"] = t0
                     bl["text"] = " ".join(str(w.get("text", "")).strip() for w in bl["words"][:-k])
                 break
@@ -251,13 +251,13 @@ def main() -> int:
 
     speech_value = sum(r["end"] - r["start"] for r in ranges)
     raw_value = sum(float(t.get("duration") or 0) for s, t in trs.items() if s in order)
-    md = [f'# Automatic cut · {len(ranges)} trechos, {speech_value:.1f} s de {raw_value:.1f} s de bruto', "",
-          f'## Tirado ({len(dropped)} blocks); review whether useful speech was misidentified as repetition', ""]
+    md = [f'# Automatic cut · {len(ranges)} ranges, {speech_value:.1f} s of {raw_value:.1f} s raw', "",
+          f'## Removed ({len(dropped)} blocks); review whether useful speech was misidentified as repetition', ""]
     for stem, bl, reason in dropped:
         md.append(f'''- {stem} [{bl['a']:.2f}-{bl['b']:.2f}] "{bl['text'][:80]}" · {reason}''')
     if alerts:
         md += ["", '## NO PAUSE: listen to these boundaries', ""] + [f'- {a}' for a in alerts]
-    md += ["", "## Trechos", ""] + [f"- {r['id']} {r['source']} [{r['start']:.2f}-{r['end']:.2f}] {r['quote']}"
+    md += ["", "## Ranges", ""] + [f"- {r['id']} {r['source']} [{r['start']:.2f}-{r['end']:.2f}] {r['quote']}"
                                     for r in ranges]
     report = "\n".join(md) + "\n"
     print(report)
@@ -277,9 +277,9 @@ def main() -> int:
                 if r["id"] in gains_value:
                     r["gain_db"] = gains_value[r["id"]]
             save_json(edl_path, edl)
-            print("volume ajustado: " + ", ".join(f'{k} {v:+.1f} dB' for k, v in gains_value.items()))
+            print("adjusted volume: " + ", ".join(f'{k} {v:+.1f} dB' for k, v in gains_value.items()))
         (edit / "automatic-cut.md").write_text(report, encoding="utf-8")
-        print(f"gravado: {edl_path} e {edit / 'automatic-cut.md'}")
+        print(f"saved: {edl_path} and {edit / 'automatic-cut.md'}")
     return 0
 
 

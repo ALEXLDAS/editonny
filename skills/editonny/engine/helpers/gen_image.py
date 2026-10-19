@@ -1,4 +1,4 @@
-"""Optional AI image for inserts, through OpenRouter (Contract 8).
+"""Optional AI image for inserts, through OpenRouter.
 
 The key comes from OPENROUTER_API_KEY in the environment or from `.env` in the skill root.
 Without a key the helper exits 2 and explains that this step is optional (fetch_images.py finds
@@ -110,8 +110,8 @@ def pick_model(requested: str | None) -> tuple[str, str]:
     ids = {m["id"] for m in models}
     if requested:
         if requested not in ids:
-            raise GenError(f"o modelo '{requested}' cannot currently generate images through OpenRouter. Options: {', '.join(sorted(ids))}", 2)
-        return requested, "modelo pedido"
+            raise GenError(f"model '{requested}' cannot currently generate images through OpenRouter. Options: {', '.join(sorted(ids))}", 2)
+        return requested, "requested model"
     for mid in PREFERRED_MODELS:
         if mid in ids:
             return mid, 'preferred model available'
@@ -125,7 +125,7 @@ def pick_model(requested: str | None) -> tuple[str, str]:
             return 1e9
 
     best = sorted(models, key=lambda m: (price(m), -int(m.get("created") or 0)))[0]
-    return best["id"], "modelo de imagem mais barato da lista"
+    return best["id"], "cheapest image model in the list"
 
 
 def build_request(prompt: str, model: str, size: tuple[int, int], raw: bool) -> dict:
@@ -170,13 +170,13 @@ def request_image(payload: dict, key: str, timeout: float = 180, save_to: Path |
     try:
         r = requests.post(CHAT_URL, headers=headers, data=json.dumps(payload), timeout=timeout)
     except requests.RequestException as e:
-        raise GenError(f'could not reach OpenRouter ({e.__class__.__name__}). Confira a internet.')
+        raise GenError(f'could not reach OpenRouter ({e.__class__.__name__}). Check the internet connection.')
     if r.status_code == 401:
         raise GenError('OpenRouter rejected OPENROUTER_API_KEY. Check the configured key.', 2)
     if r.status_code == 402:
         raise GenError('The OpenRouter account has no credit. Add credit or use fetch_images.py.')
     if r.status_code == 429:
-        raise GenError("limite de uso do OpenRouter atingido. Tente de novo em alguns minutos.")
+        raise GenError("OpenRouter rate limit reached. Try again in a few minutes.")
     if r.status_code >= 400:
         # The error body may echo the submitted key.
         raise GenError(f'OpenRouter returned error {r.status_code}. Check the service before trying again.')
@@ -194,7 +194,7 @@ def request_image(payload: dict, key: str, timeout: float = 180, save_to: Path |
             urls.append(url)
     if not urls:
         raise GenError('The model returned no image. Try a more visual description.')
-    saved = "a resposta"
+    saved = "the response"
     if save_to is not None:
         try:
             save_json(save_to, {"model": payload.get("model"), "urls": urls, "saved_at": now_iso()})
@@ -248,21 +248,21 @@ def main(argv: list[str] | None = None) -> int:
                 'OPENROUTER_API_KEY is not configured. Image generation is optional; use fetch_images.py for licensed photos, or configure the provider key in the environment or skill .env file after authorization.', 2)
 
         if args.reuse_last:
-            model, note = str(last.get("model") or args.model or FALLBACK_MODEL), "resposta guardada"
+            model, note = str(last.get("model") or args.model or FALLBACK_MODEL), "stored response"
         else:
             model, note = pick_model(args.model)
         payload = build_request(args.prompt, model, size, args.raw)
-        name = args.output or f'ia-{slugify(args.prompt)}-{hashlib.sha1((args.prompt + model).encode()).hexdigest()[:6]}.png'
+        name = args.output or f'ai-{slugify(args.prompt)}-{hashlib.sha1((args.prompt + model).encode()).hexdigest()[:6]}.png'
         name = Path(name).name
         if not name.lower().endswith((".png", ".jpg", ".jpeg")):
             name += ".png"
         out_path = edit / "assets" / name
 
         if args.dry_run:
-            print(f'modelo: {model} ({note})')
+            print(f'model: {model} ({note})')
             print(f'file: {out_path}')
             print('request (not sent):')
-            print(json.dumps({"url": CHAT_URL, "payload": payload, "key": "configurada" if key else "ausente"},
+            print(json.dumps({"url": CHAT_URL, "payload": payload, "key": "configured" if key else "missing"},
                              ensure_ascii=False, indent=2))
             return 0
 
@@ -293,11 +293,11 @@ def main(argv: list[str] | None = None) -> int:
             credits = []
         credits.append({
             "file": f'assets/{name}', "source": "openrouter", "model": model, "prompt": args.prompt,
-            "url": None, "author": f'imagem gerada por IA ({model})', "license": "gerada por IA",
+            "url": None, "author": f'AI-generated image ({model})', "license": "AI-generated",
             "width": size[0], "height": size[1], "added_at": now_iso(),
         })
         save_json(credits_path, credits)
-        print(f'ok: assets/{name}  {size[0]}x{size[1]}  modelo {model}')
+        print(f'ok: assets/{name}  {size[0]}x{size[1]}  model {model}')
         return 0
     except GenError as e:
         print(f'error: {e}', file=sys.stderr)

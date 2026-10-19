@@ -156,7 +156,7 @@ def chain_music(dur_music: float, start_music: float, needs: float, input_value:
         for k in range(1, copies):
             parts_value.append(f'[x{k - 1}][c{k}]acrossfade=d={LOOP_CROSSFADE}:c1=tri:c2=tri[x{k}];')
         parts_value.append(f'[x{copies - 1}]atrim=duration={needs:.4f},asetpts=PTS-STARTPTS[t0];')
-    chain = [f'aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo', f'volume={gain_db_value:.3f}dB']
+    chain = ['aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo', f'volume={gain_db_value:.3f}dB']
     if breath > 0:
         rg = 10 ** (breath_db / 20)
         ramp = 0.6

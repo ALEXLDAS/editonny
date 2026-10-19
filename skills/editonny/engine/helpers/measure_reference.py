@@ -33,7 +33,7 @@ except ImportError:  # pragma: no cover
 from PIL import Image, ImageDraw, ImageFont
 
 VERSION_VALUE = 1
-SKILL = Path(__file__).resolve().parent.parent   # esta skill (helpers/..)
+SKILL = Path(__file__).resolve().parent.parent   # this skill (helpers/..)
 EV_DEFAULT = Path(os.environ.get("EDITONNY_ENGINE_DIR") or SKILL)
 SR = 22050            # Sample rate of the analyzed audio.
 WINDOW = 1024         # Spectrum samples per window (46 ms)
@@ -215,7 +215,7 @@ def technical_metadata(video: Path) -> dict:
     }
 
 
-# ----------------------------------------------------------------------------- 2. cortes
+# ----------------------------------------------------------------------------- 2. cuts
 
 def score_scenes(video: Path, tmp: Path) -> tuple[np.ndarray, np.ndarray]:
     'FFmpeg scene-change score from 0 to 1 for each frame.'
@@ -302,7 +302,7 @@ def measure_pacing(cuts_t: list[float], dur: float) -> dict:
     }
 
 
-# ----------------------------------------------------------------------------- 3. quadros
+# ----------------------------------------------------------------------------- 3. frames
 
 def screen_default(w: int, h: int) -> tuple[int, int]:
     'Reference canvas: 1080x1920 vertical, 1920x1080 horizontal, or 1080x1080 square.'
@@ -367,7 +367,7 @@ def frames_by_index(video: Path, times_q: np.ndarray, indices: list[int], direct
     return output_value
 
 
-# ----------------------------------------------------------------------------- 4. rosto
+# ----------------------------------------------------------------------------- 4. face
 
 class FaceDetector:
     def __init__(self, engine: Path):
@@ -1229,7 +1229,7 @@ def analyze_audio(video: Path, dur: float, words_value: list[dict] | None, cuts_
     return res
 
 
-# ----------------------------------------------------------------------------- 8. fala
+# ----------------------------------------------------------------------------- 8. speech
 
 def transcribe_value(video: Path, engine: Path, measurements: Path) -> Path | None:
     script = engine / "helpers" / "transcribe.py"
@@ -1302,7 +1302,7 @@ def assemble_sheets(frames_value: list[tuple[float, Path]], cuts_value: list[dic
         top = 34
         sheet_value = Image.new("RGB", (cols * tw, top + th * ((len(part_value) + cols - 1) // cols)), (18, 18, 18))
         d = ImageDraw.Draw(sheet_value)
-        d.text((8, 7), f'sheet {f + 1} of {total}   {mmss_short(part_value[0][0])} a {mmss_short(part_value[-1][0])}   red border = cut; amber = tentative cut; SOUND = probable effect',
+        d.text((8, 7), f'sheet {f + 1} of {total}   {mmss_short(part_value[0][0])} to {mmss_short(part_value[-1][0])}   red border = cut; amber = tentative cut; SOUND = probable effect',
                fill=(230, 230, 230), font=font_p)
         for j, (t, file_value) in enumerate(part_value):
             k = f * per_value + j
@@ -1593,7 +1593,6 @@ def write_guide(path_value: Path, worksheet: dict, cuts_value: list[dict], pacin
     a = L.append
     name_value = worksheet["file"]
     short_value = name_value if len(name_value) <= 60 else name_value[:57] + "..."
-    strong_cuts = [c for c in cuts_value if c["type"] == "cut"]
     prov = [c for c in cuts_value if c["type"] != "cut"]
     captions = captions or {}
     engine = rules_value["edit_data"]
@@ -1756,7 +1755,7 @@ def write_guide(path_value: Path, worksheet: dict, cuts_value: list[dict], pacin
             a("")
         if captions.get('bright_screen_intervals'):
             a('Intervals with an almost entirely light screen: '
-              + ", ".join(f'{mmss(x0)} a {mmss(x1)}' for x0, x1 in captions['bright_screen_intervals']) + ". **MEASURED**")
+              + ", ".join(f'{mmss(x0)} to {mmss(x1)}' for x0, x1 in captions['bright_screen_intervals']) + ". **MEASURED**")
             a("")
 
     a("## 5. Colors")
@@ -2019,7 +2018,6 @@ def main(argv: list[str] | None = None) -> int:
                     brightness_1s[s] = float(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[..., 2].mean()) / 255.0
             # Frames before and after each cut, plus the middle of each shot.
             edges_value = [0.0] + [c["t"] for c in cuts_value] + [dur]
-            fps = worksheet["fps"] or 30.0
             middles = []
             for a0, a1 in zip(edges_value, edges_value[1:]):
                 middles.append(int(min(len(times_q) - 1, np.searchsorted(times_q, (a0 + a1) / 2))))

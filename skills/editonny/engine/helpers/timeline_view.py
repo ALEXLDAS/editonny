@@ -125,7 +125,7 @@ def render(video: Path, start: float, end: float, out: Path, transcript: Path | 
     frames = extract_frames(video, times, width=tile_w) if info.get("has_video") else []
     tile_h = frames[0].size[1] if frames else 0
 
-    head, strip_y = 64, 64
+    strip_y = 64
     wave_y = strip_y + tile_h + (34 if frames else 0) + 44
     wave_h = 260
     words_y = wave_y + wave_h + 14
@@ -135,7 +135,7 @@ def render(video: Path, start: float, end: float, out: Path, transcript: Path | 
     canvas = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(canvas, "RGBA")
     f_head, f_lab, f_word, f_small = ui_font(26, bold=True), ui_font(15), ui_font(17), ui_font(14)
-    d.text((pad, 18), f'{video.name}  ·  {fmt_time(start)} a {fmt_time(end)}  ({span:.2f}s)', fill=FG, font=f_head)
+    d.text((pad, 18), f'{video.name}  ·  {fmt_time(start)} to {fmt_time(end)}  ({span:.2f}s)', fill=FG, font=f_head)
 
     for i, (img, t) in enumerate(zip(frames, times)):
         x = x0 + i * (tile_w + gap)
@@ -284,7 +284,7 @@ def main() -> int:
     except RuntimeError as exc:
         print(f'error: {exc}', file=sys.stderr)
         return 1
-    print(f'imagem salva: {path}')
+    print(f'image saved: {path}')
     return 0
 
 

@@ -220,9 +220,9 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     cues = [{"at": 0.0, "name": "pop", "why": 'card entrance'}]
     for i, tc in enumerate(crossed):
         if mode == "x":
-            cues.append({"at": tc + SOUND_AT["x"], "name": "error", "volume": 0.7, "why": f'X no item {i + 1}'})
+            cues.append({"at": tc + SOUND_AT["x"], "name": "error", "volume": 0.7, "why": f'cross on item {i + 1}'})
         else:
-            cues.append({"at": tc + SOUND_AT["line"], "name": "tick", "volume": 1.2, "why": f'risco no item {i + 1}'})
+            cues.append({"at": tc + SOUND_AT["line"], "name": "tick", "volume": 1.2, "why": f'strike through item {i + 1}'})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]
 
 

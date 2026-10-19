@@ -264,7 +264,7 @@ def find_comment(sents: list[Sentence]) -> list[Candidate]:
             if not keyword:
                 continue
             trigger = s.words[s.word_at(m.start())]
-            params = {"keyword": keyword, "prompt_text": "Comente *{palavra}*",
+            params = {"keyword": keyword, "prompt_text": "Comente *{keyword}*",
                       "delay": round(min(5.0, max(0.3, word.start - (trigger.start - LEAD))), 2)}
             out.append(Candidate("comment_cta", trigger.start, word.end, params,
                                  original_span(s, m.start(), m.end())))
@@ -286,7 +286,7 @@ def find_price(sents: list[Sentence]) -> list[Candidate]:
         if not PRICE_CONTEXT.search(s.ntext):
             continue
         if any(is_gain(s, m) for m in monies):
-            continue          # money someone made is not a price: find_numbers makes it a contador
+            continue          # money someone made is not a price: find_numbers makes it a counter
         used_old = None
         # "de 97 por 37": the old price and the new one
         for a, b in zip(monies, monies[1:]):
@@ -435,7 +435,7 @@ def find_enumeration(s: Sentence) -> Candidate | None:
         return None
     items = items[:6]
     return Candidate("checklist", items[0][1], items[-1][2], {"items": [x[0] for x in items]}, s.text.strip(),
-                     note="lista falada: confira se cada item faz sentido sozinho", times=[x[1] for x in items])
+                     note="spoken list: check that each item stands on its own", times=[x[1] for x in items])
 
 
 STEP_RE = re.compile(r"\b(?:primeiro|primeira\s+coisa|passo\s+(?:um|1)|depois|em\s+seguida|segundo|passo\s+(?:dois|2)|"
@@ -616,7 +616,7 @@ HOURS_RE = re.compile(r"\b(\d+|vinte\s+e\s+quatro)\s+horas\b")
 
 
 def find_offer(s: Sentence) -> Candidate | None:
-    """The offer said in the sentence: guarantee -> selo_garantia; free / unlocked / for N hours -> carimbo with
+    """The offer said in the sentence: guarantee -> guarantee_badge; free / unlocked / for N hours -> stamp with
     what is offered ("AULA GRÁTIS", "por 24 horas" underneath). A free offer outranks a price."""
     m = OFFER_RE.search(s.ntext)
     if not m:
@@ -653,8 +653,8 @@ def find_offer(s: Sentence) -> Candidate | None:
 
 
 def find_moments(sents: list[Sentence]) -> list[Candidate]:
-    """The strong points of a talk that has no list, price or number: the offer (carimbo / selo_garantia),
-    the turn of the story (palavra_impacto with what comes after "mas", "descobri"...) and short emphatic
+    """The strong points of a talk that has no list, price or number: the offer (stamp / guarantee_badge),
+    the turn of the story (impact_word with what comes after "mas", "descobri"...) and short emphatic
     lines."""
     out: list[Candidate] = []
     for s in sents:
@@ -669,14 +669,14 @@ def find_moments(sents: list[Sentence]) -> list[Candidate]:
             ws = [w for w in s.words_in(m.start(), m.end()) if w.normal_value not in ("que", "e", "foi")]
             if ws:
                 out.append(Candidate("impact_word", ws[0].start, ws[-1].end, {"text": impact_text(ws)}, s.text,
-                                     score=60, note="virada da fala: reescreva o texto se a ideia pedir"))
+                                     score=60, note="turn in the speech: rewrite the text if the idea calls for it"))
                 continue
         if m:
             got = key_words(s, s.word_at(m.end() - 1) + 1)
             if got and len(got[0]) >= 1:
                 ws = got[0]
                 out.append(Candidate("impact_word", ws[0].start, ws[-1].end, {"text": impact_text(ws)}, s.text,
-                                     score=60, note="virada da fala: reescreva o texto se a ideia pedir"))
+                                     score=60, note="turn in the speech: rewrite the text if the idea calls for it"))
                 continue
         if len(s.words) <= 8:
             m = EMPHASIS_RE.search(s.ntext)
@@ -688,13 +688,13 @@ def find_moments(sents: list[Sentence]) -> list[Candidate]:
                     ws = ws[1:]
                 if ws:
                     out.append(Candidate("impact_word", ws[0].start, ws[-1].end, {"text": impact_text(ws)},
-                                         s.text, score=52, note="frase curta e forte"))
+                                         s.text, score=52, note="short, strong phrase"))
     return out
 
 
 def find_marked(sents: list[Sentence], marks: list[tuple[float, str]], detectors) -> tuple[list[Candidate], list[str]]:
     """One candidate per point marked in the preview: what the detectors find in that sentence, else the key
-    words of the sentence as palavra_impacto. Marked candidates are always kept."""
+    words of the sentence as impact_word. Marked candidates are always kept."""
     out, notes = [], []
     for t, asked in marks:
         s = next((x for x in sents if x.words[0].start - 0.4 <= t <= x.words[-1].end + 0.4), None)
@@ -712,13 +712,13 @@ def find_marked(sents: list[Sentence], marks: list[tuple[float, str]], detectors
                 continue
             ws = got[0]
             c = Candidate("impact_word", ws[0].start, ws[-1].end, {"text": impact_text(ws)}, s.text,
-                          note="ponto marcado no preview: move texto e o modelo à ideia da frase")
+                          note="point marked in the preview: fit the text and template to the sentence's idea")
         c.marked = True
-        c.note = ("marcado no preview; " + c.note) if c.note else "marcado no preview"
+        c.note = ("marked in the preview; " + c.note) if c.note else "marked in the preview"
         if asked:
-            c.note += f'. PEDIDO: "{asked}" (honor the requested change, including choosing another template)'
+            c.note += f'. REQUEST: "{asked}" (honor the requested change, including choosing another template)'
         out.append(c)
-        notes.append(f'ponto marcado em {fmt_time(t)} -> {c.template}')
+        notes.append(f'point marked at {fmt_time(t)} -> {c.template}')
     return out, notes
 
 
@@ -910,7 +910,7 @@ def main(argv: list[str] | None = None) -> int:
         if not result["motion"]:
             print('no animation suggested: no list, price, sequence, number, offer, change, or comment request detected')
         for k, item in enumerate(result["motion"], start=1):
-            print(f"suggestion {k}: {item['template']} de {fmt_time(item['start'])} a {fmt_time(item['end'])} · {item['note']}")
+            print(f"suggestion {k}: {item['template']} from {fmt_time(item['start'])} to {fmt_time(item['end'])} · {item['note']}")
         for sk in result["skipped"]:
             print(f'''excluded: {fmt_time(sk['time'])} "{sk['quote'][:70]}" · {sk['why']}''')
         print('These are suggestions. Review each item against the recording and apply the choices within the authorized scope.')

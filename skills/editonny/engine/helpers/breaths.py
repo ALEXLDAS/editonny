@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--min", type=float, default=MIN_S, help='minimum silence duration in seconds (default: 0.25)', dest='min')
     ap.add_argument("--threshold", type=float, help='silence threshold in dB (default: measured)', dest='threshold_value')
     ap.add_argument("--end-hold", action="store_true",
-                    help='final video with an intentional end hold (endHold); exclude ending silence', dest='end_parado')
+                    help='final video with an intentional end hold (endHold); exclude ending silence', dest='end_hold')
     ap.add_argument("--json", action="store_true", dest='json')
     a = ap.parse_args(argv)
     if not a.video.is_file():
@@ -46,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     found = find(db, th, a.min)
     end = len(db) * waveform.HOP_S
     tail = None
-    if a.end_parado and found and found[-1][1] >= end - 0.05:        # silence up to the last frame
+    if a.end_hold and found and found[-1][1] >= end - 0.05:        # silence up to the last frame
         tail, found = found[-1], found[:-1]
     if a.json:
         print(json.dumps({"thresholdDb": th, "min_s": a.min,
@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
                           'end_hold': ({"start": round(tail[0], 2), "dur": round(tail[1] - tail[0], 2)} if tail else None)},
                          ensure_ascii=False))
         return 1 if found else 0
-    tail_note = (f"  fim parado: {fmt_time(tail[0])} through the end ({tail[1] - tail[0]:.2f} seconds); excluded. Check it against the project's endHold") if tail else ""
+    tail_note = (f"  still ending: {fmt_time(tail[0])} through the end ({tail[1] - tail[0]:.2f} seconds); excluded. Check it against the project's endHold") if tail else ""
     if not found:
         print(f'breaths: no silence of {a.min:.2f} s or more (below {th:.0f} dB)')
         if tail_note:
@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     print(f'respiros: {len(found)} silences of {a.min:.2f} s or more (below {th:.0f} dB):')
     for x, y in found:
-        print(f'  {fmt_time(x)} a {fmt_time(y)}  ({y - x:.2f} s)')
+        print(f'  {fmt_time(x)} to {fmt_time(y)}  ({y - x:.2f} s)')
     if tail_note:
         print(tail_note)
     print('  Split each remaining breath in edl_manual.json or run waveform cutting with --threshold about 3 dB higher, or use the measured threshold above (references/cut.md)')

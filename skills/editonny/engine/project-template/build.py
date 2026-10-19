@@ -964,7 +964,7 @@ def entry_exit(M, p, default):
     frame = frame_closing(M, t_in)
     if frame is not None:
         new = round(frame['_close'] + 0.02, 3)
-        warn(f"{p.get('id')}: entra at_time {new:.2f} s, after the frame closed (requested {t_in:.2f}; frame enters at {frame['start']:.2f} and takes {new - frame['start']:.1f} s)")
+        warn(f"{p.get('id')}: enters at {new:.2f} s, after the frame closed (requested {t_in:.2f}; frame enters at {frame['start']:.2f} and takes {new - frame['start']:.1f} s)")
         (t_in, M.pushed) = (new, True)
     b = M.block(t_in)
     if b['scene'] in ('frame', 'greenScreen', 'evidence', 'contain', 'compare') and t_out > b['end'] - 0.1 and (b['end'] < P.VDUR):
@@ -1105,13 +1105,13 @@ def piece_steps(M, p, pid):
     bw = int(clamp(needs, bw, max(bw, sx1 - sx0 - 20)))
     (w, h) = (bw, len(steps) * bh + (len(steps) - 1) * gap + (round(120 * s) if end else 0))
     (x, y) = M.placement(t_in, w, h, p.get('where', 'auto'), pid)
-    M.css('steps', '.step{position:absolute;border-radius:30px;display:flex;align-items:center;gap:22px;padding:0 30px;opacity:0;background:$paper;box-shadow:$shadow}\n.step .n{width:70px;height:70px;border-radius:50%;background:$base;color:$onBase;font-weight:900;font-size:38px;display:flex;align-items:center;justify-content:center;flex:none}\n.step b{font-weight:900;color:$ink;white-space:nowrap}\n.seta{position:absolute;overflow:visible;opacity:0}\n.seta path{fill:none;stroke:$accent;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}')
+    M.css('steps', '.step{position:absolute;border-radius:30px;display:flex;align-items:center;gap:22px;padding:0 30px;opacity:0;background:$paper;box-shadow:$shadow}\n.step .n{width:70px;height:70px;border-radius:50%;background:$base;color:$onBase;font-weight:900;font-size:38px;display:flex;align-items:center;justify-content:center;flex:none}\n.step b{font-weight:900;color:$ink;white-space:nowrap}\n.step-arrow{position:absolute;overflow:visible;opacity:0}\n.step-arrow path{fill:none;stroke:$accent;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}')
     parts = []
     for (k, it) in enumerate(steps):
         yy = y + k * (bh + gap)
         parts.append(f'''<div class="step" id="{pid}-p{k}" style="left:{x}px;top:{yy}px;width:{bw}px;height:{bh}px"><span class="n">{k + 1}</span><b style="font-size:{round(48 * s)}px">{rich(it['text'])}</b></div>''')
         if k:
-            parts.append(f'<svg class="seta" id="{pid}-s{k}" style="left:{x + bw / 2 - 20:.0f}px;top:{yy - gap:.0f}px;width:40px;height:{gap}px" viewBox="0 0 40 {gap}"><path pathLength="1" d="M20 4 L20 {gap - 8} M9 {gap - 19} L20 {gap - 6} L31 {gap - 19}"/></svg>')
+            parts.append(f'<svg class="step-arrow" id="{pid}-s{k}" style="left:{x + bw / 2 - 20:.0f}px;top:{yy - gap:.0f}px;width:40px;height:{gap}px" viewBox="0 0 40 {gap}"><path pathLength="1" d="M20 4 L20 {gap - 8} M9 {gap - 19} L20 {gap - 6} L31 {gap - 19}"/></svg>')
     if end:
         parts.append(f'''<div class="stamp green" id="{pid}-f" style="left:{x + bw - round(300 * s)}px;top:{y + h - round(110 * s)}px;height:{round(100 * s)}px;padding:0 {round(24 * s)}px;font-size:{round(56 * s)}px">{escape(end['text'])}</div>''')
         piece_stamp_css(M)
@@ -1771,8 +1771,7 @@ def piece_lettering(M, p, pid):
                 return t
         return None
     order = [position] if position else ['top', 'base', 'middle']
-    (choice, first, cap, cap_used) = (None, None, px_max, px_max)
-    where_tried = ', '.join(order)
+    (choice, first, cap) = (None, None, px_max)
     while cap >= px_min - 1e-06 and choice is None:
         lay = arrange(int(cap))
         if lay is None:
@@ -1780,7 +1779,7 @@ def piece_lettering(M, p, pid):
         first = first or lay
         for where in order:
             if covers(top_at(where, lay), lay) is None:
-                (choice, cap_used) = ((lay, where), cap)
+                choice = (lay, where)
                 break
         cap = cap * 0.92 if cap > px_min else px_min - 1
     if first is None:
@@ -1789,7 +1788,7 @@ def piece_lettering(M, p, pid):
         lay = arrange(px_min) or first
         if lay['maxHeight'] > ay1 - ay0:
             raise BuildError(f"{pid}: lettering height {lay['maxHeight']} px exceeds the area height {ay1 - ay0} px. Remove support text or shorten the content.")
-        (choice, cap_used) = ((lay, order[0]), px_min)
+        choice = (lay, order[0])
         warn(f"{pid}: lettering covers the face at {covers(top_at(order[0], lay), lay):.2f} s ({(order[0] if position else 'top, base, and middle')}), even with a smaller font. Change position, shorten the text, or use a framed block")
     (lay, where) = choice
     y_top = top_at(where, lay)
@@ -2216,7 +2215,7 @@ def check_hands(M):
         where = 'the framed area' if b['scene'] == 'frame' else 'the screen'
         correction = 'enlarge frame.box, use fullscreen, or use contain in this interval' if b['scene'] == 'frame' else 'reduce block zoom or use contain in this interval'
         for (x, y) in intervals(sorted(ts), step, 0.2):
-            warn(f"Hand ({side.replace('_', ' ')}) leaves the {where} edge from {x:.2f} to {y:.2f} s. Use contain if the gesture matters.")
+            warn(f"Hand ({side.replace('_', ' ')}) leaves the {where} edge from {x:.2f} to {y:.2f} s. If the gesture matters, {correction}.")
 OPINION_WORDS = ('melhor', 'pior', 'incrivel', 'perfeito', 'perfeita', 'ruim', 'horrivel', 'lindo', 'linda', 'feio', 'feia', 'otimo', 'otima', 'pessimo', 'pessima', 'profissional', 'amador', 'amadora', 'top', 'lixo', 'maravilhoso', 'best', 'worst', 'incredible', 'perfect', 'bad', 'horrible', 'beautiful', 'ugly', 'amateur', 'professional', 'amazing', 'wonderful', 'trash', 'excellent', 'terrible')
 
 def css_media(M):
@@ -3105,7 +3104,7 @@ def build(P, mode, T0, T1):
         backgrounds = f"""\n<div id="backgrounds" {track_structure('backgrounds')}>\n""" + '\n'.join(M.BACKGROUNDS) + '\n</div>'
     last = ''
     if M.last:
-        last = f'\n  <img id="last" class="clip last" src="{M.last}" alt="" data-start="{round(max(0.0, VD - 2 / FPS), 3)}" data-duration="{round(M.hold + 2 / FPS, 3)}" data-track-index="{TRACK_LAST}" data-timeline-label="Fim stopped (endHold {M.hold:g} s)"/>'
+        last = f'\n  <img id="last" class="clip last" src="{M.last}" alt="" data-start="{round(max(0.0, VD - 2 / FPS), 3)}" data-duration="{round(M.hold + 2 / FPS, 3)}" data-track-index="{TRACK_LAST}" data-timeline-label="Final frame hold (endHold {M.hold:g} s)"/>'
     behind = ''
     (pf_a, pf_z) = ('<div class="parallax-background">', '</div>') if M.PARALLAX_LAYERS else ('', '')
     if M.BEHIND or M.PERSON_BEHIND:
@@ -3155,9 +3154,8 @@ def copy_video(src, dst):
     if not os.path.exists(src):
         raise BuildError(f'cut video not found: {src}')
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    if os.path.exists(dst) or os.path.islink(dst):
-        (a, b) = (os.stat(src), os.stat(dst))
-        if signature_file(src) == signature_file(dst) and not os.path.samefile(src, dst):
+    if os.path.lexists(dst):
+        if os.path.exists(dst) and signature_file(src) == signature_file(dst) and not os.path.samefile(src, dst):
             return
         os.remove(dst)
     shutil.copy2(src, dst)
@@ -3419,7 +3417,7 @@ def words(P, start_time, end):
         lines.append(f"  {w['start']:7.2f} {w['end']:7.2f}  {w['text']}")
     font = 'waveform start (waveform_words.json)' if P.time_speech == 'waveform' else 'Whisper timing may be up to 0.3 s early; run helpers/align_words.py to measure waveform timing'
     print(f'words from {start_time:.1f} to {end:.1f} s (cut duration {P.VDUR:.2f} s; {font}):')
-    print('\n'.join(lines) or '  (nenhuma)')
+    print('\n'.join(lines) or '  (none)')
 
 def prepare():
     dst = os.path.join(HERE, 'assets', 'gsap.min.js')

@@ -44,6 +44,7 @@ npm run graph:check
 npm run graph:update
 npm run graph:code
 npm run graph:exports
+npm run graph:test
 GRAPHIFY_NO_AUTO_REFRESH=1 graphify query 'createPrompt' --budget 1500
 ```
 
@@ -51,7 +52,7 @@ GRAPHIFY_NO_AUTO_REFRESH=1 graphify query 'createPrompt' --budget 1500
 
 Every task records source hashes and the official extraction prompt fingerprint. Documents are not truncated; batches limit input volume. Missing/changed sources, incomplete responses, wrong model/provenance, invalid graph endpoints, or invalid confidence block promotion. Cache entries are invalidated by prompt changes. Renamed, removed, or newly excluded origins are pruned. Interrupted updates preserve the served index and reusable staging; do not remove pending graph tasks casually.
 
-`graph:code` updates AST without LLM and reuses only still-valid semantic results; modified document coverage stays explicitly pending. `graph:watch` uses deterministic staging and must be stopped after use. Query/MCP auto-refresh is disabled. Unchanged corpora should produce no new tasks. These commands are outside the canonical CI check.
+`graph:code` updates AST without LLM and reuses only still-valid semantic results; modified document coverage stays explicitly pending. `graph:watch` uses deterministic staging and must be stopped after use. `graph:test` runs the graph pipeline tests in `tests/integration_graph/` under the isolated Graphify Python, with fixtures and no LLM or network. Query/MCP auto-refresh is disabled. Unchanged corpora should produce no new tasks. These commands are outside the canonical CI check.
 
 Promotion validates the graph and rechecks the corpus before replacing `graphify-out/`; failures restore the previous index. `run.json` records commit, local changes, hashes, coverage, and provenance. The index is a directed multigraph preserving parallel relations. Unknown native token counters remain unknown; do not infer cost or savings from zeros or unavailable counters.
 

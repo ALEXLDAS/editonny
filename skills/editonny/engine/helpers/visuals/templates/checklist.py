@@ -38,7 +38,7 @@ def _times(p: dict) -> list[float]:
     if times is None:
         return [p["delay"] + i * p["stagger"] for i in range(n)]
     if len(times) != n:
-        raise VisualError(f'checklist.params.times requires one time per item ({n} itens, veio {len(times)})')
+        raise VisualError(f'checklist.params.times requires one time per item ({n} items, got {len(times)})')
     for i in range(1, n):
         if times[i] < times[i - 1]:
             raise VisualError(f'checklist.params.times must increase; item {i + 1} appears at {times[i]:g} s, before item {i} at {times[i - 1]:g} s)')
@@ -211,9 +211,9 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     times = _times(params)
     cues = [{"at": 0.0, "name": "pop", "why": 'card entrance'}]
     for i, ti in enumerate(times):
-        cues.append({"at": ti + CHECK_AT, "name": "tick", "why": f'check do item {i + 1}'})
+        cues.append({"at": ti + CHECK_AT, "name": "tick", "why": f'check item {i + 1}'})
     cues.append({"at": times[-1] + CHECK_AT + CHECK_POP * 0.5 + GLOW_AFTER, "name": "success", "volume": 0.8,
-                 "why": "lista completa"})
+                 "why": "list complete"})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]
 
 

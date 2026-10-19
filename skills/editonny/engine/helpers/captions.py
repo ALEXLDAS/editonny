@@ -1,4 +1,4 @@
-"""Caption cues on the cut timeline (Contract 7).
+"""Caption cues on the cut timeline.
 
 Where the words come from (`--from`, default `auto`):
   - sources: the word-level transcripts of the source videos (`transcripts/<stem>.json`, made with
@@ -17,7 +17,7 @@ punctuation and pauses. A cue never spans a cut boundary. Words keep their origi
 captions.json also records `words_from`, `timeline_key` (a fingerprint of the cut positions: the
 composer refuses captions made for another cut), `duration`, `replacements`, `warnings` and
 `differences` ([{"time", "sources", "cut"}]: places where the source transcripts and
-transcripts/cut.json heard different words, printed as `confira:` lines so the agent picks the right
+transcripts/cut.json heard different words, printed as `check:` lines so the agent picks the right
 one with --replace). A cut.json whose duration does not match cut_timeline.json is from another cut
 and is not used.
 
@@ -202,11 +202,11 @@ def words_from_sources(edit_dir: Path, timeline: dict, cut_transcript: Path | No
             inside = max(0.0, min(ee, s1) - max(es, s0)) / max(1e-3, ee - es)
             if inside < 0.5:
                 if inside > 1.0 - CHOP_KEEP:
-                    edge = 'at the beginning' if es < s0 else "no fim"
+                    edge = 'at the beginning' if es < s0 else 'at the end'
                     warnings.append(f'''the word "{w['text']}" lies almost entirely outside interval {seg['id']} ({edge}, {fmt_time(aa if es < s0 else ab)}): inspect the EDL boundary''')
                 continue
             if inside < CHOP_KEEP:
-                edge = 'at the beginning' if es < s0 else "no fim"
+                edge = 'at the beginning' if es < s0 else 'at the end'
                 warnings.append(f'''the word "{w['text']}" was clipped {edge} of interval {seg['id']} ({fmt_time(aa if es < s0 else ab)}): inspect the EDL boundary''')
             words.append({"text": w["text"], "start": min(max(aa, es + shift), ab - MIN_WORD),
                           "end": max(min(ab, ee + shift), aa + MIN_WORD), "seg": i})
@@ -502,7 +502,7 @@ def main(argv: list[str] | None = None) -> int:
     words, rep_report = apply_replacements(words, reps)
     for r in rep_report:
         if not r["count"]:
-            warnings.append(f'''--replace '{r['from']}={r['to']}': could not find "{r['from']}" na fala''')
+            warnings.append(f'''--replace '{r['from']}={r['to']}': could not find "{r['from']}" in the speech''')
     differences: list[dict] = []
     if "sources" in words_from:
         cut_words, _ = load_cut_words(tpath, timeline)
@@ -576,9 +576,9 @@ def main(argv: list[str] | None = None) -> int:
     for msg in warnings:
         print(f'notice: {msg}')
     for d in differences[:MAX_DIFFERENCES]:
-        print(f"""confira: {fmt_time(d['time'])} sources "{d['sources']}", cut transcript "{d['cut']}" (if the cut is correct: --replace '{d['sources']}={d['cut']}')""")
+        print(f"""check: {fmt_time(d['time'])} sources "{d['sources']}", cut transcript "{d['cut']}" (if the cut is correct: --replace '{d['sources']}={d['cut']}')""")
     if len(differences) > MAX_DIFFERENCES:
-        print(f'confira: e mais {len(differences) - MAX_DIFFERENCES} differences (see differences in captions.json)')
+        print(f'check: {len(differences) - MAX_DIFFERENCES} more differences (see differences in captions.json)')
     if already_written:
         seconds_value = sum(c["end"] - c["start"] for c in already_written)
         print(f'skipped {len(already_written)} caption(s) ({seconds_value:.0f}s) where the video already displays the spoken phrase (screen_text.json)')

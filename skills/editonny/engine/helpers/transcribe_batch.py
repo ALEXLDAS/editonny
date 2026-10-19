@@ -71,11 +71,11 @@ def main() -> None:
     edit_dir = (args.edit_dir.absolute() if args.edit_dir else videos_dir / "edit")
     videos = find_videos(videos_dir)
     if not videos:
-        sys.exit(f"no video ({', '.join(VIDEO_EXTS)}) em {videos_dir}")
+        sys.exit(f"no video ({', '.join(VIDEO_EXTS)}) in {videos_dir}")
     clashes = duplicate_names(videos)
     if clashes:
-        pairs = "; ".join(" e ".join(v.name for v in g) for g in clashes)
-        sys.exit(f"videos have matching stems and different extensions: {pairs}. Transcribing would overwrite another source's transcript. Rename one file in each pair, for example {clashes[0][-1].stem}_2{clashes[0][-1].suffix}) e rode de novo. No files were transcribed.")
+        pairs = "; ".join(" and ".join(v.name for v in g) for g in clashes)
+        sys.exit(f"videos have matching stems and different extensions: {pairs}. Transcribing would overwrite another source's transcript. Rename one file in each pair, for example {clashes[0][-1].stem}_2{clashes[0][-1].suffix}, and run again. No files were transcribed.")
 
     try:
         ensure_local(videos)
@@ -87,7 +87,7 @@ def main() -> None:
     language = None if args.language.lower() == "auto" else args.language
     cached = [v for v in videos
               if not args.force and is_cached(transcript_path(edit_dir, v), v.absolute(), engine, args.model, language, prompt)]
-    print(f'{len(videos)} videos in {videos_dir.name} ({len(cached)} em cache, {len(videos) - len(cached)} remaining to transcribe)',
+    print(f'{len(videos)} videos in {videos_dir.name} ({len(cached)} cached, {len(videos) - len(cached)} remaining to transcribe)',
           flush=True)
 
     t0 = time.time()
@@ -107,7 +107,7 @@ def main() -> None:
 
     dt = time.time() - t0
     ok = len(videos) - len(failures)
-    print(f"ready in {dt:.1f}s: {ok} de {len(videos)} transcritos em {edit_dir / 'transcripts'}")
+    print(f"ready in {dt:.1f}s: {ok} of {len(videos)} transcribed in {edit_dir / 'transcripts'}")
     warnings_value = [(v, (load_json(transcript_path(edit_dir, v)) or {}).get('warning')) for v in videos]
     warnings_value = [(v, a) for v, a in warnings_value if a]
     if warnings_value:

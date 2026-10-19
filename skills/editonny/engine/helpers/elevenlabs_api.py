@@ -146,16 +146,16 @@ def redact(text: str, key: str | None) -> str:
     if key:
         key = key.strip()
     if key and len(key) >= 4:
-        text = text.replace(key, "[chave]")
+        text = text.replace(key, "[redacted]")
         chunks = {key[i:i + 8] for i in range(max(0, len(key) - 7))}
 
         def hide(match: re.Match) -> str:
             word = match.group(0)
-            return "[chave]" if any(c in word for c in chunks) else word
+            return "[redacted]" if any(c in word for c in chunks) else word
 
         if chunks:
             text = _TOKEN.sub(hide, text)
-    return _LOOKS_LIKE_KEY.sub("[chave]", text)
+    return _LOOKS_LIKE_KEY.sub("[redacted]", text)
 
 
 # ------------------------------------------------------------------ prompt
@@ -261,7 +261,7 @@ def store(edit: Path, path: Path, data: bytes, entry: dict) -> None:
     try:
         append_credit(edit, entry)
     except (OSError, ValueError) as e:
-        raise ElevenError(f"salvei assets/{path.name}, but recording assets/credits.json failed ({e.__class__.__name__}). Record the source manually: {entry.get('source')}.")
+        raise ElevenError(f"saved assets/{path.name}, but recording assets/credits.json failed ({e.__class__.__name__}). Record the source manually: {entry.get('source')}.")
 
 
 def credits_estimate(kind: str, seconds: float) -> int:
@@ -272,7 +272,7 @@ def credits_estimate(kind: str, seconds: float) -> int:
 
 def dry_run_request(url: str, payload: dict, key: str | None) -> str:
     return json.dumps({"url": url, "query": {"output_format": OUTPUT_FORMAT},
-                       "headers": {"xi-api-key": "configurada" if key else "ausente"},
+                       "headers": {"xi-api-key": "configured" if key else "missing"},
                        "body": payload}, ensure_ascii=False, indent=2)
 
 
@@ -325,11 +325,11 @@ def http_error(response: requests.Response, feature: str, key: str | None = None
     words, message, suggestion = _detail(response, key)
     if "bad_prompt" in words or suggestion:
         tip = f" ElevenLabs suggestion: '{suggestion}'." if suggestion else ""
-        return ElevenError(f'a ElevenLabs recusou o pedido porque ele cita obra, artista ou marca protegida (ou algo proibido).{tip} Rewrite without those names and retry', 2)
+        return ElevenError(f'ElevenLabs refused the request because it cites a protected work, artist, or brand (or something prohibited).{tip} Rewrite without those names and retry', 2)
     if code == 402 or words & IN_CREDIT_WORDS:
         return ElevenError('Insufficient ElevenLabs account credit or key allowance. Review billing or key limits in the provider account. Nothing was generated')
     if code in (401, 403) and any("permission" in w for w in words):
-        return ElevenError(f'the ElevenLabs key lacks permission for {feature}. Update its provider-side permissions to enable {feature}, ou criar outra.', 2)
+        return ElevenError(f'the ElevenLabs key lacks permission for {feature}. Update its provider-side permissions to enable {feature}, or create another key.', 2)
     if code == 401:
         if words and not words & INVALID_KEY_WORDS and message:
             return ElevenError(f'ElevenLabs rejected the request; HTTP 401: {message}', 2)
@@ -341,7 +341,7 @@ def http_error(response: requests.Response, feature: str, key: str | None = None
     if code == 429:
         return ElevenError('ElevenLabs rate limit: HTTP 429. Wait briefly and retry one variant at a time')
     if code >= 500:
-        return ElevenError(f'ElevenLabs is unavailable or unstable; HTTP {code}). Tente de novo em alguns minutos.')
+        return ElevenError(f'ElevenLabs is unavailable or unstable (HTTP {code}). Try again in a few minutes.')
     if code in (400, 422):
         why = f': {message}' if message else ""
         return ElevenError(f'ElevenLabs rejected the request; HTTP {code}){why}. Check the prompt and duration', 2)
@@ -369,7 +369,7 @@ def post_audio(url: str, payload: dict, key: str, feature: str, timeout: float) 
     except requests.Timeout:
         raise ElevenError('ElevenLabs timed out. Check account history before retrying; generation may already have consumed credits') from None
     except requests.RequestException as e:
-        raise ElevenError(f'could not reach ElevenLabs ({e.__class__.__name__}). Confira a internet.') from None
+        raise ElevenError(f'could not reach ElevenLabs ({e.__class__.__name__}). Check the internet connection.') from None
     except Exception as e:  # noqa: BLE001  (anything else from the HTTP stack: never let its text through)
         raise ElevenError(f'ElevenLabs request failed ({e.__class__.__name__}). Nothing was generated; retry the request.') from None
     if response.status_code >= 400:
@@ -386,7 +386,7 @@ def post_audio(url: str, payload: dict, key: str, feature: str, timeout: float) 
 def new_credit(file: str, source: str, prompt: str, seconds: float, **extra) -> dict:
     entry = {"file": file, "source": source, "prompt": prompt, "seconds": seconds}
     entry.update(extra)
-    entry.update({"created_at": now_iso(), "license": "gerado por IA na conta da pessoa", "note": COMMERCIAL_NOTE})
+    entry.update({"created_at": now_iso(), "license": "AI-generated in the user's own account", "note": COMMERCIAL_NOTE})
     return entry
 
 

@@ -112,7 +112,7 @@ def extract_frame(video: Path | str, t: float, width: int | None = None, height:
     proc = subprocess.run(cmd, capture_output=True)
     if proc.returncode != 0 or not proc.stdout:
         err = proc.stderr.decode("utf-8", "replace")[-400:]
-        raise RuntimeError(f'could not extract the frame at {t:.3f}s de {Path(video).name}: {err}')
+        raise RuntimeError(f'could not extract the frame at {t:.3f}s of {Path(video).name}: {err}')
     return Image.open(io.BytesIO(proc.stdout)).convert("RGB")
 
 
@@ -155,7 +155,7 @@ def junction_times(timeline: dict) -> tuple[list[float], list[str]]:
         a_end = int(a.get("out_end_frame", round(float(a["out_end"]) * fps)))
         b_start = int(b.get("out_start_frame", round(float(b["out_start"]) * fps)))
         for k, lab in ((a_end - 2, f"{a['id']} penultimate"), (a_end - 1, f"{a['id']} last"),
-                       (b_start, f"{b['id']} primeiro"), (b_start + 1, f"{b['id']} segundo")):
+                       (b_start, f"{b['id']} first"), (b_start + 1, f"{b['id']} second")):
             times.append(max(0, k) / fps)
             labels.append(f'{lab} · q{max(0, k)}')
     return times, labels
@@ -274,7 +274,7 @@ def main() -> int:
     out = abspath(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(out, "PNG", optimize=True)
-    print(f'folha salva: {out} ({len(frames)} frames)')
+    print(f'sheet saved: {out} ({len(frames)} frames)')
     return 0
 
 

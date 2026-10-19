@@ -33,7 +33,7 @@ SYNTH_SOUNDS = {                           # PT-BR description of each procedura
     "whoosh": 'fast synthetic wind',
     "pop": 'synthetic popping bubble',
     "click": 'short synthetic click',
-    "tick": "toque seco e curto de madeira",
+    "tick": 'short, dry wooden tap',
     "rise": 'short synthetic rise toward its peak',
     "cash": 'cash register: mechanical click followed by a bell',
     "coin": 'synthetic coin chime',
@@ -645,7 +645,7 @@ def render(name: str, peak_db: float = PEAK_DB) -> np.ndarray:
         stereo = stereo * 10 ** (gain / 20.0)
         peak = 20 * math.log10(float(np.max(np.abs(stereo))))
         if peak > KIT_PEAK_MAX_DB + 1e-6:
-            raise ValueError(f'{name}: o peak ficaria em {peak:.2f} dBFS at the calibrated kit level')
+            raise ValueError(f'{name}: the peak would reach {peak:.2f} dBFS at the calibrated kit level')
     return stereo
 
 
@@ -835,21 +835,21 @@ def kit_level_rule(name: str) -> str:
         return 'unadjusted generator output with peak at -3 dBFS'
     target = KIT_LEVELS[name]
     _, window = kit_gain_db(render(name), target)
-    cap = f'janela de 3 s em {_lufs_text(LONG_CAP_LUFS)} LUFS at volume 1.0'
+    cap = f'3 s window at {_lufs_text(LONG_CAP_LUFS)} LUFS at volume 1.0'
     if target is None:
         return f'generator-calibrated: {cap} (long sound: 6 dB below voice at -14 LUFS)'
     if window == "short_term_max_lufs":
-        return (f'generator-calibrated: {cap}, the long-sound ceiling including {_lufs_text(target)} LUFS da janela de 200 ms a janela de 3 s passaria do teto)')
-    return (f'generator-calibrated 200 ms loudness: {_lufs_text(target)} LUFS at volume 1.0, with a ceiling of {_lufs_text(LONG_CAP_LUFS)} na janela de 3 s')
+        return (f'generator-calibrated: {cap}, the long-sound ceiling ({_lufs_text(target)} LUFS in the 200 ms window would exceed the ceiling in the 3 s window)')
+    return (f'generator-calibrated 200 ms loudness: {_lufs_text(target)} LUFS at volume 1.0, with a ceiling of {_lufs_text(LONG_CAP_LUFS)} in the 3 s window')
 
 
 def _print_measure(label: str, m: dict) -> None:
     up = 20 * math.log10(SFX_CALIBRATION)
-    print(f"{label}: {m['duration_s']:.2f}s  ponto forte em {m['anchor_s']:.3f}s  peak {m['peak_dbfs']:.1f} dBFS  200 ms {m['loudness_200ms_lufs']:.1f} LUFS (volume 1.0: {m['loudness_200ms_lufs'] + up:.1f})  400 ms {m['momentary_max_lufs']:.1f} ({m['momentary_max_lufs'] + up:.1f})  3 s {m['short_term_max_lufs']:.1f} ({m['short_term_max_lufs'] + up:.1f})")
+    print(f"{label}: {m['duration_s']:.2f}s  anchor {m['anchor_s']:.3f}s  peak {m['peak_dbfs']:.1f} dBFS  200 ms {m['loudness_200ms_lufs']:.1f} LUFS (volume 1.0: {m['loudness_200ms_lufs'] + up:.1f})  400 ms {m['momentary_max_lufs']:.1f} ({m['momentary_max_lufs'] + up:.1f})  3 s {m['short_term_max_lufs']:.1f} ({m['short_term_max_lufs'] + up:.1f})")
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=f"Generate synthetic sound effects ({', '.join(SYNTH_NAMES)}) em WAV 48 kHz, ou mede o volume e o ponto forte de efeitos (--measure).")
+    ap = argparse.ArgumentParser(description=f"Generate synthetic sound effects ({', '.join(SYNTH_NAMES)}) as 48 kHz WAV, or measure the loudness and anchor of effects (--measure).")
     ap.add_argument("--out-dir", default=str(SYNTH_DIR), help='output folder (default: engine assets/sfx/synthetic)', dest='out_dir')
     ap.add_argument("--only", help='only these comma-separated sound IDs, for example whoosh,pop', dest='only')
     ap.add_argument("--peak-db", type=float, default=PEAK_DB,
@@ -899,7 +899,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     for name in names:
         info = make(name, out_dir, args.peak_db)
-        print(f"ok: {name}.wav  {info['duration']:.2f}s  peak {info['peak_db']:.1f} dBFS  ataque em {info['attack_ms']:.1f} ms")
+        print(f"ok: {name}.wav  {info['duration']:.2f}s  peak {info['peak_db']:.1f} dBFS  attack {info['attack_ms']:.1f} ms")
     print(f'folder: {out_dir}')
     return 0
 

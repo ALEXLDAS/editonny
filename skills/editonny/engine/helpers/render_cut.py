@@ -1,5 +1,5 @@
 # Adapted from browser-use/video-use (MIT, (c) 2026 Browser Use). See THIRD_PARTY_NOTICES.md.
-"""EDL -> cut.mp4 + cut_timeline.json (Contract 5 of SPEC.md).
+"""EDL -> cut.mp4 + cut_timeline.json.
 
 Usage:
     uv run python helpers/render_cut.py <edit>/edl.json [-o cut.mp4] [--jobs N] [--no-jcut] [--preview]
@@ -57,7 +57,7 @@ from functools import lru_cache
 from common import (ASSETS_DIR, OUTPUT_FORMATS, file_signature, fmt_time, load_json, nominal_fps, now_iso,
                     output_fps_for, probe_video, require_binary, save_json)
 from common import has_ffmpeg_filter as _has_ffmpeg_filter
-from grade import check_filter, graded_chain, hdr_to_sdr_chain, resolve_grade
+from grade import check_filter, graded_chain, resolve_grade
 
 SR = 48000
 FADE_SAMPLES = 1440            # 30 ms
@@ -130,7 +130,7 @@ def load_edl(path: Path) -> dict:
     try:
         edl = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise CutError(f'EDL is not valid JSON ({path.name}, linha {exc.lineno}): {exc.msg}', 2)
+        raise CutError(f'EDL is not valid JSON ({path.name}, line {exc.lineno}): {exc.msg}', 2)
     if not isinstance(edl, dict):
         raise CutError('EDL must be a JSON object', 2)
     ranges = edl.get("ranges")
@@ -204,15 +204,15 @@ def load_sync(edl: dict, edit_dir: Path, probes: dict) -> tuple[dict[str, tuple[
             off = float(f.get("offset") or 0.0) + float(f.get("adjustment_s") or 0.0)
             scale = float(f.get("scale") or 1.0)
         except (TypeError, ValueError):
-            raise CutError(f'{path.name}: deslocamento, ajuste_s ou escala de {key} is not numeric', 2)
+            raise CutError(f'{path.name}: offset, adjustment_s, or scale of {key} is not numeric', 2)
         if not 0.9 < scale < 1.1:
-            raise CutError(f'{path.name}: escala {scale} de {key} outside the reasonable range', 2)
+            raise CutError(f'{path.name}: scale {scale} of {key} is outside the reasonable range', 2)
         src = probes[key]["path"]
         measured = Path(str(f.get("file") or ""))
         same_path = measured.exists() and os.path.samefile(measured, src)
         same_sig = f.get("signature") == file_signature(src)
         if not same_path and not same_sig:
-            raise CutError(f'{path.name} mediu {key} in another file ({measured}), rather than {src}: rode sync_cameras.py de novo', 2)
+            raise CutError(f'{path.name} measured {key} in another file ({measured}), rather than {src}: run sync_cameras.py again', 2)
         if same_path and not same_sig and f.get("signature"):
             warn(f'{src.name} changed after synchronization ({path.name}): if re-exported, rerun sync_cameras.py')
         if f.get("confidence") == "weak":
@@ -537,7 +537,7 @@ def plan_crops(plans: list[Plan], ranges: list[dict], W: int, H: int, edit_dir: 
             warned.add(p.pic_source)
             dw, dh = p.pic_info.get("display_width"), p.pic_info.get("display_height")
             part = "width" if axis == "x" else "height"
-            warn(f'{p.pic_src.name} is {dw}x{dh} and output is {W}x{H}: the cut retains only {kept:.0%} da {part}. Framing follows the face or explicit focus_x/focus_y. Inspect the contact sheet')
+            warn(f'{p.pic_src.name} is {dw}x{dh} and output is {W}x{H}: the cut retains only {kept:.0%} of the {part}. Framing follows the face or explicit focus_x/focus_y. Inspect the contact sheet')
         given = fx if axis == "x" else fy
         p.crop = {"axis": axis, "kept": round(kept, 3), "focus_x": 0.5 if fx is None else fx,
                   "focus_y": 0.5 if fy is None else fy, "focus_from": "edl" if given is not None else "center"}
@@ -599,7 +599,7 @@ def plan_cut(edl: dict, edit_dir: Path, fps: int, jcut: dict, probes: dict, jobs
             t0, t1 = p.to_pic(p.edl_start), p.to_pic(end)
             pdur = p.pic_info["duration"]
             if t0 < -0.5 / fps or t1 > pdur + 0.5 / fps:
-                raise CutError(f'interval {p.rid}: a {p.pic_source} has no picture from {p.edl_start:.2f} a {end:.2f}s da {p.source} (synchronization maps this to {t0:.2f} a {t1:.2f} seconds of a total {pdur:.2f}s). Use another camera or shorten the interval', 2)
+                raise CutError(f'interval {p.rid}: {p.pic_source} has no picture for {p.edl_start:.2f} to {end:.2f}s of {p.source} (synchronization maps this to {t0:.2f} to {t1:.2f} seconds of a total {pdur:.2f}s). Use another camera or shorten the interval', 2)
         plans.append(p)
     for a, b in zip(plans, plans[1:]):
         if a.source == b.source and b.edl_start < a.edl_end - REPEAT_TOL_S and b.edl_end > a.edl_start:
@@ -609,7 +609,7 @@ def plan_cut(edl: dict, edit_dir: Path, fps: int, jcut: dict, probes: dict, jobs
         if a.source != b.source or abs(b.edl_start - a.edl_end) > 0.5 / fps:
             continue
         if abs(a.gain_db - b.gain_db) > 0.05:
-            warn(f'intervals {a.rid} e {b.rid} continue the same speech with different gain_db values ({a.gain_db:+.1f} e {b.gain_db:+.1f}): speech has a 30 ms join here. Use identical gain_db values to preserve continuous speech')
+            warn(f'intervals {a.rid} and {b.rid} continue the same speech with different gain_db values ({a.gain_db:+.1f} and {b.gain_db:+.1f}): speech has a 30 ms join here. Use identical gain_db values to preserve continuous speech')
             continue
         b.joined = True
         a.fade_out = b.fade_in = False
@@ -1158,7 +1158,7 @@ def _render(args: argparse.Namespace) -> int:
     if measured:
         af = (f"loudnorm=I={targets['I']}:TP={targets['TP']}:LRA={targets['LRA']}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true,aresample={SR}")
         ffmpeg(["ffmpeg", "-y", "-v", "error", "-nostdin", "-i", str(mix_wav), "-af", af, "-c:a", "pcm_f32le",
-                "-ar", str(SR), "-ac", "2", "-f", "wav", str(normal_wav)], "normalizar o volume")
+                "-ar", str(SR), "-ac", "2", "-f", "wav", str(normal_wav)], "normalize volume")
         audio_in = normal_wav
     else:
         if has_audio and audio_policy['mode'] == 'normalize':
@@ -1174,7 +1174,7 @@ def _render(args: argparse.Namespace) -> int:
         audio_map = ["-map", "1:a:0", *af_mux, "-c:a", "aac", "-b:a", "192k", "-ar", str(SR), "-ac", "2"] if has_audio else ['-an']
         ffmpeg(["ffmpeg", "-y", "-v", "error", "-nostdin", "-f", "concat", "-safe", "0", "-i", str(concat_list),
                 *audio_args, "-map", "0:v:0", "-c:v", "copy", *audio_map, "-t", f'{duration:.6f}',
-                "-movflags", "+faststart", "-f", "mp4", str(tmp_out)], f'montar o {out_path.name}')
+                "-movflags", "+faststart", "-f", "mp4", str(tmp_out)], f'assemble {out_path.name}')
 
     peak_gain = 0.0
     try:
@@ -1273,12 +1273,12 @@ def _render(args: argparse.Namespace) -> int:
     log("")
     log(f"{'id':6s} {'source':10s} {'origin':>15s}  {'in cut':>17s}  {'frames':>7s}  lead tail")
     for s, p in zip(segments, plans):
-        pic = f'  picture from {p.pic_source} em {p.pic_start:.2f}s' if p.other_picture else ""
-        log(f"{s['id']:6s} {s['source'][:10]:10s} {s['src_start']:6.2f}-{s['src_end']:6.2f}s  {fmt_time(s['out_start'])}-{fmt_time(s['out_end'])}  {s['frames']:7d}  {p.lead:4d} {p.tail:4d}{('  (cache)' if p.cached else '')}{('  lead reduzido: ' + p.lead_note if p.lead_note else '')}{('  voz continua do anterior' if p.joined else '')}{pic}")
+        pic = f'  picture from {p.pic_source} at {p.pic_start:.2f}s' if p.other_picture else ""
+        log(f"{s['id']:6s} {s['source'][:10]:10s} {s['src_start']:6.2f}-{s['src_end']:6.2f}s  {fmt_time(s['out_start'])}-{fmt_time(s['out_end'])}  {s['frames']:7d}  {p.lead:4d} {p.tail:4d}{('  (cache)' if p.cached else '')}{('  reduced lead: ' + p.lead_note if p.lead_note else '')}{('  voice continues from the previous range' if p.joined else '')}{pic}")
     for s in segments:
         if s["crop"] and s["crop"]["focus_from"] != "center":
             c = s["crop"]
-            log(f"Enquadramento {s['id']}: focus_x {c['focus_x']:.2f} focus_y {c['focus_y']:.2f} ({c['focus_from']})")
+            log(f"Framing {s['id']}: focus_x {c['focus_x']:.2f} focus_y {c['focus_y']:.2f} ({c['focus_from']})")
     if measured:
         log(f"Original loudness: {float(measured['input_i']):.1f} LUFS, peak {float(measured['input_tp']):.1f} dBTP -> target {LOUDNORM['I']:.0f} LUFS")
     if out_tp is not None and out_tp <= -100:

@@ -140,7 +140,7 @@ def main():
     with open(a.output, 'w', encoding='utf-8') as f:
         json.dump(exit, f, separators=(',', ':'))
     count = sum((1 for k in frames if frames[k]))
-    print(f'ok: {a.output} · {len(frames)} frames from {f0 / fps:.2f} a {end_frame / fps:.2f} s · hands in {count} · {len(music)} track(s)')
+    print(f'ok: {a.output} · {len(frames)} frames from {f0 / fps:.2f} to {end_frame / fps:.2f} s · hands in {count} · {len(music)} track(s)')
     return 0
 if __name__ == '__main__':
     sys.exit(main())

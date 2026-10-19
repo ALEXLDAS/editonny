@@ -348,7 +348,7 @@ def _extents(canvas: tuple[int, int]) -> dict[str, tuple[float, float]]:
         "hook": ext(tr.render_hook('Make every word count', "headline", tr.DEFAULT_ACCENT, canvas,
                                    center_y=lay["hook"], max_width=int(900 * W / 1080)), lay["hook"], 1.05),
         "captions": tr.caption_extent([], "impact", canvas),
-        "cta": ext(tr.render_cta("Toque em Saiba Mais", "Instant access", tr.DEFAULT_ACCENT, canvas,
+        "cta": ext(tr.render_cta("Tap Learn More", "Instant access", tr.DEFAULT_ACCENT, canvas,
                                  center_y=lay["cta"]), lay["cta"], 1.03),
         "disclaimer": ext(tr.render_disclaimer('Individual results depend on execution. No earnings are guaranteed.',
                                                canvas, center_y=lay["disclaimer"]), lay["disclaimer"]),
@@ -463,7 +463,7 @@ def _summary(layout: dict) -> str:
     if moves:
         where = "face height changes between intervals"
     else:
-        where = "rosto baixo" if rec["camera"]["focus_y"] > 0.5 else "rosto alto" if rec["camera"]["focus_y"] < 0.3 else "rosto no meio"
+        where = "face low in frame" if rec["camera"]["focus_y"] > 0.5 else "face high in frame" if rec["camera"]["focus_y"] < 0.3 else "face centered"
     key = {"hook": "hook_center_y", "captions": "captions_center_y", "cta": "cta_center_y", "disclaimer": "disclaimer_center_y"}
 
     def v(sec):
@@ -471,10 +471,10 @@ def _summary(layout: dict) -> str:
         if c is not None:
             return str(c)
         per = sorted({s["recommended"][key[sec]] for s in segs if (s.get("recommended") or {}).get(key[sec]) is not None})
-        return f'varies by interval ({per[0]} a {per[-1]})' if per else 'no free space'
+        return f'varies by interval ({per[0]} to {per[-1]})' if per else 'no free space'
 
     tip = (". Leave camera.focus_y and center_y at \"auto\": composition adjusts each interval" if moves else "")
-    return (f"face in {len(found)} de {len(segs)} intervals, eyes between {min(eyes):.2f} e {max(eyes):.2f} of frame height ({where}). Suggested camera.focus_y: {('auto' if moves else rec['camera']['focus_y'])}, hook {v('hook')}, captions {v('captions')}, call to action {v('cta')}, warning {v('disclaimer')}{tip}")
+    return (f"face in {len(found)} of {len(segs)} intervals, eyes between {min(eyes):.2f} and {max(eyes):.2f} of frame height ({where}). Suggested camera.focus_y: {('auto' if moves else rec['camera']['focus_y'])}, hook {v('hook')}, captions {v('captions')}, call to action {v('cta')}, warning {v('disclaimer')}{tip}")
 
 
 # ---------------------------------------------------------------- build / cache
@@ -539,7 +539,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--edit-dir", required=True, help='session edit folder', dest='edit_dir')
     ap.add_argument("--video", help='video to analyze (default: edit/cut.mp4)', dest='video')
     ap.add_argument("--force", action="store_true", help='recompute even when face_layout.json is current', dest='force')
-    ap.add_argument("--json", action="store_true", help="imprime o face_layout.json", dest='json')
+    ap.add_argument("--json", action="store_true", help="print face_layout.json", dest='json')
     args = ap.parse_args(argv)
     edit = Path(args.edit_dir).expanduser().resolve()
     if not edit.is_dir():
@@ -556,7 +556,7 @@ def main(argv: list[str] | None = None) -> int:
     for s in layout["segments"]:
         if s.get("face"):
             z = s["zone"]
-            print(f"  {s['id']:>5} {s['start']:6.2f}-{s['end']:6.2f}s  rosto {s['detected']}/{s['samples']}  height {z['y0']:.2f}-{z['y1']:.2f}  olhos {s['face']['eyes_y']:.2f}")
+            print(f"  {s['id']:>5} {s['start']:6.2f}-{s['end']:6.2f}s  face {s['detected']}/{s['samples']}  height {z['y0']:.2f}-{z['y1']:.2f}  eyes {s['face']['eyes_y']:.2f}")
         else:
             print(f"  {s['id']:>5} {s['start']:6.2f}-{s['end']:6.2f} seconds without a face (0/{s['samples']})")
     print(f"ok: {layout['summary']} -> {edit / 'face_layout.json'}")

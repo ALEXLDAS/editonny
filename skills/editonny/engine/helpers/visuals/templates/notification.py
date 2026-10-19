@@ -1,4 +1,4 @@
-"""notificacao: a generic phone notification card that slides down from the top of the screen.
+"""notification: a generic phone notification card that slides down from the top of the screen.
 
 Title and text come from the person; the app icon is a generic glyph (speech bubble, bell, check, heart or a
 letter) on the accent color, never the logo or the look of a real app. The card springs down from above the

@@ -1,4 +1,4 @@
-"""palavra_impacto: one to four big words that slam onto the screen one after the other (kinetic typography).
+"""impact_word: one to four big words that slam onto the screen one after the other (kinetic typography).
 
 Each word starts big and faint, falls onto the screen accelerating, lands with a squash, and on the
 landing the screen flashes, the block shakes and short impact lines shoot out. Two looks: "outline"
@@ -6,7 +6,7 @@ landing the screen flashes, the block shakes and short impact lines shoot out. T
 slightly tilted chip, white or in the accent color, like the `tarja` hook). In "banner" the chip and its word
 slam in as one piece.
 
-Full-screen flash: `flash: "screen"` draws on `E.Canvas(box, full=True)` on EVERY frame (Contract 12). The
+Full-screen flash: `flash: "screen"` draws on `E.Canvas(box, full=True)` on EVERY frame. The
 flash, the glow and the impact lines are effects, not content: `ink()` gives the area of the resting words
 (plus the entrance scale), so face-aware placing and the caption rules only see the words.
 """
@@ -22,7 +22,7 @@ from PIL import Image
 from visuals import engine as E
 from visuals.engine import VisualError
 
-TEMPLATE = {'id': 'impact_word', 'label': 'Impact Word', 'description': 'One or two large words strike the screen, settle with a snap, and optionally trigger a flash or shake.', 'use_when': 'Use when this visual directly supports the recorded phrase. Align its timing to measured words and verify the sample.', 'notes': 'Validate the parameters, keep text readable, and inspect the exported entrance and exit.', 'category': 'graphics', 'version': 1, 'params': {'text': {'type': 'text', 'default': '*ATTENTION*', 'max_len': 32, 'required_text': True, 'label': 'Text'}, 'style': {'type': 'choice', 'choices': ['outline', 'banner'], 'default': 'outline', 'label': 'Style'}, 'font': {'type': 'choice', 'choices': ['condensed', 'rounded'], 'default': 'condensed', 'label': 'Font'}, 'size': {'type': 'choice', 'choices': ['normal', 'large'], 'default': 'normal', 'label': 'Size'}, 'flash': {'type': 'choice', 'choices': ['screen', 'local', 'none'], 'default': 'screen', 'label': 'Flash'}, 'flash_color': {'type': 'choice', 'choices': ['white', 'accent'], 'default': 'white', 'label': 'Flash Color'}, 'shake': {'type': 'bool', 'default': True, 'label': 'Shake'}, 'burst': {'type': 'bool', 'default': True, 'label': 'Burst'}, 'stagger': {'type': 'number', 'default': 0.24, 'min': 0, 'max': 1.5, 'label': 'Stagger (0–1.5)'}, 'upper': {'type': 'bool', 'default': True, 'label': 'Upper'}, 'sound': {'type': 'choice', 'choices': ['metal', 'bass', 'hit'], 'default': 'metal', 'label': 'Sound'}}, 'default_duration': 2.0, 'default_region': 'bottom', 'sfx': [{'at': 0.13, 'name': 'metal_hit', 'why': 'palavra batendo'}], 'bleed': 300, 'example': {'text': 'ZERO *INVENTORY*'}}
+TEMPLATE = {'id': 'impact_word', 'label': 'Impact Word', 'description': 'One or two large words strike the screen, settle with a snap, and optionally trigger a flash or shake.', 'use_when': 'Use when this visual directly supports the recorded phrase. Align its timing to measured words and verify the sample.', 'notes': 'Validate the parameters, keep text readable, and inspect the exported entrance and exit.', 'category': 'graphics', 'version': 1, 'params': {'text': {'type': 'text', 'default': '*ATTENTION*', 'max_len': 32, 'required_text': True, 'label': 'Text'}, 'style': {'type': 'choice', 'choices': ['outline', 'banner'], 'default': 'outline', 'label': 'Style'}, 'font': {'type': 'choice', 'choices': ['condensed', 'rounded'], 'default': 'condensed', 'label': 'Font'}, 'size': {'type': 'choice', 'choices': ['normal', 'large'], 'default': 'normal', 'label': 'Size'}, 'flash': {'type': 'choice', 'choices': ['screen', 'local', 'none'], 'default': 'screen', 'label': 'Flash'}, 'flash_color': {'type': 'choice', 'choices': ['white', 'accent'], 'default': 'white', 'label': 'Flash Color'}, 'shake': {'type': 'bool', 'default': True, 'label': 'Shake'}, 'burst': {'type': 'bool', 'default': True, 'label': 'Burst'}, 'stagger': {'type': 'number', 'default': 0.24, 'min': 0, 'max': 1.5, 'label': 'Stagger (0–1.5)'}, 'upper': {'type': 'bool', 'default': True, 'label': 'Upper'}, 'sound': {'type': 'choice', 'choices': ['metal', 'bass', 'hit'], 'default': 'metal', 'label': 'Sound'}}, 'default_duration': 2.0, 'default_region': 'bottom', 'sfx': [{'at': 0.13, 'name': 'metal_hit', 'why': 'word lands'}], 'bleed': 300, 'example': {'text': 'ZERO *INVENTORY*'}}
 
 FONTS = {"condensed": "display_condensed", "rounded": "sans_black"}
 MAX_SIZE = {("condensed", "normal"): 250.0, ("condensed", "large"): 330.0,
@@ -69,9 +69,9 @@ def _lines_of(text: str, upper: bool, font_key: str) -> list[list[tuple[str, boo
         raise VisualError('impact_word.params.text requires at least one word with supported letters or digits')
     count = sum(len(ln) for ln in lines)
     if count > MAX_WORDS:
-        raise VisualError(f'palavra_impacto.params.text tem {count} words; maximum {MAX_WORDS}. Keep only the key words')
+        raise VisualError(f'impact_word.params.text has {count} words; maximum {MAX_WORDS}. Keep only the key words')
     if len(lines) > 2:
-        raise VisualError(f'palavra_impacto.params.text tem {len(lines)} lines; maximum two, separated by one |')
+        raise VisualError(f'impact_word.params.text has {len(lines)} lines; maximum two, separated by one |')
     return lines
 
 
@@ -356,7 +356,7 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     hits = sorted(set(_hit_times(_word_count(params), params["stagger"], fps)))
     # the landing is drawn on the frame where (frame + 1) / fps == hit
     return [{"frame": max(0, int(round(h * fps)) - 1), "name": name, "volume": 1.0 if j == 0 else 0.8,
-             "why": "palavra batendo"} for j, h in enumerate(hits)]
+             "why": "word lands"} for j, h in enumerate(hits)]
 
 
 def suggested_duration(params: dict) -> float:

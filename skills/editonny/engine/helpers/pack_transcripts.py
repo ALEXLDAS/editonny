@@ -10,7 +10,7 @@ or when cut.json is the only transcript in the folder, the speech of the cut is 
 phrases (a pause of 0.3 s, a sentence end or 12 words) with the time each one starts in cut.mp4, to read
 against the `quote` of every range.
 
-Output: <edit>/takes_packed.md (the cut: <edit>/fala_do_cut.md)
+Output: <edit>/takes_packed.md (the cut: <edit>/cut_speech.md)
 
 Usage:
     uv run --directory '<SKILL>' python helpers/pack_transcripts.py --edit-dir <edit_dir> [--silence 0.5] [-o FILE]
@@ -124,7 +124,7 @@ def render_cut_markdown(data: dict, phrases: list[dict]) -> str:
     lines = [f"# Cut speech · {Path(str(data.get('source') or 'cut.mp4')).name}, {format_duration(float(data.get('duration') or 0))}, {_plural(n_words, 'word', 'words')}",
              'Time is the phrase onset in the cut. Transcription may lead by 0.3 seconds; measure animation timing from the waveform.', ""]
     if not phrases:
-        lines.append("  _sem fala detectada_")
+        lines.append("  _no speech detected_")
     for p in phrases:
         lines.append(f"  [{format_time(p['start'])}] {p['text']}")
     return "\n".join(lines) + "\n"
@@ -137,7 +137,7 @@ def source_transcripts(transcripts_dir: Path) -> list[Path]:
 
 
 def phrases_for_transcript(data: dict, silence: float = 0.5) -> list[dict]:
-    """Phrases of a Contract 1 transcript dict (used by pack and voice_levels)."""
+    """Phrases of a word-level transcript dict (used by pack and voice_levels)."""
     words = sorted(data.get("words", []), key=lambda w: w.get("start", 0.0))
     seg_starts = {round(float(s["start"]), 3) for s in data.get("segments", []) if "start" in s}
     return group_into_phrases(words, silence, seg_starts)
@@ -157,7 +157,7 @@ def render_markdown(entries: list[tuple[str, float, list[dict]]]) -> str:
     for name, duration, phrases in entries:
         lines.append(f"## {name}  ({format_duration(duration)}, {_plural(len(phrases), 'phrase', 'phrases')})")
         if not phrases:
-            lines.append("  _sem fala detectada_")
+            lines.append("  _no speech detected_")
         for p in phrases:
             lines.append(f"  [{format_time(p['start'])}-{format_time(p['end'])}] {p['text']}")
         lines.append("")
@@ -190,7 +190,7 @@ def main() -> None:
         data = json.loads(cut_json.read_text(encoding="utf-8"))
         silence = args.silence if args.silence != 0.5 else CUT_SILENCE_S
         phrases = cut_phrases(data, silence)
-        out_path = (args.output or edit_dir / "fala_do_cut.md").absolute()
+        out_path = (args.output or edit_dir / "cut_speech.md").absolute()
         out_path.write_text(render_cut_markdown(data, phrases), encoding="utf-8")
         print(f"cut speech: {_plural(len(phrases), 'phrase', 'phrases')}, {format_duration(float(data.get('duration') or 0))} · {out_path}")
         return

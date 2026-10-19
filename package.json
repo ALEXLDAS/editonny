@@ -24,7 +24,9 @@
     "graph:code": "python3 scripts/project_graph.py code",
     "graph:exports": "python3 scripts/project_graph.py exports",
     "graph:watch": "python3 scripts/project_graph.py watch",
-    "test:scenes": "node --test tests/template-scenes.test.mjs"
+    "graph:test": "python3 scripts/project_graph.py test",
+    "test:scenes": "node --test tests/template-scenes.test.mjs",
+    "test:three": "node scripts/smoke_three.mjs"
   },
   "engines": {
     "node": "^22.13.0 || >=24.0.0"

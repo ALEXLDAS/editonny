@@ -170,7 +170,7 @@ def search_wikimedia(query: str, want: int, orientation: str | None, min_width: 
         r.raise_for_status()
         data = r.json()
     except (requests.RequestException, ValueError) as e:
-        raise FetchError(f'could not reach Wikimedia Commons ({e.__class__.__name__}). Confira a internet.')
+        raise FetchError(f'could not reach Wikimedia Commons ({e.__class__.__name__}). Check the internet connection.')
     pages = sorted((data.get("query") or {}).get("pages", {}).values(), key=lambda p: p.get("index", 0))
     out = []
     for p in pages:
@@ -200,7 +200,7 @@ def search_wikimedia(query: str, want: int, orientation: str | None, min_width: 
             "title": str(p.get("title", "")).removeprefix("File:"),
             "download_url": url,
             "url": info.get("descriptionurl") or url,
-            "author": author or "desconhecido",
+            "author": author or "unknown",
             "license": lic,
             "license_url": lic_url,
             "license_class": cls,
@@ -220,11 +220,11 @@ def search_pexels(query: str, want: int, orientation: str | None, key: str) -> l
         r = requests.get(PEXELS_API, params=params, timeout=TIMEOUT,
                          headers={"Authorization": key, "User-Agent": USER_AGENT})
     except requests.RequestException as e:
-        raise FetchError(f'could not reach Pexels ({e.__class__.__name__}). Confira a internet.')
+        raise FetchError(f'could not reach Pexels ({e.__class__.__name__}). Check the internet connection.')
     if r.status_code in (401, 403):
         raise FetchError('Pexels rejected PEXELS_API_KEY. Check the configured key.')
     if r.status_code == 429:
-        raise FetchError("limite de buscas do Pexels atingido. Tente mais tarde ou use --source wikimedia.")
+        raise FetchError("Pexels search limit reached. Try again later or use --source wikimedia.")
     try:
         r.raise_for_status()
         photos = r.json().get("photos", [])
@@ -239,7 +239,7 @@ def search_pexels(query: str, want: int, orientation: str | None, key: str) -> l
         out.append({
             "source": "pexels", "id": f"pexels-{ph.get('id')}", "title": ph.get("alt") or "",
             "download_url": url, "url": ph.get("url") or url,
-            "author": ph.get("photographer") or "desconhecido",
+            "author": ph.get("photographer") or "unknown",
             "license": "Pexels License", "license_url": "https://www.pexels.com/license/",
             "license_class": "free", "attribution_required": False, "share_alike": False,
             "orig_width": int(ph.get("width") or 0), "orig_height": int(ph.get("height") or 0),
@@ -254,7 +254,7 @@ def download(item: dict, dest_dir: Path, base_name: str) -> dict:
         r = requests.get(item["download_url"], headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT)
         r.raise_for_status()
     except requests.RequestException as e:
-        raise FetchError(f"falha ao baixar {item['url']} ({e.__class__.__name__})")
+        raise FetchError(f"failed to download {item['url']} ({e.__class__.__name__})")
     try:
         img = Image.open(io.BytesIO(r.content))
         img.load()
@@ -285,13 +285,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--edit-dir", required=True, help='session edit folder', dest='edit_dir')
     ap.add_argument("--source", choices=("wikimedia", "pexels"), default="wikimedia", dest='source')
     ap.add_argument("--count", type=int, default=3, help='number of images to download (default 3)', dest='count')
-    ap.add_argument("--orientation", choices=("portrait", "landscape"), help="retrato ou paisagem", dest='orientation')
+    ap.add_argument("--orientation", choices=("portrait", "landscape"), help="portrait or landscape", dest='orientation')
     ap.add_argument("--min-width", type=int, default=800, help='minimum original width (default 800)', dest='min_width')
     ap.add_argument("--allow-attribution", action="store_true",
                     help='also accept CC BY; include the required attribution in the delivered credits', dest='allow_attribution')
     ap.add_argument("--allow-sharealike", action="store_true",
                     help='also accept CC BY-SA; attribution and applicable ShareAlike terms must be satisfied', dest='allow_sharealike')
-    ap.add_argument("--json", action="store_true", help="imprime o resultado em JSON", dest='json')
+    ap.add_argument("--json", action="store_true", help="print the result as JSON", dest='json')
     args = ap.parse_args(argv)
 
     if not args.query.strip():
@@ -338,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
     if not found:
         hint = "" if (args.allow_attribution or source == "pexels") else\
             ' If the required attribution is acceptable, retry with --allow-attribution'
-        print(f'no CC0 or public-domain image found for "{args.query}". Try other search terms; English often returns more results' + (" ou tire o --orientation." if args.orientation else ".") + hint)
+        print(f'no CC0 or public-domain image found for "{args.query}". Try other search terms; English often returns more results' + (" or remove --orientation." if args.orientation else ".") + hint)
         return 1
 
     by_url = {c.get("url"): c for c in credits if isinstance(c, dict)}
@@ -376,7 +376,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for e in results:
             tag = ' (already downloaded)' if e.get("reused") else ""
-            print(f"ok: {e['file']}  {e['width']}x{e['height']}  {e['license']}  por {e['author']}{tag}")
+            print(f"ok: {e['file']}  {e['width']}x{e['height']}  {e['license']}  by {e['author']}{tag}")
             if e.get("share_alike"):
                 print(f"   attribution and applicable ShareAlike terms required. Credit: {e.get('credit_line') or credit_line(e)}")
             elif e.get("attribution_required"):
@@ -384,7 +384,7 @@ def main(argv: list[str] | None = None) -> int:
         for msg in errors:
             print(f'notice: {msg}')
         if results and len(results) < args.count and not (args.allow_attribution or args.allow_sharealike) and source == "wikimedia":
-            print(f'notice: only {len(results)} de {args.count} with CC0 or public-domain terms. --allow-attribution also accepts CC BY with required attribution')
+            print(f'notice: only {len(results)} of {args.count} with CC0 or public-domain terms. --allow-attribution also accepts CC BY with required attribution')
         if results:
             print(f'credits saved at {credits_path}')
     if not results:

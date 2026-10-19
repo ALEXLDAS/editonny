@@ -1,6 +1,6 @@
-"""barra_progresso: a progress bar (or ring) filling up to a percentage, with the label and the percentage
-counting, moving stripes and a bright tip while it fills, and a short glow when it lands (SPEC Contract 12).
-Optional segments turn it into a step bar ("etapa 3 de 5").
+"""progress_bar: a progress bar (or ring) filling up to a percentage, with the label and the percentage
+counting, moving stripes and a bright tip while it fills, and a short glow when it lands.
+Optional segments turn it into a step bar ("step 3 of 5").
 
 `_stripes` draws moving diagonal stripes clipped to a mask. The card, label and track are drawn once
 (`E.static_sprite`) and pasted after the entrance.
@@ -320,7 +320,7 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     if params["value"] != params["start_value"]:
         steps = 1 if params["ease"] != "linear" else max(1, int(dur / 0.6 + 0.5))
         for k in range(steps):
-            cues.append({"at": start + k * 0.6, "name": "count", "volume": 1.3, "why": "barra enchendo"})
+            cues.append({"at": start + k * 0.6, "name": "count", "volume": 1.3, "why": "bar filling"})
         if params["value"] >= 100:
             cues.append({"at": start + dur, "name": "success", "why": "100%"})
     return [{"frame": E.frame_of(c.pop("at"), fps), **c} for c in cues]

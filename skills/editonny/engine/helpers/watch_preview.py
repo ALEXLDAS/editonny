@@ -26,10 +26,10 @@ SEEN_LIMIT = 50
 HEARTBEAT_S = 3.0
 DEFAULT_AVERAGE = {"cut": "cut.mp4", "final": "final.mp4"}
 AVERAGE_KEY = {"cut": "cut_video", "final": "final_video"}
-DENOISE_LABEL = {"off": "desligado", "light": "light", "strong": "strong"}   # preview_style.json "denoise"
+DENOISE_LABEL = {"off": "off", "light": "light", "strong": "strong"}   # preview_style.json "denoise"
 # preview_style.json music_mood accepts off, file with music_file, or a library mood ID.
 # preview_style.json "greenScreenPosition" and "greenScreenBackgroundInserts" (with "edit_type": "greenScreen")
-TV_POSITION_LABEL = {"left": "canto esquerdo", "right": "canto direito", "center": "meio"}
+TV_POSITION_LABEL = {"left": "left corner", "right": "right corner", "center": "center"}
 
 
 def utf8_console() -> None:
@@ -56,16 +56,16 @@ def quote(text: str) -> str:
 
 def format_approval(rec: dict) -> str:
     phase = PHASE_NAME.get(rec.get("phase"), str(rec.get("phase")))
-    line = f'[preview] {phase} APROVADO'
+    line = f'[preview] {phase} APPROVED'
     note = (rec.get("note") or "").strip()
     if note:
-        line += f' · nota: {quote(note)}'
+        line += f' · note: {quote(note)}'
     return line
 
 
 def format_marks(rec: dict) -> str:
     marks = rec.get("marks") or []
-    where = PHASE_IN.get(rec.get("phase"), f"em {rec.get('phase')}")
+    where = PHASE_IN.get(rec.get("phase"), f"in {rec.get('phase')}")
     if not marks:
         return f'[preview] marks {where} cleared; zero marks remain'
     parts = []
@@ -73,9 +73,9 @@ def format_marks(rec: dict) -> str:
         note = (m.get("note") or "").strip()
         if m.get("kind") == "motion":
             piece = f"VISUAL HERE at {fmt_time(float(m.get('in', 0)))}"
-            parts.append(f'{piece} {quote(note)}' if note else f'{piece} (o agente escolhe o modelo pela fala)')
+            parts.append(f'{piece} {quote(note)}' if note else f'{piece} (the agent picks the template from the speech)')
             continue
-        piece = f"{fmt_time(float(m.get('in', 0)))} a {fmt_time(float(m.get('out', 0)))}"
+        piece = f"{fmt_time(float(m.get('in', 0)))} to {fmt_time(float(m.get('out', 0)))}"
         parts.append(f'{piece} {quote(note)}' if note else f'{piece} (no note)')
     label = 'mark' if len(marks) == 1 else "annotations"
     return f'[preview] {len(marks)} {label} {where}: ' + "; ".join(parts)
@@ -84,25 +84,25 @@ def format_marks(rec: dict) -> str:
 def format_trims(rec: dict) -> str:
     """Requests to adjust an interval edge in EDL seconds."""
     trims = rec.get("trims") or []
-    where = PHASE_IN.get(rec.get("phase"), f"em {rec.get('phase')}")
+    where = PHASE_IN.get(rec.get("phase"), f"in {rec.get('phase')}")
     if not trims:
         return f'[preview] interval adjustments {where} cleared (0 adjustments)'
     parts = []
     for tr in trims:
         rid = str(tr.get("id", "?"))
         bits = []
-        for key, onde in (("start_delta", 'at the beginning'), ("end_delta", "no fim")):
+        for key, edge in (("start_delta", 'at the beginning'), ("end_delta", 'at the end')):
             delta = float(tr.get(key) or 0.0)
             if not delta:
                 continue
-            verbo = "estica" if (delta < 0 if key == "start_delta" else delta > 0) else "encolhe"
-            bits.append(f'{verbo} {abs(delta):.2f}s {onde}')
+            verb = "extend" if (delta < 0 if key == "start_delta" else delta > 0) else "shrink"
+            bits.append(f'{verb} {abs(delta):.2f}s {edge}')
         quote_txt = (tr.get("quote") or "").strip()
-        piece_value = f'{rid}: ' + " e ".join(bits or ['unchanged'])
+        piece_value = f'{rid}: ' + " and ".join(bits or ['unchanged'])
         parts.append(f'{piece_value} {quote(quote_txt)}' if quote_txt else piece_value)
     label = "interval adjustment" if len(trims) == 1 else "interval adjustments"
     return (f'[preview] {len(trims)} {label} {where}: ' + "; ".join(parts)
-            + " · aplique no edl.json (start_delta soma no start, end_delta soma no end) e renderize de novo")
+            + " · apply to edl.json (add start_delta to start and end_delta to end), then render again")
 
 
 def format_style(rec: dict, catalog: dict) -> str:
@@ -126,17 +126,17 @@ def format_style(rec: dict, catalog: dict) -> str:
         f'[preview] style saved: {edit_type}',
         f"captions {rec.get('caption_style') or '-'}",
         f"hook {rec.get('hook_style') or '-'}",
-        f"cor {rec.get('accent') or '-'}",
-        "elementos: " + (", ".join(on) if on else "none"),
+        f"color {rec.get('accent') or '-'}",
+        "elements: " + (", ".join(on) if on else "none"),
         "excluded: " + (", ".join(off) if off else "none"),
     ]
     if isinstance(elements.get("motion"), bool):
         if elements["motion"] and rec.get("motionCount"):
             n = {"few": 3, "some": 5}.get(rec["motionCount"], 3)
             theme_value = rec.get("motionTheme") or "paper"
-            fields.append(f'''animations enabled, {rec['motionCount']} (motion.quantidade {n}), visual {theme_value} (motion.theme "{theme_value}")''')
+            fields.append(f'''animations enabled, {rec['motionCount']} (motion.count {n}), visual {theme_value} (motion.theme "{theme_value}")''')
         else:
-            fields.append(f"animations: {('ligadas' if elements['motion'] else 'desligadas')}")
+            fields.append(f"animations: {('enabled' if elements['motion'] else 'disabled')}")
     if isinstance(rec.get("denoise"), str) and rec["denoise"] in DENOISE_LABEL:
         fields.append(f"noise: {DENOISE_LABEL[rec['denoise']]}")
     mood = rec.get("music_mood")
@@ -150,9 +150,9 @@ def format_style(rec: dict, catalog: dict) -> str:
     if (rec.get("hook_text") or "").strip():
         fields.append(f"hook text: {quote(rec['hook_text'])}")
     if (rec.get("cta_text") or "").strip():
-        fields.append(f"chamada: {quote(rec['cta_text'])}")
+        fields.append(f"call to action: {quote(rec['cta_text'])}")
     if (rec.get("note") or "").strip():
-        fields.append(f"nota: {quote(rec['note'])}")
+        fields.append(f"note: {quote(rec['note'])}")
     return " · ".join(fields)
 
 
@@ -236,7 +236,7 @@ def pending_marks_note(edit_dir: Path, approval: dict) -> str | None:
     if render_t is not None and marks_t < render_t:
         return None  # those marks were for an older version, already handled
     n = len(marks["marks"])
-    where = PHASE_IN.get(phase, f'em {phase}')
+    where = PHASE_IN.get(phase, f'in {phase}')
     label = 'mark' if n == 1 else "annotations"
     return (f'[preview] attention: approval includes {n} {label} {where} saved after the latest render. Resolve the requested adjustments before proceeding')
 
@@ -314,7 +314,7 @@ def main() -> int:
         description='Print one line per preview action: approval, marks, or style selection.',
     )
     parser.add_argument("--edit-dir", required=True, help='session edit folder', dest='edit_dir')
-    parser.add_argument("--once", action="store_true", help="verifica uma vez e sai", dest='once')
+    parser.add_argument("--once", action="store_true", help="check once and exit", dest='once')
     parser.add_argument("--interval", type=float, default=1.0, help='seconds between checks (default 1.0)', dest='interval')
     args = parser.parse_args()
     utf8_console()
@@ -332,7 +332,7 @@ def main() -> int:
 
     if args.once:
         if report(edit_dir, seen_path, seen, catalog) == 0:
-            print("[preview] nada novo", file=sys.stderr, flush=True)
+            print("[preview] nothing new", file=sys.stderr, flush=True)
         return 0
 
     print('Waiting for preview actions. Press Ctrl+C to stop.', file=sys.stderr, flush=True)

@@ -53,9 +53,9 @@ def recommendation(results: list[dict]) -> dict:
     if worst["level"] == "clean":
         return {"suggest": "off", "worst": worst["stem"],
                 "text": 'Recommendation: no video requires noise removal; leave it off.'}
-    label = "Leve" if worst["level"] == "light" else "Forte"
+    label = "light" if worst["level"] == "light" else "strong"
     return {"suggest": worst["suggest"], "worst": worst["stem"],
-            "text": (f"Recommendation: offer background-noise removal {label} (worst source: {worst['stem']}, difference {worst['snr_db']:.0f} dB between voice and background).")}
+            "text": (f"Recommendation: offer {label} background-noise removal (worst source: {worst['stem']}, difference {worst['snr_db']:.0f} dB between voice and background).")}
 
 
 def main() -> int:

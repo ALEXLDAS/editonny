@@ -1,5 +1,5 @@
 """Person cutout without a green screen: the speaker cut out of the cut and placed over a
-background, as the base layer of compose_final.py (SPEC Contract 13).
+background, as the base layer of compose_final.py.
 
 edit_data.json:
     "edit_type": "greenScreen",
@@ -643,7 +643,7 @@ def face_cut_sides(seg: "Segment") -> tuple[bool, bool]:
 def plan_segments(cfg: Config, segs: list[Segment]) -> None:
     """Scale and flush sides per person segment; segments close to the typical size share it (no jump at a cut
     of the same take)."""
-    people = [s for s in segs if s.mode == "pessoa" and s.stats and s.stats.get("person_frames")]
+    people = [s for s in segs if s.mode == "person" and s.stats and s.stats.get("person_frames")]
     for s in people:
         st = s.stats
         s.scale = base_scale(cfg, st)
@@ -683,7 +683,7 @@ def plan_segments(cfg: Config, segs: list[Segment]) -> None:
             s.drop = round(min(FILL_DROP, max(0.0, (1.0 - top) * (1.0 - corner))), 5)
     fallback = people[0] if people else None
     for s in segs:
-        if s.mode == "pessoa" and s not in people:
+        if s.mode == "person" and s not in people:
             s.note = 'no person detected in this interval; only the background is visible'
             if fallback is not None:
                 s.scale = fallback.scale
@@ -724,7 +724,7 @@ def inner_cut(cfg: Config, segs: list[Segment], W: int, H: int) -> dict | None:
         return None
     total = inner = both = 0.0
     for s in segs:
-        if s.mode != "pessoa" or not s.stats or not s.stats.get("person_frames"):
+        if s.mode != "person" or not s.stats or not s.stats.get("person_frames"):
             continue
         st = s.stats
         sc, x0, _ = layer_rect(cfg, s, s.zoom, W, H)
@@ -770,7 +770,7 @@ def screen_zones(cfg: Config, seg: Segment, W: int, H: int) -> dict:
     """Where the face and the body end up on the screen (fractions), over the zoom range of the segment.
 
     -> {"face": {zone, core, eyes_y} | None, "person": rect | None}"""
-    if seg.mode != "pessoa" or not seg.stats or not seg.stats.get("person_frames"):
+    if seg.mode != "person" or not seg.stats or not seg.stats.get("person_frames"):
         return {"face": None, "person": None}
     st = seg.stats
     zooms = {seg.zoom, seg.zoom * (1 + seg.push)}
@@ -919,7 +919,7 @@ def scan_video(path: Path, fps: int, cache_dir: Path | None = None) -> dict:
     """What a background video has where: {frames (one pass at fps), lead and tail (empty frames at its start and
     end, at most a third of it each; a tail also covers a clip shrinking away after its last full frame),
     content (main area, fractions, over the whole clip), quiet (plain border)}. Cached by the file signature."""
-    cv2 = _cv2()
+    _cv2()  # fail before scanning when OpenCV is unavailable
     st = path.stat()
     key = hashlib.sha1(json.dumps([SCAN_VERSION, str(path), st.st_size, st.st_mtime_ns, fps, SCAN_SIDE, SCAN_DETAIL,
                                    SCAN_EMPTY, SCAN_FADE, SCAN_ROW, SCAN_MASS,
@@ -1907,7 +1907,7 @@ def render(job: Job, progress: Callable[[str], None] | None = None, workers: int
             mreader = None
             mjob = job.mattes.get(si)
             plate = job.plates.get(si)
-            if seg.mode == "pessoa" and mjob is not None:
+            if seg.mode == "person" and mjob is not None:
                 mreader = M.FrameReader(M.matte_cmd(mjob.path, (W, H), job.full_size), (W, H), 1, "read the cutout",
                                         queue_len=8)
             last_alpha = None
@@ -1981,7 +1981,7 @@ def plan_stages(cfg: Config, segs: list[Segment], W: int, H: int,
             continue
         heads = []
         for s in segs:
-            if s.mode != "pessoa" or not s.stats or not s.stats.get("person_frames"):
+            if s.mode != "person" or not s.stats or not s.stats.get("person_frames"):
                 continue
             if not any(s.f0 < b1 and a0 < s.f1 for a0, b1 in spans):
                 continue
@@ -2061,14 +2061,14 @@ def report_segments(cfg: Config, segs: list[Segment], fps: int, W: int, H: int, 
     out = []
     for s in segs:
         row = {"start": round(s.f0 / fps, 3), "end": round(s.f1 / fps, 3), "mode": s.mode}
-        if s.mode == "pessoa" and cfg.mirror:
+        if s.mode == "person" and cfg.mirror:
             row["mirrored"] = True
         if s.side:
             row["position"] = s.side
         if s.fill:
             row['full_width'] = True
             row['bottom_crop'] = s.drop
-        if s.mode == "pessoa" and s.stats and s.stats.get("person_frames"):
+        if s.mode == "person" and s.stats and s.stats.get("person_frames"):
             sc, x0, y0 = layer_rect(cfg, s, s.zoom, W, H)
             lw = W * sc
             row.update({"scale": round(sc, 4), "x": int(round(x0 * scale_to_out)), "y": int(round(y0 * scale_to_out)),

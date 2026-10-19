@@ -70,7 +70,7 @@ def words_per_interval(words: list[dict], groups_value: list[dict]) -> list[list
     return out
 
 
-def diferenca(quote: str, heard_value: str) -> tuple[list[str], list[str]]:
+def difference(quote: str, heard_value: str) -> tuple[list[str], list[str]]:
     """(words of the quote missing in the cut, words of the cut not in the quote), accents and case ignored."""
     a, b = _normal_words(quote), _normal_words(heard_value)
     missing_value, remainder = [], []
@@ -88,7 +88,7 @@ def speech_of_cut(edit: Path, video: Path) -> list[str]:
         return ['(no cut transcript; inspect the transcription error above)']
     words = sorted(data.get("words", []), key=lambda w: w["start"])
     try:
-        (edit / "fala_do_cut.md").write_text(render_cut_markdown(data, cut_phrases(data)), encoding="utf-8")
+        (edit / "cut_speech.md").write_text(render_cut_markdown(data, cut_phrases(data)), encoding="utf-8")
     except OSError:
         pass
     timeline = load_json(edit / f'{video.stem}_timeline.json') or {}
@@ -103,17 +103,17 @@ def speech_of_cut(edit: Path, video: Path) -> list[str]:
         if g["dry"]:
             mark_value = '  dry is false; comparison skipped'
         elif g["quote"]:
-            missing_value, remainder = diferenca(g["quote"], heard_value)
+            missing_value, remainder = difference(g["quote"], heard_value)
             if missing_value or remainder:
                 n_dif += 1
                 parts_value = ([f'''missing "{' '.join(missing_value)}"'''] if missing_value else []) +\
-                         ([f'''a mais "{' '.join(remainder)}"'''] if remainder else [])
-                mark_value = "  ≠ confira: " + ", ".join(parts_value)
-        titulo = f"{g['beat']} · " if g["beat"] else ""
-        lines_value.append(f'''{fmt_time(g['start'])}  {titulo}escrito: "{g['quote']}"{mark_value}''')
+                         ([f'''extra "{' '.join(remainder)}"'''] if remainder else [])
+                mark_value = "  ≠ check: " + ", ".join(parts_value)
+        beat_label = f"{g['beat']} · " if g["beat"] else ""
+        lines_value.append(f'''{fmt_time(g['start'])}  {beat_label}written: "{g['quote']}"{mark_value}''')
         cut_value = [f["words"] for f in split_long(group_into_phrases(ws, 0.3))] if ws else []
         if not cut_value:
-            lines_value.append("          (nada falado)")
+            lines_value.append("          (nothing spoken)")
         for c in cut_value:
             lines_value.append(f"  {fmt_time(float(c[0]['start']))}  {' '.join((w['text'] for w in c))}")
     summary_value = (f'{n_dif} intervals differ from their quotes. Listen for clipped boundaries, abandoned takes, or transcription differences' if n_dif else
@@ -145,10 +145,10 @@ def breaths_of_cut(out: str, edit: Path, video: Path) -> tuple[list[str], int]:
     else:
         lines_value.append(f'respiros: {len(count_value)} silences of {mn:.2f} s or more (below {th:.0f} dB):')
         for r, _ in count_value:
-            lines_value.append(f"  {fmt_time(r['start'])} a {fmt_time(r['end'])}  ({r['dur']:.2f} s)")
+            lines_value.append(f"  {fmt_time(r['start'])} to {fmt_time(r['end'])}  ({r['dur']:.2f} s)")
         lines_value.append('  review each detected pause against the intended pacing; adjust only authorized intervals and preserve complete words')
     for r, s in fica:
-        lines_value.append(f'''  retain: {fmt_time(r['start'])} a {fmt_time(r['end'])} ({r['dur']:.2f} s) inside interval {s.get('id')} with "dry": false ("{(s.get('quote') or '')[:40]}")''')
+        lines_value.append(f'''  retain: {fmt_time(r['start'])} to {fmt_time(r['end'])} ({r['dur']:.2f} s) inside interval {s.get('id')} with "dry": false ("{(s.get('quote') or '')[:40]}")''')
     return lines_value, len(count_value)
 
 
@@ -157,7 +157,7 @@ def main() -> int:
     ap.add_argument('edit_dir', type=Path)
     ap.add_argument("--video", default="cut.mp4", help='cut filename within the folder (default cut.mp4)', dest='video')
     ap.add_argument("--prompt", default=None, help='proper names occurring in speech, as accepted by transcribe.py', dest='prompt')
-    ap.add_argument("--min-silence", type=float, default=None, help="repassado ao verify_cut.py", dest='min_silence')
+    ap.add_argument("--min-silence", type=float, default=None, help="passed to verify_cut.py", dest='min_silence')
     args = ap.parse_args()
 
     edit = args.edit_dir.resolve()

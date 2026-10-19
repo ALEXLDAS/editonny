@@ -320,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
         db = envelope(path, edit / "regions" / f'onda_{name}.npy')
         th = args.threshold_value if args.threshold_value is not None else threshold(db)
         sources[name] = Source(db, th)
-        print(f'{name}: floor {sources[name].floor:.0f} dB, fala forte {np.percentile(db, 90):.0f} dB, pause below {th:.0f} dB')
+        print(f'{name}: floor {sources[name].floor:.0f} dB, loud speech {np.percentile(db, 90):.0f} dB, pause below {th:.0f} dB')
 
     new, warnings_value, integers_value, switches, valleys = [], [], [], [], []
     for r in edl["ranges"]:
@@ -340,14 +340,14 @@ def main(argv: list[str] | None = None) -> int:
             for side_value, t, switch in sides:
                 if switch:
                     if side_value == 'beginning' and src.at(t) >= src.th:
-                        switches.append(f"{rs[k - 1].get('id')} -> {r.get('id')} em {float(t):.2f} s: a imagem passa de {picture_of(rs[k - 1])} to {picture_of(r)} no meio da fala, a voz segue")
+                        switches.append(f"{rs[k - 1].get('id')} -> {r.get('id')} at {float(t):.2f} s: the picture switches from {picture_of(rs[k - 1])} to {picture_of(r)} mid-speech; the voice continues")
                     continue
                 if src.at(t) >= src.th + 6:
-                    warnings_value.append((r.get("id"), side_value, f"{r.get('id')} ({r.get('quote', '')[:40]!r}): o {side_value} em {t:.2f} seconds falls within speech and may clip a word"))
+                    warnings_value.append((r.get("id"), side_value, f"{r.get('id')} ({r.get('quote', '')[:40]!r}): the {side_value} at {t:.2f} seconds falls within speech and may clip a word"))
         r = rs[0]
         if not r.get("dry", True):
             new.append(copy.deepcopy(r))
-            integers_value.append(f"""{r.get('id')} ("dry": false): {float(r['start']):.2f} a {float(r['end']):.2f} seconds; boundaries retained as specified""")
+            integers_value.append(f"""{r.get('id')} ("dry": false): {float(r['start']):.2f} to {float(r['end']):.2f} seconds; boundaries retained as specified""")
             continue
         limit = next_in_source(edl["ranges"], group[-1])
         if len(rs) == 1:
@@ -363,7 +363,7 @@ def main(argv: list[str] | None = None) -> int:
     edl = dict(edl, ranges=new)
     save_json(output_value, edl)
     total = sum(n["end"] - n["start"] for n in new)
-    print(f'{len(new)} trechos, {total:.2f} s → {output_value}')
+    print(f'{len(new)} ranges, {total:.2f} s → {output_value}')
     for t in integers_value:
         print("  inteiro: " + t)
     for t in switches:

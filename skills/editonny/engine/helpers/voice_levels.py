@@ -89,7 +89,7 @@ def ranges_from_edl(edl_path: Path, edit_dir: Path) -> list[dict]:
         stem = r.get("source")
         src = sources.get(stem)
         if not src:
-            raise ValueError(f"o range {r.get('id', i + 1)} usa a font '{stem}', which is absent from 'sources'")
+            raise ValueError(f"range {r.get('id', i + 1)} uses source '{stem}', which is absent from 'sources'")
         path = resolve_source(str(src), edl_path.parent)
         out.append({"id": r.get("id") or f'r{i + 1}', "source": stem, "path": path,
                     "start": float(r["start"]), "end": float(r["end"]),
@@ -183,7 +183,7 @@ def main() -> None:
         r.update(diff_db=diff, low=low, high=high, gain_db=round(min(GAIN_CAP_DB, max(-GAIN_CAP_DB, final)), 1))
 
     shown = [r for r in ranges if video is None or r["source"] == video.stem]
-    unit = {"edl": ("range do EDL", "ranges do EDL"), "phrases": ("frase", "frases"),
+    unit = {"edl": ("EDL range", "EDL ranges"), "phrases": ("phrase", "phrases"),
             "regions": ("speech interval", "speech intervals")}[mode][0 if len(shown) == 1 else 1]
     scope = video.stem if video is not None else "all sources"
     gain_note = ', including EDL gain_db' if edl_mode else ""
@@ -198,22 +198,22 @@ def main() -> None:
             continue
         tip = ""
         if r["low"] or r["high"]:
-            tip = (f"  gain_db final {r['gain_db']:+.1f} (hoje {r['current_gain_db']:+.1f})" if edl_mode
-                   else f"  gain_db {r['gain_db']:+.1f} se usar no EDL")
+            tip = (f"  gain_db final {r['gain_db']:+.1f} (currently {r['current_gain_db']:+.1f})" if edl_mode
+                   else f"  gain_db {r['gain_db']:+.1f} if used in the EDL")
         text = f'''  "{r['text'][:60]}"''' if r["text"] else ""
         print(f"  {where}[{r['start']:06.2f}-{r['end']:06.2f}] {r['heard_db']:6.1f} dB ({r['diff_db']:+.1f}){tip}{text}")
     n_low = sum(1 for r in shown if r["low"])
     n_high = sum(1 for r in shown if r["high"])
     if n_low + n_high == 0:
         both = "below or above" if edl_mode else "below"
-        print(f'  no interval {args.drop_db:g} dB ou mais {both} from the reference')
+        print(f'  no interval {args.drop_db:g} dB or more {both} from the reference')
     elif not args.all:
         parts = []
         if n_low:
             parts.append(f"{n_low} {('quiet interval' if n_low == 1 else 'quiet intervals')}")
         if n_high:
             parts.append(f"{n_high} {('loud interval' if n_high == 1 else 'loud intervals')}")
-        print(f"  {' e '.join(parts)}. In the EDL, replace the interval's gain_db with the displayed final value (maximum {GAIN_CAP_DB:g} dB above or below)")
+        print(f"  {' and '.join(parts)}. In the EDL, replace the interval's gain_db with the displayed final value (maximum {GAIN_CAP_DB:g} dB above or below)")
 
     out = edit_dir / "verify" / "voice_levels.json"
     save_json(out, {
@@ -224,7 +224,7 @@ def main() -> None:
         "measured_at": now_iso(),
         "ranges": [{k: (str(v) if k == "path" else v) for k, v in r.items()} for r in ranges],
     })
-    print(f'  detalhes em {out}')
+    print(f'  details in {out}')
 
 
 if __name__ == "__main__":

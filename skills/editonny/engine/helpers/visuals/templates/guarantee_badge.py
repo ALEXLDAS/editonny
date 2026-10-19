@@ -106,7 +106,7 @@ def sfx(params: dict, fps: int, frames: int) -> list[dict]:
     d = float(params["delay"])
     return [{"frame": E.frame_of(d, fps), "name": "pop", "why": "seal entrance"},
             {"frame": E.frame_of(d + ENTERS * 0.7, fps), "name": "success", "volume": 0.8,
-             "why": "o prazo aparece"}]
+             "why": "duration appears"}]
 
 
 def settle(params: dict, fps: int) -> float:

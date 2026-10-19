@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -103,6 +104,29 @@ class EngineTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             cfg = json.loads((project / 'project.json').read_text())
             self.assertEqual(len(cfg['scenes']), 1)
+
+    def test_command_reference_lists_every_helper(self):
+        text = (ENGINE / 'references/commands.md').read_text()
+        commands = set(re.findall(r'^- `([a-z_]+\.py)`$', text, re.M))
+        library = set(re.findall(r'`([a-z_]+\.py)`', text.split('These modules have no command line')[1]))
+        for path in (ENGINE / 'helpers').glob('*.py'):
+            runnable = re.search(r"__name__ == ['\"]__main__['\"]", path.read_text()) is not None
+            with self.subTest(helper=path.name):
+                self.assertIn(path.name, commands if runnable else library)
+
+    def test_cut_copy_replaces_a_dangling_link(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('copy_build', ENGINE / 'project-template/build.py')
+        build = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build)
+        with tempfile.TemporaryDirectory(prefix='editonny copy ') as tmp:
+            src, dst = Path(tmp) / 'cut.mp4', Path(tmp) / 'assets/cut.mp4'
+            src.write_bytes(b'cut')
+            dst.parent.mkdir()
+            dst.symlink_to(Path(tmp) / 'missing.mp4')
+            build.copy_video(str(src), str(dst))
+            self.assertFalse(dst.is_symlink())
+            self.assertEqual(dst.read_bytes(), b'cut')
 
 
 if __name__ == '__main__':

@@ -101,7 +101,6 @@ def split_ranges(edl, primary_key, windows, gap_ok=0.02):
         if r.get('source') != primary_key or r.get('picture_source'):
             new_items.append(r)
             continue
-        cuts = []
         (start, end) = (float(r['start']), float(r['end']))
         points = [(start, None)]
         for (w0, w1, name) in windows:

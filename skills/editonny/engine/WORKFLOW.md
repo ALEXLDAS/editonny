@@ -105,3 +105,11 @@ Final filenames are unique (`title-v001-final[-02].mp4`). Requested `delivery.su
 ## References and worksheets
 
 `references/` documents focused techniques and helper contracts. `worksheets/` contains optional planning records; use only what the task requires. The canonical project remains `project.json`, not a competing worksheet configuration. Avoid duplicated workflow documents or historical approval rituals.
+
+- Helpers: [commands](references/commands.md).
+- Cut: [cut](references/cut.md), [tighten-cut](references/tighten-cut.md) and its [algorithm](references/tighten-cut-algorithm.md), [variations](references/variations.md).
+- Finishing: [phase2](references/phase2.md), [block-direction](references/block-direction.md), [framing](references/framing.md), [lettering](references/lettering.md), [ready-styles](references/ready-styles.md), [studio](references/studio.md), [review](references/review.md).
+- Motion: [animation](references/animation.md), [templates](references/templates.md), [animation-catalog](references/animation-catalog.md), [3d](references/3d.md).
+- Sound: [sound-and-music](references/sound-and-music.md), [sound-table](references/sound-table.md), [example events](references/example-events.json).
+- Visual references: [measure-reference](references/measure-reference.md), [apply-reference](references/apply-reference.md).
+- Worksheets: `video-brief.md`, `block-plan.md`, `scene-sheet.csv`, `hook-matrix.csv`, `version-sheet.csv`, `sample-review.md`, `media-register.json`, `default.json`.

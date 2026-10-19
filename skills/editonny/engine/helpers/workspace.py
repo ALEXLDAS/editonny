@@ -16,7 +16,7 @@ import threading
 import uuid
 
 from common import content_hash, ensure_edit_dirs, now_iso, save_json
-from project_contract import (artifact_dependencies, digest, load_contract, read_json,
+from project_contract import (digest, load_contract, read_json,
                               require_confirmation, settings_hash, source_identity_hash,
                               validate_confirmation, validate_contract)
 

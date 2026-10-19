@@ -311,7 +311,7 @@ def update_state(edit_dir: Path, video: Path, flags: list[dict], ask_approval: b
     else:
         n = len(flags)
         state.update(phase="cut", awaiting=None,
-                     message=f"Checking the cut: {n} {('ponto' if n == 1 else 'points')} to resolve before presentation")
+                     message=f"Checking the cut: {n} {('point' if n == 1 else 'points')} to resolve before presentation")
         if blocking:
             line = f"Preview: approval NOT requested ({', '.join(blocking)}): render again."
         else:

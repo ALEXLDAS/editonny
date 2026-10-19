@@ -148,7 +148,7 @@ def source_levels(path: str, log=None) -> tuple[np.ndarray, float] | None:
                 log(f'{Path(path).stem}: background rumble; measured voice after high-pass filtering in band {top - floor:.0f} dB)')
             return db, floor
     if log:
-        log(f'{Path(path).stem}: no measurable silence; floor {floor:.0f} dB, fala {top:.0f} dB. Music or an existing edit may mask pauses. Source boundaries remain unchanged')
+        log(f'{Path(path).stem}: no measurable silence; floor {floor:.0f} dB, speech {top:.0f} dB. Music or an existing edit may mask pauses. Source boundaries remain unchanged')
     return None
 
 
@@ -199,7 +199,7 @@ def refine_edl(edl: dict, envs: dict | None = None, log=print) -> list[str]:
             notes.append(f'start falls inside speech: {how}')
         if end_hot:
             ne, how = fix_edge_on_speech(db, floor, e, "end", lo, hi)
-            notes.append(f'fim na fala: {how}')
+            notes.append(f'end inside speech: {how}')
         ts, te = tighten(db, floor, ns, ne, lo, hi, not (start_hot or keep_s), not (end_hot or keep_e))
         ns, ne = (s if keep_s else round(ts, 3)), (e if keep_e else round(te, 3))
         if ne - ns < 0.1:
@@ -214,7 +214,7 @@ def refine_edl(edl: dict, envs: dict | None = None, log=print) -> list[str]:
         log(f"{r['id']} {r['source']} {s:7.2f}->{ns:7.2f} ({d0:+.2f})  {e:7.2f}->{ne:7.2f} ({d1:+.2f}){mark}{('  · ' + '; '.join(notes) if notes else '')}")
         r["start"], r["end"] = ns, ne
 
-    log(f'\n{moved} de {len(rs)} intervals adjusted · silence removed {removed_value:+.2f} s')
+    log(f'\n{moved} of {len(rs)} intervals adjusted · silence removed {removed_value:+.2f} s')
     if alerts:
         log('NO PAUSE: speech crosses this boundary; listen or move the cut to the phrase ending:')
         for a in alerts:
@@ -225,7 +225,7 @@ def refine_edl(edl: dict, envs: dict | None = None, log=print) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument('edl', type=Path)
-    ap.add_argument("--apply", action="store_true", help="grava no edl.json (backup em edl.json.bak)", dest='apply')
+    ap.add_argument("--apply", action="store_true", help="write to edl.json (backup at edl.json.bak)", dest='apply')
     args = ap.parse_args()
 
     edl = load_json(args.edl)
@@ -236,7 +236,7 @@ def main() -> int:
     if args.apply:
         shutil.copy(args.edl, args.edl.with_name(args.edl.name + ".bak"))
         save_json(args.edl, edl)
-        print(f'gravado em {args.edl} (backup {args.edl.name}.bak)')
+        print(f'saved to {args.edl} (backup {args.edl.name}.bak)')
     return 0
 
 

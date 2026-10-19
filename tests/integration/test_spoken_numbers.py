@@ -62,6 +62,24 @@ class SpokenMoneyTests(unittest.TestCase):
                     self.assertEqual(params.get('value',params.get('price')),expected)
                     self.assertEqual(params['prefix'],prefix)
 
+    def test_comment_suggestion_renders_its_keyword(self):
+        from visuals.templates import comment_cta
+        with tempfile.TemporaryDirectory() as tmp:
+            edit = Path(tmp)
+            (edit / 'transcripts').mkdir()
+            (edit / 'cut_timeline.json').write_text(json.dumps({'duration':20,'segments':[]}))
+            words = [{'text':word,'start':5+i*.3,'end':5+i*.3+.25} for i,word in enumerate('comenta a palavra ideia aqui'.split())]
+            (edit / 'transcripts/cut.json').write_text(json.dumps({'words':words}))
+            result = subprocess.run([sys.executable,str(HELPERS/'suggest_visuals.py'),'--edit-dir',str(edit),'--json'],
+                                    capture_output=True,text=True,timeout=20)
+            self.assertEqual(result.returncode,0,result.stderr)
+            comments=[m for m in json.loads(result.stdout)['motion'] if m['template']=='comment_cta']
+            self.assertEqual(len(comments),1,result.stdout)
+            params=comments[0]['params']
+            prompt=comment_cta._prompt(params,params['keyword'])
+            self.assertIn('IDEIA',prompt)
+            self.assertNotIn('{',prompt)
+
     def test_assemble_sources_cli(self):
         result=subprocess.run([sys.executable,str(HELPERS/'assemble_cut.py'),'--help'],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)

@@ -1,4 +1,4 @@
-"""passos: a 2 to 4 step flow. Numbered circles light up one by one, joined by arrows that draw themselves.
+"""steps: a 2 to 4 step flow. Numbered circles light up one by one, joined by arrows that draw themselves.
 
 Frame 0 already shows the card and the steps as faint placeholders (the shape of the flow). Each step then
 pops in the accent color with a pulse ring and its name rises underneath (or beside it, vertically). The
@@ -39,7 +39,7 @@ def _times(p: dict) -> list[float]:
     if times is None:
         return [p["delay"] + i * p["stagger"] for i in range(n)]
     if len(times) != n:
-        raise VisualError(f'steps.params.times requires one time per step ({n} passos, veio {len(times)})')
+        raise VisualError(f'steps.params.times requires one time per step ({n} steps, got {len(times)})')
     for i in range(1, n):
         if times[i] < times[i - 1]:
             raise VisualError(f'steps.params.times must increase; step {i + 1} appears at {times[i]:g} s, before step {i} at {times[i - 1]:g} s)')

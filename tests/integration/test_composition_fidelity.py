@@ -1,4 +1,3 @@
-from fractions import Fraction
 import json
 from pathlib import Path
 import sys

@@ -60,8 +60,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('text', help='sound description, preferably in English')
     ap.add_argument("--edit-dir", required=True, help='session edit folder', dest='edit_dir')
     ap.add_argument("--seconds", type=float, default=DEFAULT_SECONDS,
-                    help=f'duration in seconds, from {MIN_SECONDS:g} a {MAX_SECONDS:g} (default {DEFAULT_SECONDS:g})', dest='seconds')
-    ap.add_argument("--out", help=f'filename in assets/ (default: {PREFIX}<texto>.mp3; o prefixo {PREFIX} entra sozinho)', dest='out')
+                    help=f'duration in seconds, from {MIN_SECONDS:g} to {MAX_SECONDS:g} (default {DEFAULT_SECONDS:g})', dest='seconds')
+    ap.add_argument("--out", help=f'filename in assets/ (default: {PREFIX}<text>.mp3; the {PREFIX} prefix is added automatically)', dest='out')
     ap.add_argument("--prompt-influence", type=float, default=DEFAULT_INFLUENCE,
                     help=f'0 to 1: adherence to the description (default {DEFAULT_INFLUENCE:g})', dest='prompt_influence')
     ap.add_argument("--loop", action="store_true", help='sound loops seamlessly', dest='loop')
@@ -83,17 +83,17 @@ def main(argv: list[str] | None = None) -> int:
             raise el.ElevenError('sound description is empty', 2)
         el.check_prompt(text, EXAMPLE)
         if not 1 <= args.variations <= MAX_VARIATIONS:
-            raise el.ElevenError(f'--variations vai de 1 a {MAX_VARIATIONS} (each variant incurs a charge)', 2)
+            raise el.ElevenError(f'--variations ranges from 1 to {MAX_VARIATIONS} (each variant incurs a charge)', 2)
         influence = args.prompt_influence
         if not math.isfinite(influence) or not 0 <= influence <= 1:
-            raise el.ElevenError("--prompt-influence vai de 0 a 1 (ex.: 0.5)", 2)
+            raise el.ElevenError("--prompt-influence ranges from 0 to 1 (for example 0.5)", 2)
         edit = el.edit_folder(args.edit_dir)
         seconds, notes = pick_seconds(args.seconds)
         key = el.api_key()
         el.check_in_key(text, key)
         if not key and not args.dry_run:
             raise el.ElevenError(el.missing_key_message(
-                "Gerar efeito sonoro", 'the 24 bundled sound effects are included with the skill; inspect the local library before generating another'), 2)
+                "Generate a sound effect", 'the 24 bundled sound effects are included with the skill; inspect the local library before generating another'), 2)
         paths = output_names(edit, text, args.out, args.variations)
         payload = {"text": text, "duration_seconds": seconds, "prompt_influence": round(influence, 3),
                    "loop": bool(args.loop), "model_id": MODEL}
@@ -104,9 +104,9 @@ def main(argv: list[str] | None = None) -> int:
 
         each = el.credits_estimate("sfx", seconds)
         if args.dry_run:
-            say(f"efeito: {seconds:g} s{(', em loop' if args.loop else '')}, text influence {influence:g}")
-            say("arquivos: " + ", ".join(f'assets/{p.name}' for p in paths))
-            say(f'custo estimado: cerca de {each} credits per variant, {each * len(paths)} total (a ElevenLabs cobra cerca de {el.SFX_CREDITS_PER_SECOND} credits per sound-effect second; the provider dashboard gives the actual charge')
+            say(f"effect: {seconds:g} s{(', looped' if args.loop else '')}, text influence {influence:g}")
+            say("files: " + ", ".join(f'assets/{p.name}' for p in paths))
+            say(f'estimated cost: about {each} credits per variant, {each * len(paths)} total (ElevenLabs charges about {el.SFX_CREDITS_PER_SECOND} credits per sound-effect second; the provider dashboard gives the actual charge)')
             say(el.PAID_PLAN_LINE)
             if not key:
                 say(f'key missing. Configure it before generation: {el.KEY_NAME}; see the message produced without --dry-run')
@@ -115,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         for i, path in enumerate(paths, 1):
-            say(f'gerando efeito {i}/{len(paths)} ({seconds:g} s) na conta ElevenLabs da pessoa...', flush=True)
+            say(f'generating effect {i}/{len(paths)} ({seconds:g} s) in the user\'s ElevenLabs account...', flush=True)
             data = el.post_audio(el.SFX_URL, payload, key or "", "Sound Effects", TIMEOUT)
             rel = f'assets/{path.name}'
             el.store(edit, path, data, el.new_credit(rel, SOURCE, text, seconds, loop=bool(args.loop),
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
             saved.append(rel)
             say(f'ok: {rel}  {seconds:g} s  {len(data) // 1024} KB', flush=True)
         say(f'credits recorded in assets/credits.json ({el.COMMERCIAL_NOTE})')
-        say(f'em sfx.events: {{"at": 5.07, "name": "{saved[0]}"}}; the file begins at "at"; use "anchor_s" if its peak comes later')
+        say(f'in sfx.events: {{"at": 5.07, "name": "{saved[0]}"}}; the file begins at "at"; use "anchor_s" if its peak comes later')
         return 0
     except Exception as e:  # noqa: BLE001  (never a traceback: its text could carry the key)
         if not isinstance(e, el.ElevenError):

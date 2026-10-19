@@ -5,6 +5,15 @@ from preview_fixture import running_preview
 
 
 class PreviewServerTests(unittest.TestCase):
+    def test_style_report_names_a_motion_field_compose_accepts(self):
+        import re
+        from compose_final import _motion_items
+        from watch_preview import format_style
+        line = format_style({'elements': {'motion': True}, 'motionCount': 'some', 'motionTheme': 'paper'}, {})
+        field = re.search(r'\(motion\.(\w+) (\d+)\)', line)
+        self.assertIsNotNone(field, line)
+        self.assertEqual(_motion_items({'motion': {field.group(1): int(field.group(2)), 'items': []}}), [])
+
     def test_watcher_rejects_approval_after_dependency_change(self):
         from watch_preview import stale_approval_note
         info = self.session.file_info('cut.mp4')

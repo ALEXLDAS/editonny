@@ -196,7 +196,7 @@ def end_of_speech(cfg: dict, dur: float) -> float | None:
 
 
 def sheet_value(video: Path, w: int, h: int, times_value: list[float], output_value: Path) -> Path:
-    from PIL import Image, ImageDraw  # noqa: PLC0415
+    from PIL import ImageDraw  # noqa: PLC0415
     import contact_sheet as cs  # noqa: PLC0415
     tw = 270
     th = round(tw * h / w)
