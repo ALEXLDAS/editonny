@@ -104,6 +104,21 @@ The same container additionally exposed HLG10 quantization at the previous x265 
 
 Two independent native reviewers closed the narrow composition/fixture and HDR-quality patches, including callers and cache invalidation. The 75 engine tests then passed on both local macOS and the disposable Ubuntu container, each with the ordinary opt-in native skip; the general check passed with 88 Python, 15 Node and 130 Vitest tests. The pinned render smoke, separately enabled native conformance and isolated preview gate also passed after these patches; the smoke frame at one second was inspected. These follow-ups address the new CI portability risk and do not replace the three publication review cycles above.
 
+## Engine fixes from an HDR phone edit
+
+On 2026-10-19 an edit of an iPhone HLG/Dolby Vision 8.4 clip at 263400/4391 FPS, with a confirmed `convert`/`sdr-bt709`/`hable` policy, exposed four engine defects. Each was reproduced before correction with synthetic data:
+
+- `inspect --requested` failed with a circular reference because the proposal stored the inspection report it was then attached to. Provenance now keeps a copy. Test: `tests/test_intake.py`.
+- Managed `hf render` re-applied the color plan to the already-converted SDR cut and blocked the Hable route. The cut is now compared with the plan of the selected sources, as FFmpeg composition does; the native SDR 8-bit checks are unchanged. Test: `tests/test_media_policy.py`.
+- Native renders at fractional rates carried 1–2 tick PTS jitter, so the delivery `frameRate` check failed. After the audio steps, video timestamps are snapped to the exact frame grid by stream copy (`setts`) and verified: exact deltas, increasing DTS and DTS not after PTS. A time base that cannot represent the rate blocks the candidate. Test: a jittered H.264 fixture with B-frames at 263400/4391 in `tests/integration/test_media_timing.py`.
+- Counter, checklist and notification pieces suggested undefined sound types (`counting`, `risk`, `ding`). They now use `tick`, `scratch` and `notification`. Test: `tests/integration/test_sound_plan.py` checks every literal piece sound type.
+
+The skill now tells agents not to show engine errors or repair requests to users, to continue only through supported routes without editing the package or relaxing checks, and otherwise to offer concrete choices.
+
+One read-only native Codex review (`gpt-6-astra`, ChatGPT authentication) reported one Important finding: revisions keep deselected sources in the manifest, so planning from all of them rejected a valid cut. It was reproduced; native and FFmpeg composition now plan from the selected sources only, with a regression case. Afterwards `npm run check` passed with 90 Python and 132 Vitest tests, `npm run test:engine` passed 77 tests with its opt-in native skip, the separately enabled native conformance passed (exercising the snap at 24 FPS), the pinned render smoke passed with its one-second frame inspected, and `doctor` passed.
+
+Limits: the original clip was not re-rendered. Snap evidence covers synthetic H.264 at 24 FPS and 263400/4391, not every renderer time base. Cadence detection still tolerates one time-base tick, so a stream-copy remux to a finer timescale (1/600 to 1/19200 in this edit) can reclassify a CFR phone source as VFR; this is recorded, not changed.
+
 ## README visual refresh
 
 On 2026-10-18 the README refresh passed `npm run check`: rule self-check, ESLint, 54 Python tests, 22 Node tests, and generated-guide verification. `doctor` also passed. The additional package test and extended archive fixture first failed against the previous packager, then passed after adding the named README artwork directory. Coverage includes artwork inclusion, exclusion of private sibling files and `.env`, and rejection of a symlinked artwork root.

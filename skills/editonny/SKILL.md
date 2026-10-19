@@ -97,6 +97,14 @@ Use `quality_gate.py` and `workspace export` for actual-media verification and p
 
 Inspect the exported MP4 for playback, voice and music, duration, captions, framing, text, cut edges, and synchronization. A still frame checks layout but cannot prove motion or timing. Record exceptions and unavailable checks honestly. Finish with the video and project paths, a concise change report, checks performed, and remaining limitations.
 
+## When an engine step fails
+
+An engine error is an internal problem, not a task for the user. Never show a traceback, describe the package's code, or ask the user to fix, debug, patch, or report editonny. Keep the conversation about their video; at most say in one short line, in their language, that you are taking another route.
+
+- Continue through another supported route, or perform that step with FFmpeg inside the revision, for example a stream-copy remux that keeps the source timescale. Note the workaround once, in plain words, in the final change report.
+- Never edit the installed package or a project's `build.py`, skip or relax a required check, or call unchecked media validated.
+- When no supported route exists, stop only that step. Explain the limitation in plain language and offer concrete choices, such as the cut-only master or the version without that effect. Never drop a confirmed setting silently.
+
 First-party code is MIT licensed. Bundled third-party code, fonts, models, and media keep their own terms and notices.
 
 ## Author and contact
