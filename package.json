@@ -1,0 +1,44 @@
+{
+  "name": "editonny-dev",
+  "private": true,
+  "scripts": {
+    "build": "node web/build-data.mjs",
+    "check:web": "node web/build-data.mjs --check",
+    "test": "python3 -m unittest discover -s tests -p 'test_*.py' && node --test tests/web-cleanup.test.mjs tests/web.test.mjs tests/web-build.test.mjs tests/eslint-config.test.mjs tests/three-engine.test.mjs tests/preview-api.test.mjs",
+    "test:browser": "node --test tests/web-browser.test.mjs",
+    "lint": "eslint . --max-warnings 0",
+    "lint:rules": "node eslint-rules/verify.mjs ./eslint-rules/index.cjs",
+    "check": "npm run lint:rules && npm run lint && npm test && npm run check:web",
+    "test:engine": "uv run --locked --directory skills/editonny/engine python -m unittest discover -s ../../../tests/integration -p 'test_*.py'",
+    "test:preview": "node --test tests/preview-browser.test.mjs",
+    "graph:check": "python3 scripts/project_graph.py check",
+    "graph:update": "python3 scripts/project_graph.py update",
+    "graph:code": "python3 scripts/project_graph.py code",
+    "graph:exports": "python3 scripts/project_graph.py exports",
+    "graph:watch": "python3 scripts/project_graph.py watch",
+    "test:scenes": "node --test tests/template-scenes.test.mjs"
+  },
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Matheus Gomes",
+    "email": "eu@matheusgom.es",
+    "url": "https://instagram.com/matheusgomes"
+  },
+  "homepage": "https://github.com/soumatheusgomes/editonny#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soumatheusgomes/editonny.git"
+  },
+  "bugs": {
+    "url": "https://github.com/soumatheusgomes/editonny/issues"
+  }
+}

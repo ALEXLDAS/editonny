@@ -1,0 +1,1455 @@
+{
+  "version": "2026-10-12",
+  "scenes": [
+    {
+      "id": "revenue-counter",
+      "name": "Revenue counter",
+      "category": "General",
+      "whenToUse": "When speech mentions revenue, profit, or a monetary result.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "three-steps",
+      "name": "Three steps",
+      "category": "General",
+      "whenToUse": "When speech summarizes a method in three steps.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "before-after",
+      "name": "Before after",
+      "category": "General",
+      "whenToUse": "When comparing a previous result with a new result using two numbers.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "call-to-action",
+      "name": "Call to action",
+      "category": "General",
+      "whenToUse": "At the end of a video, when asking viewers to tap a button.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "question-answer",
+      "name": "Question answer",
+      "category": "General",
+      "whenToUse": "When answering a frequently asked question.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "step-by-step",
+      "name": "Step by step",
+      "category": "General",
+      "whenToUse": "When explaining four steps in sequence.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "numbered-list",
+      "name": "Numbered list",
+      "category": "General",
+      "whenToUse": "When listing mistakes, tips, or reasons.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "comparison",
+      "name": "Comparison",
+      "category": "General",
+      "whenToUse": "When comparing two options side by side.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "phone-tutorial",
+      "name": "Phone tutorial",
+      "category": "General",
+      "whenToUse": "When demonstrating a sequence of actions inside an app.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "phone-chat",
+      "name": "Phone chat",
+      "category": "General",
+      "whenToUse": "When describing a customer conversation that led to a sale.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "laptop-dashboard",
+      "name": "Laptop dashboard",
+      "category": "General",
+      "whenToUse": "When presenting monthly results.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "notifications",
+      "name": "Notifications",
+      "category": "General",
+      "whenToUse": "When describing sales arriving one after another.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "mortgage-calculator",
+      "name": "Mortgage calculator",
+      "category": "Real estate",
+      "whenToUse": "When explaining an estimated mortgage payment.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "property-card",
+      "name": "Property card",
+      "category": "Real estate",
+      "whenToUse": "When presenting a property with a price and dimensions.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "medical-warning-signs",
+      "name": "Medical warning signs",
+      "category": "Health",
+      "whenToUse": "When listing symptoms and possible contributing factors. Replace illustrative content with verified clinical information.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "body-diagram",
+      "name": "Body diagram",
+      "category": "Health",
+      "whenToUse": "When identifying body regions and possible causes of pain. Illustrative content does not replace medical advice.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "balanced-plate",
+      "name": "Balanced plate",
+      "category": "Nutrition",
+      "whenToUse": "When explaining how to divide a plate into food groups.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "food-swap",
+      "name": "Food swap",
+      "category": "Nutrition",
+      "whenToUse": "When suggesting a food substitution.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "legal-deadline",
+      "name": "Legal deadline",
+      "category": "Legal",
+      "whenToUse": "When explaining a running legal deadline. Verify the applicable jurisdiction and facts.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "legal-code",
+      "name": "Legal code",
+      "category": "Legal",
+      "whenToUse": "When quoting a legal provision. Replace illustrative legal text with the applicable verified source.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "follower-counter",
+      "name": "Follower counter",
+      "category": "Creators",
+      "whenToUse": "When celebrating or discussing a follower count.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "creator-comment",
+      "name": "Creator comment",
+      "category": "Creators",
+      "whenToUse": "When replying to a viewer's comment.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "fullscreen",
+      "hidesCaptions": true
+    },
+    {
+      "id": "legal-article-panel",
+      "name": "Legal article panel",
+      "category": "Legal panels",
+      "whenToUse": "When showing a legal article on a document. Verify the jurisdiction and cited rule.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "legal-deadline-panel",
+      "name": "Legal deadline panel",
+      "category": "Legal panels",
+      "whenToUse": "When explaining a legal time limit on a timeline.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "refund-panel",
+      "name": "Refund panel",
+      "category": "Legal panels",
+      "whenToUse": "When adding up the components of a customer refund.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "three-second-hook-panel",
+      "name": "Three second hook panel",
+      "category": "Creator panels",
+      "whenToUse": "When explaining the importance of the first three seconds.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "waveform-panel",
+      "name": "Waveform panel",
+      "category": "Creator panels",
+      "whenToUse": "When explaining successive audience tests for a video.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "engagement-panel",
+      "name": "Engagement panel",
+      "category": "Creator panels",
+      "whenToUse": "When listing viewer engagement signals.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "heart-panel",
+      "name": "Heart panel",
+      "category": "Health panels",
+      "whenToUse": "When introducing heart rate and cardiovascular health.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "artery-panel",
+      "name": "Artery panel",
+      "category": "Health panels",
+      "whenToUse": "When explaining pressure in a clear or narrowed artery.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "health-chart-panel",
+      "name": "Health chart panel",
+      "category": "Health panels",
+      "whenToUse": "When illustrating a risk range or an undiagnosed condition. Verify clinical figures before use.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "drink-carton-panel",
+      "name": "Drink carton panel",
+      "category": "Nutrition panels",
+      "whenToUse": "When revealing the sugar content of a packaged drink.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "sugar-cubes-panel",
+      "name": "Sugar cubes panel",
+      "category": "Nutrition panels",
+      "whenToUse": "When translating grams of sugar into cubes.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "nutrition-limit-panel",
+      "name": "Nutrition limit panel",
+      "category": "Nutrition panels",
+      "whenToUse": "When comparing sugar with a daily limit and suggesting whole fruit. Verify the intended guidance.",
+      "duration": 6,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "building-panel",
+      "name": "Building panel",
+      "category": "Real estate panels",
+      "whenToUse": "When introducing a property development. The building rises floor by floor while its floor count animates; set floors to zero to hide the count.",
+      "duration": 6.3,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "location-map-panel",
+      "name": "Location map panel",
+      "category": "Real estate panels",
+      "whenToUse": "When explaining a location and walking distance. The count can land on a spoken word or an explicit panel time; up to two additional locations light up when named.",
+      "duration": 5.7,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "floor-plan-panel",
+      "name": "Floor plan panel",
+      "category": "Real estate panels",
+      "whenToUse": "When showing a property interior: an outlined floor plan becomes a 3D view with area and four room labels.",
+      "duration": 7.3,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "property-price-panel",
+      "name": "Property price panel",
+      "category": "Real estate panels",
+      "whenToUse": "When introducing a property price above the floor plan. Zero hides the numeric price.",
+      "duration": 4.8,
+      "format": "9:16",
+      "layout": "frame",
+      "hidesCaptions": true
+    },
+    {
+      "id": "transition-glow",
+      "name": "Transition glow",
+      "category": "Transitions",
+      "whenToUse": "For a standard scene change: a warm light leak peaks at the cut.",
+      "duration": 0.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-flash",
+      "name": "Transition flash",
+      "category": "Transitions",
+      "whenToUse": "For a sharp, emphatic cut: a short white flash peaks at the cut.",
+      "duration": 0.3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-film-burn",
+      "name": "Transition film burn",
+      "category": "Transitions",
+      "whenToUse": "For a change of topic or time: film-burn shapes sweep across the screen.",
+      "duration": 0.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-glitch",
+      "name": "Transition glitch",
+      "category": "Transitions",
+      "whenToUse": "For technology, errors, or sudden reversals: separated color channels, displaced strips, line tearing, and static peak at the cut.",
+      "duration": 0.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-tv",
+      "name": "Transition tv",
+      "category": "Transitions",
+      "whenToUse": "For a section ending or a joke: the image closes into a line and opens again.",
+      "duration": 0.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-curtain",
+      "name": "Transition curtain",
+      "category": "Transitions",
+      "whenToUse": "For a new item or topic: a strip in the accent color sweeps across the screen.",
+      "duration": 0.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-zoom",
+      "name": "Transition zoom",
+      "category": "Transitions",
+      "whenToUse": "To move toward an important detail: speed rays and blur emphasize the cut.",
+      "duration": 0.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-blinds",
+      "name": "Transition blinds",
+      "category": "Transitions",
+      "whenToUse": "For a change of setting or day: seven strips close and open in sequence.",
+      "duration": 0.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-iris",
+      "name": "Transition iris",
+      "category": "Transitions",
+      "whenToUse": "To close a story or focus on a detail: a circle closes at the center and reopens.",
+      "duration": 0.7,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "transition-fade",
+      "name": "Transition fade",
+      "category": "Transitions",
+      "whenToUse": "For a dramatic pause or passage of time: the image briefly fades to black.",
+      "duration": 0.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-down-arrow",
+      "name": "Pointer down arrow",
+      "category": "Pointers",
+      "whenToUse": "To point at a button, number, product, or link.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-curved-arrow",
+      "name": "Pointer curved arrow",
+      "category": "Pointers",
+      "whenToUse": "To draw attention to a detail with a hand-drawn curved arrow.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-side-arrow",
+      "name": "Pointer side arrow",
+      "category": "Pointers",
+      "whenToUse": "To point toward nearby text, a button, or an on-screen item.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-red-cross",
+      "name": "Pointer red cross",
+      "category": "Pointers",
+      "whenToUse": "To reject an option or mark something as incorrect.",
+      "duration": 2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-green-check",
+      "name": "Pointer green check",
+      "category": "Pointers",
+      "whenToUse": "To confirm, approve, or mark an item as completed.",
+      "duration": 2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-circle",
+      "name": "Pointer circle",
+      "category": "Pointers",
+      "whenToUse": "To circle a number, face, button, or other detail.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-underline",
+      "name": "Pointer underline",
+      "category": "Pointers",
+      "whenToUse": "To underline an important word, number, or phrase.",
+      "duration": 2.2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-box",
+      "name": "Pointer box",
+      "category": "Pointers",
+      "whenToUse": "To outline a region, screenshot detail, button, or object.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-highlighter",
+      "name": "Pointer highlighter",
+      "category": "Pointers",
+      "whenToUse": "To highlight a written phrase, value, or screenshot line.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-spotlight",
+      "name": "Pointer spotlight",
+      "category": "Pointers",
+      "whenToUse": "To isolate a face, product, or screenshot detail by darkening the surroundings.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-banner",
+      "name": "Pointer banner",
+      "category": "Pointers",
+      "whenToUse": "To conceal an area such as a face, name, number, or screenshot detail.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-toggle",
+      "name": "Pointer toggle",
+      "category": "Pointers",
+      "whenToUse": "When asking viewers to enable or disable a feature or mode.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-tap",
+      "name": "Pointer tap",
+      "category": "Pointers",
+      "whenToUse": "When asking viewers to tap or click a specific point.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-number",
+      "name": "Pointer number",
+      "category": "Pointers",
+      "whenToUse": "When numbering steps or items over the footage.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-rays",
+      "name": "Pointer rays",
+      "category": "Pointers",
+      "whenToUse": "To surround an important object, face, or number with emphatic rays.",
+      "duration": 2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-question",
+      "name": "Pointer question",
+      "category": "Pointers",
+      "whenToUse": "When asking a question or showing uncertainty near the speaker's head.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "pointer-exclamation",
+      "name": "Pointer exclamation",
+      "category": "Pointers",
+      "whenToUse": "When warning about an error, risk, or important precaution.",
+      "duration": 2.2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-vignette",
+      "name": "Effect vignette",
+      "category": "Video effects",
+      "whenToUse": "To create a darker cinematic mood or draw attention to the speaker's face.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-blur",
+      "name": "Effect blur",
+      "category": "Video effects",
+      "whenToUse": "To blur the background while keeping the face sharp, like portrait mode.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-glow",
+      "name": "Effect glow",
+      "category": "Video effects",
+      "whenToUse": "For a dream, memory, luxury mood, or beautiful moment: bright areas gain a soft halo.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-chromatic-blur",
+      "name": "Effect chromatic blur",
+      "category": "Video effects",
+      "whenToUse": "For an old-lens, dreamlike, or dizzy look: red and blue fringes appear around edges.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-shake",
+      "name": "Effect shake",
+      "category": "Video effects",
+      "whenToUse": "To emphasize a striking number, reversal, surprise, or impact with camera shake.",
+      "duration": 2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-money-rain",
+      "name": "Effect money rain",
+      "category": "Video effects",
+      "whenToUse": "When discussing sales, profit, revenue, or incoming money.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-confetti",
+      "name": "Effect confetti",
+      "category": "Video effects",
+      "whenToUse": "To celebrate a milestone, sale, achievement, or birthday with confetti.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-cinema",
+      "name": "Effect cinema",
+      "category": "Video effects",
+      "whenToUse": "For storytelling, revelations, or epic moments with a film-trailer look.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-noir",
+      "name": "Effect noir",
+      "category": "Video effects",
+      "whenToUse": "For a serious scene, memory, drama, or secret with a monochrome look.",
+      "duration": 2.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-tv-lines",
+      "name": "Effect tv lines",
+      "category": "Video effects",
+      "whenToUse": "For an old CRT, surveillance camera, archival recording, or memory.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-static",
+      "name": "Effect static",
+      "category": "Video effects",
+      "whenToUse": "For a weak signal, interference, failing memory, or suspense.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-vhs",
+      "name": "Effect vhs",
+      "category": "Video effects",
+      "whenToUse": "For a nostalgic recording, 1990s home video, or archival VHS look.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "effect-prism",
+      "name": "Effect prism",
+      "category": "Video effects",
+      "whenToUse": "For dreams, dizziness, amazement, or confusion: prism-like image copies spread apart.",
+      "duration": 2.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "stone-text",
+      "name": "Stone text",
+      "category": "Comedy",
+      "whenToUse": "To give a phrase physical weight: stone letters hang briefly, then fall and break the floor.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "cracked-screen",
+      "name": "Cracked screen",
+      "category": "Comedy",
+      "whenToUse": "For a screen-hit joke: glass cracks at the selected point, the image shakes, and the cracks remain.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "stage-spotlight",
+      "name": "Stage spotlight",
+      "category": "Comedy",
+      "whenToUse": "For a request for attention or light: the room darkens and a stage spotlight shines on the subject while side beams sweep.",
+      "duration": 3.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "concert-strobe",
+      "name": "Concert strobe",
+      "category": "Comedy",
+      "whenToUse": "For a concert or nightclub joke: the room darkens, a white strobe pulses to the beat, colored beams cross, and fog rises.",
+      "duration": 3.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "explosion",
+      "name": "Explosion",
+      "category": "Comedy",
+      "whenToUse": "For an explosion joke: realistic fire, dark smoke, and sparks erupt at x/y, with a white flash and a short shake.",
+      "duration": 3.2,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "fire",
+      "name": "Fire",
+      "category": "Comedy",
+      "whenToUse": "For a heat or fire joke: realistic flames rise from the lower edge and a warm flicker covers the footage.",
+      "duration": 3.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "smoke",
+      "name": "Smoke",
+      "category": "Comedy",
+      "whenToUse": "For a disappearing act, mishap, or concealed change: gray smoke rises, covers the screen, and dissipates.",
+      "duration": 3.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "shattered-glass",
+      "name": "Shattered glass",
+      "category": "Comedy",
+      "whenToUse": "For a broken-screen joke: glass cracks at x/y and the shards fly and fall, with a short flash and shake.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "neon-quote",
+      "name": "Neon quote",
+      "category": "Neon",
+      "whenToUse": "For a strong headline: text blocks alternate weights and the starred keyword glows in the corner-light color.",
+      "duration": 3.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "neon-good-bad",
+      "name": "Neon good bad",
+      "category": "Neon",
+      "whenToUse": "To challenge apparently good advice: a green card is struck by a light streak, breaks apart, turns red, and reveals a verdict.",
+      "duration": 4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "glass-chart",
+      "name": "Glass chart",
+      "category": "Neon",
+      "whenToUse": "When a metric rises or falls: a white curve draws progressively while its marker and counter move to the final value.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "stuck-progress-bar",
+      "name": "Stuck progress bar",
+      "category": "Neon",
+      "whenToUse": "To show something that never quite finishes: a progress bar stops near completion, locks, and reveals an emphatic phrase.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "attempt-counter",
+      "name": "Attempt counter",
+      "category": "Neon",
+      "whenToUse": "When success follows repeated attempts: failed attempts receive red crosses and strikes; the successful attempt lights up green.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "glass-list",
+      "name": "Glass list",
+      "category": "Neon",
+      "whenToUse": "When listing completed work or benefits: dim items light up one by one with green checks on a glass card.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "object-card",
+      "name": "Object card",
+      "category": "Scene objects",
+      "whenToUse": "When introducing an object with numeric facts: a rotating 3D object appears with a 2×2 fact card. Change the video src to a bundled object file; the renderer reads that HTML resource directly.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "house-construction",
+      "name": "House construction",
+      "category": "Scene objects",
+      "whenToUse": "When explaining a build or staged process: a 3D house assembles while step labels light up. Playback runs once at 1.2×, completing in 2.4 seconds; allow at least 3.5 seconds for the badge to follow completion.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "brazil-map",
+      "name": "Brazil map",
+      "category": "Scene objects",
+      "whenToUse": "When discussing reach or locations in Brazil: an angled map lights states individually, by region, or in a chosen set, while a counter animates above.",
+      "duration": 5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "solar-system",
+      "name": "Solar system",
+      "category": "Scene objects",
+      "whenToUse": "When introducing the universe, a central idea, or orbital relationships: four planets orbit a 3D Sun, passing behind and in front of it.",
+      "duration": 5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "video-gallery",
+      "name": "Video gallery",
+      "category": "Scene objects",
+      "whenToUse": "When showcasing video work: six portrait cards fan out in 3D and one moves forward. Replace placeholder gradients with muted video elements; set data-start, data-duration, and the correct src. Optional views count below.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "notes-interface",
+      "name": "Notes interface",
+      "category": "Interfaces",
+      "whenToUse": "When listing requirements, steps, or tasks: a title types in and each item gains a check in sequence.",
+      "duration": 4.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "ai-chat-interface",
+      "name": "AI chat interface",
+      "category": "Interfaces",
+      "whenToUse": "When showing a request to AI: the request types in, sends, waits, and receives a reply with a finished video.",
+      "duration": 5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "search-interface",
+      "name": "Search interface",
+      "category": "Interfaces",
+      "whenToUse": "When inviting a search or introducing a product: the query types in and a leading result appears.",
+      "duration": 4.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "camera-interface",
+      "name": "Camera interface",
+      "category": "Interfaces",
+      "whenToUse": "When discussing filming or appearing on camera: the footage becomes a camera viewfinder and a phrase appears word by word.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "command-bar",
+      "name": "Command bar",
+      "category": "Interfaces",
+      "whenToUse": "When showing a computer or AI command: the command types in, Enter submits it, and stages receive checks one by one.",
+      "duration": 4.8,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "receipt",
+      "name": "Receipt",
+      "category": "Proof cards",
+      "whenToUse": "When explaining cost and elapsed time: the cost card counts up, slides aside, and gives way to a time card.",
+      "duration": 4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "completed-checklist",
+      "name": "Completed checklist",
+      "category": "Proof cards",
+      "whenToUse": "When listing tasks that are no longer necessary: each item appears and is crossed out.",
+      "duration": 4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "crossed-out-quote",
+      "name": "Crossed out quote",
+      "category": "Proof cards",
+      "whenToUse": "When comparing an old recurring cost with a new price.",
+      "duration": 4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "progress-meter",
+      "name": "Progress meter",
+      "category": "Proof cards",
+      "whenToUse": "When describing a low or high cost, effort, or risk: a gauge indicates the level.",
+      "duration": 3.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "time-counter",
+      "name": "Time counter",
+      "category": "Proof cards",
+      "whenToUse": "When stating how long a task takes: a counter reaches the chosen time and unit.",
+      "duration": 3.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "editing-behind-scenes",
+      "name": "Editing behind scenes",
+      "category": "Proof cards",
+      "whenToUse": "When showing editing in progress: an editor panel displays footage, waveform, captions, a moving playhead, and successive cuts.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "waveform-cuts",
+      "name": "Waveform cuts",
+      "category": "Proof cards",
+      "whenToUse": "When explaining removed pauses: red waveform gaps disappear one by one, the waveform joins, and the duration decreases.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "dentist-brushing",
+      "name": "Dentist brushing",
+      "category": "Dental demonstrations",
+      "whenToUse": "When correcting brushing technique: hard brushing marks the tooth red, the wrong title is crossed out, and a soft brush gently cleans a protected tooth.",
+      "duration": 4.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "muscle-recovery",
+      "name": "Muscle recovery",
+      "category": "Fitness demonstrations",
+      "whenToUse": "When explaining muscle recovery: training contracts the muscle; sleep, protein, and rest then send energy into it and it grows.",
+      "duration": 5.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "consumer-rights",
+      "name": "Consumer rights",
+      "category": "Legal demonstrations",
+      "whenToUse": "When explaining retained and lost rights: retained items gain checks while excluded items are crossed out and move away. Verify the applicable jurisdiction and facts.",
+      "duration": 5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "nutrition-oranges",
+      "name": "Nutrition oranges",
+      "category": "Nutrition demonstrations",
+      "whenToUse": "When comparing whole fruit with juice: oranges are squeezed into one glass, sugar remains in the juice, and fiber moves out, with labels.",
+      "duration": 5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "architect-room",
+      "name": "Architect room",
+      "category": "Architecture demonstrations",
+      "whenToUse": "When explaining a small-room design: window light reflects from a mirror, then a floor-to-ceiling curtain demonstrates height.",
+      "duration": 5.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "year-hook",
+      "name": "Year hook",
+      "category": "General",
+      "whenToUse": "For an opening year or number hook: large digits flip over a dark chart panel and a pill badge emphasizes the message.",
+      "duration": 4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "profession-cards",
+      "name": "Profession cards",
+      "category": "General",
+      "whenToUse": "When presenting several professions or niches: stacked cards fan out with an occupation icon on each.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "comment-call-to-action",
+      "name": "Comment call to action",
+      "category": "General",
+      "whenToUse": "At the closing call to action: a comment box appears, a keyword types in, and a finger taps Send.",
+      "duration": 4.5,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "text-karaoke",
+      "name": "Text karaoke",
+      "category": "Captions and titles",
+      "whenToUse": "For standard short-video captions: white words remain visible while the current spoken word turns yellow and bounces.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-pop",
+      "name": "Text pop",
+      "category": "Captions and titles",
+      "whenToUse": "For a hook or emphatic reversal: one or two large words pop on their spoken timing; the last word is highlighted.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-chromatic",
+      "name": "Text chromatic",
+      "category": "Captions and titles",
+      "whenToUse": "For energetic technology, AI, or editing captions with a chromatic glitch look.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-rising-glow",
+      "name": "Text rising glow",
+      "category": "Captions and titles",
+      "whenToUse": "For flowing captions: the current word rises from behind a line with a yellow glow, then turns white.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-red-word",
+      "name": "Text red word",
+      "category": "Captions and titles",
+      "whenToUse": "For a warning, promise, or strong claim: dim words turn red as spoken and remain lit until the next caption group.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-italic",
+      "name": "Text italic",
+      "category": "Captions and titles",
+      "whenToUse": "For sports, action, challenges, or results: italic captions emphasize the longest word in each group.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-translucent-box",
+      "name": "Text translucent box",
+      "category": "Captions and titles",
+      "whenToUse": "For tutorials or busy backgrounds: a subtle dark translucent pill contains the phrase, with a brighter current word.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-glowing-outline",
+      "name": "Text glowing outline",
+      "category": "Captions and titles",
+      "whenToUse": "For conversational tips, routines, or behind-the-scenes footage with a delicate glowing outline.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-typewriter",
+      "name": "Text typewriter",
+      "category": "Captions and titles",
+      "whenToUse": "For commands, code, or AI tutorials: letters type into a dark strip with a moving block cursor that blinks during pauses.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-bold-title",
+      "name": "Text bold title",
+      "category": "Captions and titles",
+      "whenToUse": "For an opening headline: short black text appears on colored strips, one strip per line near the top.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-two-line-title",
+      "name": "Text two line title",
+      "category": "Captions and titles",
+      "whenToUse": "For a classic short-video hook: a small white lead-in sits above a large accent-colored second line.",
+      "duration": 3.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-impact",
+      "name": "Text impact",
+      "category": "Captions and titles",
+      "whenToUse": "For an emphatic number, price, or promise: text jumps up, sharpens, and leaves a large translucent echo. The entrance lasts 0.5 seconds, then holds until the cut.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-spring",
+      "name": "Text spring",
+      "category": "Captions and titles",
+      "whenToUse": "For an energetic short callout: text springs from zero, overshoots, and settles. It then holds until the cut.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-doodle",
+      "name": "Text doodle",
+      "category": "Captions and titles",
+      "whenToUse": "For a callout held for several seconds: letters appear individually and wobble like hand-drawn lettering through four stepped poses.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-twist",
+      "name": "Text twist",
+      "category": "Captions and titles",
+      "whenToUse": "For a sustained call to action: letters shift and their outlines twist around a wavy baseline in four poses per cycle, faster and stronger than Doodle.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-color-glitch",
+      "name": "Text color glitch",
+      "category": "Captions and titles",
+      "whenToUse": "For a technology headline or launch notice: text appears with a chromatic jolt, holds, then briefly splits red and cyan channels across displaced bands.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-spotlight-off",
+      "name": "Text spotlight off",
+      "category": "Captions and titles",
+      "whenToUse": "For an emphatic exit: text flashes on under a moving spotlight; the spotlight closes toward the center and disappears in 0.3 seconds.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-exhale",
+      "name": "Text exhale",
+      "category": "Captions and titles",
+      "whenToUse": "For an expiring offer or deadline: text types in, holds, then ripples, flattens, blurs horizontally, and evaporates in a 0.5-second exit.",
+      "duration": 2.4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": true
+    },
+    {
+      "id": "text-number-badge",
+      "name": "Text number badge",
+      "category": "Captions and titles",
+      "whenToUse": "For numbered lists: a top pill holds the current number and item name. Use one copy per item, with adjacent copies meeting at their boundaries. Editor captions remain visible below; do not hide them.",
+      "duration": 4,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-drop-left",
+      "name": "Entrance drop left",
+      "category": "Image entrances",
+      "whenToUse": "When introducing an image, screenshot, or clip with impact: the card drops from above, holds, then exits left in the last 0.3 seconds. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-drop-right",
+      "name": "Entrance drop right",
+      "category": "Image entrances",
+      "whenToUse": "When introducing an image, screenshot, or clip with impact: the card drops from above, holds, then exits right in the last 0.3 seconds. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-drop-bottom-left",
+      "name": "Entrance drop bottom left",
+      "category": "Image entrances",
+      "whenToUse": "When introducing an image or result: the card slides in from the right, holds, then drops downward in the last 0.3 seconds. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-drop-bottom-right",
+      "name": "Entrance drop bottom right",
+      "category": "Image entrances",
+      "whenToUse": "When introducing an image or result: the card slides in from the left, holds, then drops downward in the last 0.3 seconds. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-zoom-one",
+      "name": "Entrance zoom one",
+      "category": "Image entrances",
+      "whenToUse": "When an image needs a forceful reveal: it enters at 2× scale, snaps down with radial blur, holds still, then rapidly grows at the end. Entry and exit each take about 0.2 seconds. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-zoom-two",
+      "name": "Entrance zoom two",
+      "category": "Image entrances",
+      "whenToUse": "When an image unfolds on screen: it starts at 0.5× inside a card surrounded by mirrored copies, snaps to full scale with radial blur, holds, then shrinks again. Entry takes about 0.2 seconds; exit about 0.15 seconds. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-side-zoom",
+      "name": "Entrance side zoom",
+      "category": "Image entrances",
+      "whenToUse": "When an image enters from the side and recedes: a mirrored edge accompanies a blurred half-screen slide, followed by gradual shrinking and a faster final shrink to about 0.8×. The side parameter selects direction. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-click-open",
+      "name": "Entrance click open",
+      "category": "Image entrances",
+      "whenToUse": "When opening a dashboard, link, or result: an image rises at 44% scale, a cursor clicks it, and it expands with an elastic shake and brief blur. It holds until the cut. The 1.3-second entrance compresses below 2.4 seconds to occupy 55% of the scene; sound timing must compress with it. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    },
+    {
+      "id": "entrance-before-after-curtain",
+      "name": "Entrance before after curtain",
+      "category": "Image entrances",
+      "whenToUse": "For before/after proof: original footage covers the screen with a recording label, then a bright handled curtain sweeps across, briefly reverses, and reveals the edited footage beneath. The sweep starts after 1 second (earlier below 2.5 seconds) and takes about 1.8 seconds. Match the original clip to the spoken content; remove its CSS filter to retain original color. Set image to a file in the image folder. For footage, replace the image element with a video retaining its ID and class, and add src, data-start=\"0\", data-duration, data-track-index=\"2\", muted, and playsinline. Keep portrait cards beside or below the face; the default 16:9 card sits above it.",
+      "duration": 3.6,
+      "format": "9:16",
+      "layout": "overlay",
+      "hidesCaptions": false
+    }
+  ]
+}

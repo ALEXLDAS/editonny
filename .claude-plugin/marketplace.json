@@ -1,0 +1,19 @@
+{
+  "name": "editonny-local",
+  "owner": {
+    "name": "Matheus Gomes",
+    "email": "eu@matheusgom.es",
+    "url": "https://instagram.com/matheusgomes"
+  },
+  "plugins": [
+    {
+      "name": "editonny",
+      "source": "./",
+      "description": "Local video editing and visual scenes",
+      "version": "1.0.0"
+    }
+  ],
+  "metadata": {
+    "description": "Conversation-guided local video editing."
+  }
+}

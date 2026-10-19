@@ -1,0 +1,16 @@
+{
+  "name": "editonny",
+  "version": "1.0.0",
+  "description": "Local video editing, captions, audio, and visual scenes guided by conversation.",
+  "author": {
+    "name": "Matheus Gomes",
+    "email": "eu@matheusgom.es",
+    "url": "https://instagram.com/matheusgomes"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "editonny",
+    "shortDescription": "Your story. Your rhythm. One local editing workflow."
+  },
+  "license": "MIT"
+}

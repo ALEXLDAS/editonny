@@ -1,0 +1,12 @@
+{
+  "name": "editonny-local",
+  "interface": {"displayName": "editonny · Local"},
+  "plugins": [
+    {
+      "name": "editonny",
+      "source": {"source": "local", "path": "./"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+      "category": "Productivity"
+    }
+  ]
+}
