@@ -109,6 +109,30 @@ class MediaTimingTests(unittest.TestCase):
             self.assertEqual(Fraction(facts['fps_str']), Fraction(30000, 1001))
             self.assertEqual((facts['width'], facts['height']), (160, 96))
 
+    def test_fractional_render_rate_is_restamped_onto_the_exact_grid(self):
+        from common import _video_stamps, restamp_cfr
+        rate = '263400/4391'
+        with tempfile.TemporaryDirectory() as temp:
+            exact, render, coarse = (Path(temp) / name for name in ('exact.mp4', 'render.mp4', 'coarse.mp4'))
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', f'testsrc=s=64x64:r={rate}:d=1', '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p', '-video_track_timescale', '263400', str(exact)], check=True)
+            # Renderer-style rounding jitter of -2, 0 or +2 ticks; the same shift keeps the B-frame decode order valid.
+            jitter = '2*(N-3*floor(N/3))-2'
+            subprocess.run(['ffmpeg', '-v', 'error', '-i', str(exact), '-c', 'copy', '-bsf:v', f'setts=pts=PTS+{jitter}:dts=DTS+{jitter}',
+                '-video_track_timescale', '263400', str(render)], check=True)
+            b_frames = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=has_b_frames',
+                '-of', 'csv=p=0', str(render)], capture_output=True, text=True, check=True).stdout.strip()
+            self.assertNotEqual(b_frames, '0')
+            self.assertNotEqual(Fraction(probe_video(render)['fps_str']), Fraction(rate))
+            restamp_cfr(render, rate)
+            shown = sorted(pts for pts, _ in _video_stamps(render)[1])
+            self.assertEqual({b - a for a, b in zip(shown, shown[1:])}, {4391})
+            # The delivery frameRate check compares exactly this value.
+            self.assertEqual(Fraction(probe_video(render)['fps_str']), Fraction(rate))
+            subprocess.run(['ffmpeg', '-v', 'error', '-i', str(exact), '-c', 'copy', '-video_track_timescale', '19200', str(coarse)], check=True)
+            with self.assertRaisesRegex(ValueError, 'cannot represent'):
+                restamp_cfr(coarse, rate)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -204,6 +204,41 @@ def probe_video(path: Path | str) -> dict:
     return out
 
 
+def _video_stamps(path: Path | str) -> tuple[Fraction, list[tuple[int, int]]]:
+    process = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+        'stream=time_base:packet=pts,dts', '-of', 'json', str(path)], capture_output=True, text=True, timeout=600, check=True)
+    data = json.loads(process.stdout)
+    packets = data.get('packets', [])
+    if not packets or any('pts' not in p or 'dts' not in p for p in packets):
+        raise ValueError('Rendered video timestamps are unknown; exact frame timing cannot be verified')
+    return Fraction(data['streams'][0]['time_base']), [(int(p['pts']), int(p['dts'])) for p in packets]
+
+
+def restamp_cfr(video: Path, rate: str) -> None:
+    """Snap renderer rounding jitter onto the exact CFR frame grid without re-encoding; fail closed otherwise."""
+    time_base, _ = _video_stamps(video)
+    step = 1 / (Fraction(rate) * time_base)
+    if step.denominator != 1:
+        raise ValueError(f'Video time base {time_base} cannot represent {rate} fps exactly; render with a timescale that can')
+    step = int(step)
+    grid = f'setts=pts=round(PTS/{step})*{step}:dts=round(DTS/{step})*{step}:duration={step}'
+    with tempfile.TemporaryDirectory(prefix='restamp-', dir=Path(video).parent) as temporary:
+        output = Path(temporary) / 'candidate.mp4'
+        process = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(video), '-map', '0', '-c', 'copy', '-bsf:v', grid,
+            '-video_track_timescale', str(time_base.denominator), '-movflags', '+faststart', str(output)],
+            capture_output=True, text=True, timeout=600)
+        if process.returncode:
+            raise ValueError('Could not restamp video timestamps: ' + process.stderr[-300:])
+        restamped_base, stamps = _video_stamps(output)
+        shown = sorted(pts for pts, _ in stamps)
+        decoded = [dts for _, dts in stamps]
+        # B-frames must keep a valid decode order after snapping.
+        if restamped_base != time_base or any(b - a != step for a, b in zip(shown, shown[1:])) or \
+                any(b <= a for a, b in zip(decoded, decoded[1:])) or any(dts > pts for pts, dts in stamps):
+            raise ValueError('Rendered frames do not fit the exact frame grid without reordering; the candidate was not changed')
+        os.replace(output, video)
+
+
 _COMMON_RATES = (23.976, 24.0, 25.0, 29.97, 30.0, 48.0, 50.0, 59.94, 60.0, 120.0)
 
 

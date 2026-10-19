@@ -1073,7 +1073,7 @@ def piece_list(M, p, pid):
         M.FT(f'#{pid}-m{k} path', {'strokeDashoffset': 1}, {'strokeDashoffset': 0, 'duration': 0.25, 'ease': 'power2.out'}, t + 0.3)
         if brand == 'x':
             M.FT(f'#{pid}-r{k}', {'opacity': 1, 'clipPath': 'inset(0% 100% 0% 0%)'}, {'clipPath': 'inset(0% 0% 0% 0%)', 'duration': 0.22, 'ease': 'power2.out'}, t + 0.3)
-        M.sound('tick' if brand != 'x' else 'risk', t + 0.43, SOUND_SMALL, f'{pid}-{k}')
+        M.sound('tick' if brand != 'x' else 'scratch', t + 0.43, SOUND_SMALL, f'{pid}-{k}')
     M.TO(f'#{pid}', {'opacity': 0, 'y': -28, 'duration': 0.25, 'ease': 'power3.in'}, t_out - 0.25)
     M.reserve(t_in, t_out, x, y, w, h)
 
@@ -1161,7 +1161,7 @@ def piece_counter(M, p, pid):
     M.FT(f'#{pid}', {'y': 0}, {'keyframes': [{'y': round(-14 * s), 'duration': 0.12, 'ease': 'power2.out'}, {'y': 0, 'duration': 0.25, 'ease': 'power2.in'}]}, a + dur)
     M.TO(f'#{pid}', {'opacity': 0, 'y': -28, 'duration': 0.25, 'ease': 'power3.in'}, t_out - 0.25)
     M.reserve(t_in, t_out, x, y, w, h)
-    M.sound('counting', a, SOUND_SMALL, pid)
+    M.sound('tick', a, SOUND_SMALL, pid)
     M.sound('impact', a + dur, SOUND_KEY, pid)
 SVG_BAG = '<svg viewBox="0 0 30 30"><path d="M7 11h16l-1.6 14H8.6z M11 11V9a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>'
 SVG_OK_P = '<svg viewBox="0 0 30 30" width="24" height="24"><path d="M7 15 L13 21 L23 9" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -1190,7 +1190,7 @@ def piece_notification(M, p, pid):
     M.sound('whoosh', t_in + 0.2, SOUND_SMALL, pid)
     for (k, t) in enumerate(times):
         M.FT(f'#{pid}-n{k}', {'opacity': 0, 'y': -80}, {'opacity': 1, 'y': 0, 'duration': 0.3, 'ease': 'back.out(2)'}, t)
-        M.sound('ding' if k == 0 else 'pop', t + 0.1, SOUND_KEY if k == 0 else SOUND_SMALL, f'{pid}-{k}')
+        M.sound('notification' if k == 0 else 'pop', t + 0.1, SOUND_KEY if k == 0 else SOUND_SMALL, f'{pid}-{k}')
     M.TO(f'#{pid}', {'opacity': 0, 'y': 60, 'duration': 0.3, 'ease': 'power3.in'}, t_out - 0.3)
     M.reserve(t_in, t_out, x, y, w, h)
 
@@ -3690,6 +3690,31 @@ def build_inputs(cfg):
     return result
 
 
+def check_native_media(managed, manifest, facts, hdr_requested=False):
+    """Accept only a cut that matches the confirmed media plan and the native SDR 8-bit profile."""
+    from media_policy import COLOR_FIELDS, UNKNOWN, plan_media
+    from workspace import selected_sources
+    try:
+        # The plan comes from the selected sources: the cut already carries any confirmed conversion.
+        expected = plan_media([s['facts'] for s in selected_sources(manifest, managed)['sources']], managed, None, 'master')
+        plan_media([facts], {**managed, 'workflow': {**managed['workflow'], 'color': {'mode': 'preserve', 'target': 'source'}}}, None, 'composition')
+    except ValueError as error:
+        raise BuildError(str(error)) from error
+    if any(expected.get(k) not in UNKNOWN and facts.get(k) != expected[k] for k in COLOR_FIELDS):
+        raise BuildError('The cut master color profile does not match the confirmed media plan; render the cut again from the current settings')
+    if facts.get('is_hdr'):
+        raise BuildError('Native HDR overlays have no passing fidelity conformance evidence in this release; preserve the cut-only master or confirm a supported conversion')
+    elif hdr_requested:
+        raise BuildError('SDR-to-HDR is not an automatic image improvement')
+    elif facts.get('bit_depth', 8) != 8 or facts.get('pix_fmt') != 'yuv420p' or facts.get('color_space') != 'bt709' or facts.get('color_range') != 'tv':
+        raise BuildError('Native SDR output changes this source profile; use a validated preservation composition route or confirm its conversion')
+    encoding = managed['workflow']['encoding']
+    if encoding['videoCodec'] not in ('auto', 'h264') and not (encoding['videoCodec'] == 'source' and facts.get('codec') == 'h264'):
+        raise BuildError('Native SDR output is H.264; use the cut-only route or confirm a supported encoding')
+    if encoding['bitDepth'] not in ('source', 8) or encoding['chroma'] not in ('source', '420'):
+        raise BuildError('Native SDR output is 8-bit 4:2:0; use the cut-only route or confirm a supported encoding')
+
+
 def cmd_hf(args):
     """Cmd hf."""
     if not args:
@@ -3711,7 +3736,6 @@ def cmd_hf(args):
     managed = confirmed_project(cfg)
     if managed and args[0] == 'render':
         from common import probe_video, ensure_distinct_output
-        from media_policy import plan_media
         from project_contract import read_json
         if any(arg.startswith('--') and '=' in arg for arg in args):
             raise BuildError('Use separate render flag/value arguments so the confirmed policy can validate them')
@@ -3732,7 +3756,7 @@ def cmd_hf(args):
         facts = probe_video(edit / cfg.get('video', 'cut.mp4'))
         if managed['workflow']['audio']['denoise'] != 'off':
             raise BuildError('Native composition does not apply the confirmed denoise; use the FFmpeg composition route')
-        plan_media([facts], managed, None, 'composition')
+        check_native_media(managed, manifest, facts, '--hdr' in args)
         expected_rate = managed['workflow']['video']['frameRate']
         if '--fps' in args and Fraction(args[args.index('--fps') + 1]) != Fraction(expected_rate):
             raise BuildError('Render FPS conflicts with the confirmed settings')
@@ -3740,17 +3764,6 @@ def cmd_hf(args):
             args += ['--fps', expected_rate]
         if any(flag in args for flag in ('--resolution', '--width', '--height')):
             raise BuildError('Render size overrides require a confirmed output variant')
-        if facts.get('is_hdr'):
-            raise BuildError('Native HDR overlays have no passing fidelity conformance evidence in this release; preserve the cut-only master or confirm a supported conversion')
-        elif '--hdr' in args:
-            raise BuildError('SDR-to-HDR is not an automatic image improvement')
-        elif facts.get('bit_depth', 8) != 8 or facts.get('pix_fmt') != 'yuv420p' or facts.get('color_space') != 'bt709' or facts.get('color_range') != 'tv':
-            raise BuildError('Native SDR output changes this source profile; use a validated preservation composition route or confirm its conversion')
-        encoding = managed['workflow']['encoding']
-        if encoding['videoCodec'] not in ('auto', 'h264') and not (encoding['videoCodec'] == 'source' and facts.get('codec') == 'h264'):
-            raise BuildError('Native SDR output is H.264; use the cut-only route or confirm a supported encoding')
-        if encoding['bitDepth'] not in ('source', 8) or encoding['chroma'] not in ('source', '420'):
-            raise BuildError('Native SDR output is 8-bit 4:2:0; use the cut-only route or confirm a supported encoding')
         if '--video-frame-format' not in args:
             args += ['--video-frame-format', 'png']
     if args[0] == 'snapshot' or (args[0] == 'check' and '--snapshots' in args):
@@ -3786,6 +3799,12 @@ def cmd_hf(args):
                     if process.returncode:
                         raise BuildError('Could not preserve source audio: ' + process.stderr[-300:])
                     os.replace(remuxed, output)
+            # Last video step: the remuxes above may rewrite timestamps.
+            from common import restamp_cfr
+            try:
+                restamp_cfr(output, expected_rate)
+            except ValueError as error:
+                raise BuildError(str(error)) from error
             record_artifact(Path(HERE), 'render:' + content_hash(output), output, render_dependencies(Path(HERE)),
                             {'overlayMasks': meta.get('overlayMasks', []), 'window': meta.get('window'), 'renderer': f'hyperframes@{v}'})
         return result

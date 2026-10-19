@@ -1,4 +1,5 @@
 import importlib
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -38,6 +39,13 @@ class IntakeTests(unittest.TestCase):
         self.assertFalse(proposal['config']['captions']['enabled'])
         self.assertEqual(proposal['config']['workflow']['editing']['scope'], 'captions')
         self.assertTrue(proposal['confirmationRequired'])
+
+    def test_proposal_attached_to_its_inspection_report_serializes(self):
+        # Mirrors `inspect --requested`, which prints the report with its proposal attached.
+        report = self.source()
+        report['proposal'] = self.i.propose_settings(report, {'conversation': 'pt-BR'})
+        printed = json.loads(json.dumps(report))
+        self.assertEqual(printed['proposal']['provenance']['observed']['sources'], printed['sources'])
 
     def test_multiple_audio_tracks_are_disclosed_before_confirmation(self):
         inspection = self.source()

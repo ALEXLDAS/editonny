@@ -125,4 +125,5 @@ def propose_settings(inspection: dict, requested: dict) -> dict:
     }
     return {'config': config, 'summary': summary, 'settingsHash': settings_hash(config),
             'sourceIdentityHash': source_identity_hash(inspection), 'confirmationRequired': True,
-            'provenance': {'requested': requested, 'observed': inspection, 'defaults': 'proposed, not approved'}}
+            # A snapshot: callers attach the proposal to the same inspection report they print.
+            'provenance': {'requested': requested, 'observed': copy.deepcopy(inspection), 'defaults': 'proposed, not approved'}}

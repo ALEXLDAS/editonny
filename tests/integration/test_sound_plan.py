@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,16 @@ class SoundPlanTests(unittest.TestCase):
              patch.object(module, 'loudness', return_value={'input_tp': '-0.8', 'input_i': '-14'}):
             with self.assertRaises((SystemExit, ValueError, RuntimeError)):
                 module.finalize('video.mp4', 'audio.wav', 'output.mp4')
+
+    def test_built_in_piece_sounds_are_known_types(self):
+        spec = importlib.util.spec_from_file_location('sound_types_test', HELPER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        build = (HELPER.parents[1] / 'project-template/build.py').read_text(encoding='utf-8')
+        kinds = {k for pair in re.findall(r"M\.sound\('([\w-]+)'(?: if [^,]+ else '([\w-]+)')?", build) for k in pair if k}
+        self.assertIn('tick', kinds)
+        # The plan rejects any suggested type missing from TYPE_NAMES.
+        self.assertEqual({k for k in kinds if module.normal_value(k) not in module.TYPE_NAMES}, set())
 
     def test_project_plan_respects_tail_and_copies_woven_license(self):
         with tempfile.TemporaryDirectory(prefix='editonny sound plan ') as temporary:

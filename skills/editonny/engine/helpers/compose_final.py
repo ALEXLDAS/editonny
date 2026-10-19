@@ -305,7 +305,8 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
         expected_video = contract['workflow']['video']
         if (full_w, full_h) != (expected_video['width'], expected_video['height']) or Fraction(fps_str) != Fraction(expected_video['frameRate']):
             raise ComposeError('Composition geometry or cadence conflicts with confirmed settings', 2)
-        manifest = load_json(edit_dir / 'source_manifest.json')
+        from workspace import selected_sources
+        manifest = selected_sources(load_json(edit_dir / 'source_manifest.json'), contract)
         expected = plan_media([s['facts'] for s in manifest['sources']], contract, None, 'master')
         if any(expected.get(k) not in UNKNOWN and source_facts.get(k) != expected[k] for k in COLOR_FIELDS):
             raise ComposeError('The cut master color profile does not match the confirmed media plan', 2)

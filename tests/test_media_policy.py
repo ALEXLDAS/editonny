@@ -65,6 +65,30 @@ class MediaPolicyTests(unittest.TestCase):
             self.m.plan_media([self.facts(is_hdr=True, color_transfer='smpte2084', bit_depth=10,
                                         pix_fmt='yuv420p10le')], c, {'encoders': ['libx264'], 'filters': ['tonemap']}, 'delivery')
 
+    def test_native_render_checks_the_cut_against_the_source_plan(self):
+        from unittest.mock import patch
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('native_render_build', HELPERS.parent / 'project-template/build.py')
+        build = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build)
+        converted = config()
+        converted['workflow']['color'].update(mode='convert', target='sdr-bt709', conversion='hable')
+        hdr = self.facts(is_hdr=True, color_transfer='arib-std-b67', color_primaries='bt2020', color_space='bt2020nc',
+                         bit_depth=10, pix_fmt='yuv420p10le', codec='hevc')
+        sdr_cut = self.facts(codec='h264')
+        hdr_source, sdr_source = {'id': 'source', 'facts': hdr}, {'id': 'source', 'facts': self.facts()}
+        # Revisions keep deselected footage in the manifest; only selected sources define the plan.
+        deselected = {'sources': [sdr_source, {'id': 'earlier', 'facts': hdr}]}
+        capabilities = {'encoders': ['libx264', 'libx265'], 'filters': ['zscale', 'tonemap']}
+        with patch.object(self.m, 'probe_capabilities', return_value=capabilities):
+            build.check_native_media(converted, {'sources': [hdr_source]}, sdr_cut)
+            build.check_native_media(config(), {'sources': [sdr_source]}, sdr_cut)
+            build.check_native_media(config(), deselected, sdr_cut)
+            with self.assertRaisesRegex(build.BuildError, 'color profile'):
+                build.check_native_media(converted, {'sources': [hdr_source]}, hdr)
+            with self.assertRaisesRegex(build.BuildError, 'color profile'):
+                build.check_native_media(config(), {'sources': [hdr_source]}, sdr_cut)
+
 
 if __name__ == '__main__':
     unittest.main()
