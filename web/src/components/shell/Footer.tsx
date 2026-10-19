@@ -28,7 +28,7 @@ export async function Footer({ locale }: { locale: AppLocale }) {
           <Link href="/catalog">{t('Footer.scenes')}</Link>
           <Link href="/create">{t('Nav.create')}</Link>
           <Link href="/install">{t('Footer.install')}</Link>
-          <NextLink href={`${getPathname({ locale, href: '/' })}#how-it-works`}>{t('Footer.requirements')}</NextLink>
+          <NextLink href={`${getPathname({ locale, href: '/' })}#how-it-works`} prefetch={false}>{t('Footer.requirements')}</NextLink>
           <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer"><Icon name="github" size={16} />GitHub{newTab}</a>
           <a href={AUTHOR.instagram} rel="author noopener noreferrer" target="_blank">Instagram{newTab}</a>
           <a href={`mailto:${AUTHOR.email}`}>{AUTHOR.email}</a>

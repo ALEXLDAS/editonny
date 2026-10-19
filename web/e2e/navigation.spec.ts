@@ -87,3 +87,12 @@ test('the language list stays inside a phone screen', async ({ page, isMobile })
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(width);
 });
+
+test('other pages do not prefetch the home page, whose head would preload its unused CSS and hero photo', async ({ page }) => {
+  const prefetched: string[] = [];
+  page.on('request', request => { if (request.headers()['next-router-prefetch'] && new URL(request.url()).pathname === '/en') prefetched.push(request.url()); });
+  await page.goto('/en/catalog', { waitUntil: 'networkidle' });
+  await page.getByRole('contentinfo').scrollIntoViewIfNeeded();
+  await page.waitForLoadState('networkidle');
+  expect(prefetched).toEqual([]);
+});

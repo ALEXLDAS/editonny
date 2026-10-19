@@ -21,14 +21,14 @@ export function MobileMenu({ home }: { home: string }) {
         <nav aria-label={t('Nav.label')}>
           <ul className={styles.menuList}>
             {SECTIONS.map(section => (
-              <li key={section.id}><NextLink href={`${home}#${section.id}`} className={styles.menuLink} onClick={close}>{t(`Nav.${section.key}`)}</NextLink></li>
+              <li key={section.id}><NextLink href={`${home}#${section.id}`} prefetch={false} className={styles.menuLink} onClick={close}>{t(`Nav.${section.key}`)}</NextLink></li>
             ))}
           </ul>
           <h3 className={styles.menuGroup}>{t('Nav.pages')}</h3>
           <ul className={styles.menuList}>
             {PAGES.map(item => (
               <li key={item.href}>
-                <Link href={item.href} className={styles.menuPage} aria-current={pathname === item.href ? 'page' : undefined} onClick={close}>{t(`Nav.${item.key}`)}</Link>
+                <Link href={item.href} prefetch={item.href === '/' ? false : undefined} className={styles.menuPage} aria-current={pathname === item.href ? 'page' : undefined} onClick={close}>{t(`Nav.${item.key}`)}</Link>
               </li>
             ))}
             <li>

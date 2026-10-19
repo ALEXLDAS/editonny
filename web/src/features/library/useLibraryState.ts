@@ -53,6 +53,15 @@ export function useLibraryState(itemParam: 'scene' | 'example', categories: stri
     }
     router[mode]({ pathname, query: Object.fromEntries(next) }, { scroll: false });
   };
+  // A navigation in flight has not reached window.location yet, so a debounced search firing after another write would
+  // rebuild the URL without it. Other writes therefore carry the typed search themselves and cancel the pending one.
+  // shortcut: a search typed while a slower category navigation is still in flight can still drop it; queue writes if seen.
+  const withSearch = (patch: Record<string, string | null>) => {
+    clearTimeout(pendingSearch.current);
+    const next = query.trim() ? query : '';
+    setWritten(next);
+    return { ...patch, q: next || null };
+  };
 
   return {
     query,
@@ -67,8 +76,8 @@ export function useLibraryState(itemParam: 'scene' | 'example', categories: stri
         write({ q: next || null });
       }, SEARCH_DELAY);
     },
-    setCategory(value) { write({ category: value || null }); },
-    open(id) { openedHere.current = true; write({ [itemParam]: id }, 'push'); },
+    setCategory(value) { write(withSearch({ category: value || null })); },
+    open(id) { openedHere.current = true; write(withSearch({ [itemParam]: id }), 'push'); },
     close() {
       if (openedHere.current) { openedHere.current = false; router.back(); }
       else write({ [itemParam]: null });
