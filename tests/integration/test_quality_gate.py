@@ -13,6 +13,25 @@ HELPERS = Path(__file__).resolve().parents[2] / 'skills/editonny/engine/helpers'
 
 
 class QualityGateTests(unittest.TestCase):
+    def test_managed_blocked_checks_keep_operational_exit_status(self):
+        from contextlib import ExitStack, redirect_stdout
+        import io
+        module = self.module
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
+            root = Path(tmp); video = root / 'candidate.mp4'; video.write_bytes(b'candidate')
+            project = root / 'project'; project.mkdir()
+            (project / 'project.json').write_text(json.dumps({'workflow': {'audio': {'mode': 'preserve'}}, 'captions': {'enabled': False}}))
+            for name, result in (('require_binary', None), ('probe_video', {'width': 128, 'height': 64, 'duration': 1, 'has_audio': False}),
+                                 ('black_intervals', []), ('end_of_speech', None), ('sheet_value', None),
+                                 ('text_outside', {'findings': [], 'reader': None})):
+                stack.enter_context(patch.object(module, name, return_value=result))
+            stack.enter_context(patch('fidelity.verify_media', return_value={'status': 'blocked', 'checks': []}))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                status = module.main([str(video), '--project', str(project), '--json'])
+            self.assertEqual(status, 2)
+            self.assertEqual(json.loads(output.getvalue())['status'], 'blocked')
+
     @classmethod
     def setUpClass(cls):
         sys.path.insert(0, str(HELPERS))

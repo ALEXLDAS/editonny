@@ -32,6 +32,8 @@ def export_subtitles(project: Path, format_name: str, output: Path) -> Path:
     words = read_json(edit / 'transcripts/cut.json').get('words', [])
     if not words:
         raise ValueError('Measured cut words are required; subtitles cannot be invented')
+    from transcript_corrections import correct_words
+    words = correct_words(words, config.get('corrections', {}))
     cues, group = [], []
     for word in words:
         start, end = word.get('start'), word.get('end')

@@ -12,6 +12,24 @@ from common import output_fps_for, probe_video
 
 
 class MediaTimingTests(unittest.TestCase):
+    def test_equal_nominal_and_average_rates_do_not_hide_irregular_timestamps(self):
+        from intake import inspect_sources, propose_settings
+        from render_vfr import frame_times
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); edit = root / 'edit'; edit.mkdir(); source = root / 'irregular.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=gray:s=128x64:r=24:d=2',
+                '-vf', 'settb=1/24000,setpts=PTS+if(eq(N\\,10)\\,20\\,0),setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709',
+                '-fps_mode', 'passthrough', '-enc_time_base', '1/24000', '-bf', '0', '-c:v', 'libx264', str(source)], check=True)
+            observed = inspect_sources([source], False)
+            facts = observed['sources'][0]['facts']
+            self.assertEqual(facts['fps_str'], facts['nominal_fps_str'])
+            self.assertEqual(propose_settings(observed, {})['config']['workflow']['video']['timing'], 'vfr')
+            edl = edit / 'edl.json'
+            edl.write_text(json.dumps({'sources': {'s': str(source)}, 'ranges': [{'id': 'a', 'source': 's', 'start': 0, 'end': 2}]}))
+            result = subprocess.run([sys.executable, str(HELPERS / 'render_cut.py'), str(edl), '--no-jcut'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(all(abs(a - b) <= 1e-6 for a, b in zip(frame_times(source), frame_times(edit / 'cut.mp4'))))
+
     def test_vfr_cut_keeps_irregular_picture_timestamps(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); edit = root / 'edit'; edit.mkdir()

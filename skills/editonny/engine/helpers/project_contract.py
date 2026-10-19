@@ -102,6 +102,8 @@ def validate_contract(config: dict) -> dict:
     if language.get('translation') not in (None, False):
         raise ValueError('Automatic caption translation is not implemented; preserve source language or provide a separately verified supported translation workflow')
     audio = workflow['audio']
+    if audio.get('tracks') != 'source':
+        raise ValueError('Explicit audio track selection is not implemented; provide a separately prepared and confirmed single-track source')
     _choice(audio, 'mode', ('preserve', 'normalize'))
     _choice(audio, 'denoise', ('off', 'light', 'strong'))
     for key in ('music', 'effects'):

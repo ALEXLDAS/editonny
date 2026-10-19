@@ -264,8 +264,13 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
         if data.get('contractHash') != settings_hash(contract):
             raise ComposeError('Composition settings do not match the confirmed project snapshot', 2)
         workflow = contract['workflow']
-        if workflow['visuals']['scenes'] == 'off' and (data.get('inserts') or _enabled(_section(data, 'motion'))):
+        if workflow['visuals']['scenes'] == 'off' and (data.get('inserts') or _motion_items(data) or
+                any(_enabled(_section(data, key)) for key in ('hook', 'cta', 'disclaimer'))):
             raise ComposeError('Additional visual scenes were not confirmed', 2)
+        if workflow['visuals']['transitions'] == 'off' and data.get('transitions'):
+            raise ComposeError('Visual transitions were not confirmed', 2)
+        if workflow['visuals'].get('backgroundTreatment', 'none') == 'none' and data.get('edit_type') == 'greenScreen':
+            raise ComposeError('Background replacement was not confirmed', 2)
         if not workflow['visuals']['cameraMotion'] and any(_section(data, 'camera').get(key) for key in ('zoom_cuts', 'push_in')):
             raise ComposeError('Camera motion was not confirmed', 2)
         if not workflow['audio']['music'] and _enabled(_section(data, 'music')):

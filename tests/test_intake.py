@@ -39,6 +39,12 @@ class IntakeTests(unittest.TestCase):
         self.assertEqual(proposal['config']['workflow']['editing']['scope'], 'captions')
         self.assertTrue(proposal['confirmationRequired'])
 
+    def test_multiple_audio_tracks_are_disclosed_before_confirmation(self):
+        inspection = self.source()
+        inspection['sources'][0]['facts']['audio_tracks'] = 2
+        with self.assertRaisesRegex(ValueError, 'Multi-track.*not implemented'):
+            self.i.propose_settings(inspection, {})
+
     def test_mixed_source_formats_are_not_silently_selected(self):
         inspection = self.source()
         import copy

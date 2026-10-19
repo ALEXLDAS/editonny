@@ -87,7 +87,6 @@ ACCENT_INTERVAL = 6.0
 def norm(s):
     s = s.strip().lower().strip('.,!?…:;"\'()«»“”')
     return ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))
-END_PUNCTUATION = '.,!?…:;'
 
 def is_skill(p):
     return bool(p) and os.path.isfile(os.path.join(os.path.expanduser(p), 'helpers', 'matte.py'))
@@ -196,50 +195,14 @@ def split(text):
     return [x for x in re.split('[ \\t\\r\\n]+', str(text).strip()) if x]
 
 def correct(words, fix):
-    """Apply longest transcript corrections first, preserving punctuation and timing. Replacement words share the original interval by character count; nonbreaking spaces keep a phrase together."""
     if not fix:
         return words
-    rules = []
-    for (k, v) in fix.items():
-        parts = split(k)
-        if parts:
-            rules.append((parts, str(v)))
-    rules.sort(key=lambda r: -len(r[0]))
-    (out, i) = ([], 0)
-    while i < len(words):
-        for (parts, v) in rules:
-            n = len(parts)
-            interval = words[i:i + n]
-            if len(interval) < n:
-                continue
-            exact = n == 1 and interval[0]['text'] == parts[0]
-            if not exact and (not all((norm(w['text']) == norm(p) for (w, p) in zip(interval, parts)))):
-                continue
-            new = split(v)
-            if new and (not exact):
-                ending_punctuation = ''
-                last = interval[-1]['text']
-                while last and last[-1] in END_PUNCTUATION:
-                    ending_punctuation = last[-1] + ending_punctuation
-                    last = last[:-1]
-                if ending_punctuation and new[-1][-1] not in END_PUNCTUATION:
-                    new[-1] += ending_punctuation
-            if len(new) == n:
-                out += [dict(w, text=t) for (w, t) in zip(interval, new)]
-            elif new:
-                (a, z) = (interval[0]['start'], interval[-1]['end'])
-                total = sum((max(1, len(t)) for t in new))
-                t0 = a
-                for t in new:
-                    t1 = t0 + (z - a) * max(1, len(t)) / total
-                    out.append(dict(text=t, start=round(t0, 3), end=round(t1, 3)))
-                    t0 = t1
-            i += n
-            break
-        else:
-            out.append(words[i])
-            i += 1
-    return out
+    engine = project_engine(read_optional_json(os.path.join(HERE, 'project.json')) or {})
+    if not engine:
+        raise BuildError('Transcript corrections require the recorded engine package')
+    sys.path.insert(0, os.path.join(engine, 'helpers'))
+    from transcript_corrections import correct_words
+    return correct_words(words, fix)
 
 class Project:
 

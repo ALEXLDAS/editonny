@@ -72,6 +72,8 @@ def propose_settings(inspection: dict, requested: dict) -> dict:
     sources = inspection.get('sources', [])
     if not sources:
         raise ValueError('Select footage before proposing settings')
+    if any(s['facts'].get('audio_tracks', 0) > 1 for s in sources):
+        raise ValueError('Multi-track source editing is not implemented; select and prepare a single-track derivative explicitly before confirming this edit')
     facts = sources[0]['facts']
     dimensions = {(s['facts']['display_width'], s['facts']['display_height']) for s in sources}
     rates = {s['facts'].get('fps_str') for s in sources}

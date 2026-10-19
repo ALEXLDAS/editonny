@@ -75,6 +75,8 @@ def encoder_args(info: dict, available: dict | None = None, quality: str = '18')
 def plan_media(source_facts: list[dict], contract: dict | None, capabilities: dict | None, purpose: str) -> dict:
     if not source_facts:
         raise ValueError('Media planning requires observed video sources')
+    if purpose in ('master', 'composition') and (contract or {}).get('workflow', {}).get('audio') and any(f.get('audio_tracks', 0) > 1 for f in source_facts):
+        raise ValueError('Multi-track source editing is not implemented; no source audio track may be silently discarded')
     capabilities = capabilities if capabilities is not None else probe_capabilities()
     output = copy.deepcopy(source_facts[0])
     if any(f.get('sample_aspect_ratio') not in (None, '', '1:1', '0:1') for f in source_facts):

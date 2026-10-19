@@ -255,6 +255,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     failures: list[str] = []
+    blocked: list[str] = []
     if blacks_value:
         failures.append("black frame: " + ", ".join(f'{fmt_time(x)} to {fmt_time(y)}' for x, y in blacks_value))
     if vol and abs(vol["lufs"] - target_lufs) > MARGIN_LUFS:
@@ -267,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         failures.append(f'''text {f['reason']}: "{f['text'][:40]}" at {fmt_time(f['t'])}'''
                       + (f" to {fmt_time(f['end'])}" if f["end"] > f["t"] else ""))
     if txt['reader'] is None and cfg.get('captions', {}).get('enabled', True):
-        failures.append('text check not performed: install a local reader or provide an explicitly reviewed artifact')
+        blocked.append('text check not performed: install a local reader or provide an explicitly reviewed artifact')
     if a.adjust_volume and failures and all(f.startswith(('volume ', 'peak ')) for f in failures):
         if cfg.get('workflow') and (not normalize or target_lufs != -14 or peak_max != -1):
             print('ERROR: Automatic adjustment uses a different target; render with the confirmed audio policy.', file=sys.stderr)
@@ -292,15 +293,22 @@ def main(argv: list[str] | None = None) -> int:
     media = None
     if cfg.get('workflow'):
         from fidelity import verify_media
-        media = verify_media(a.video, a.project)
-        if media['status'] != 'passed':
+        try:
+            media = verify_media(a.video, a.project)
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+            media = {'status': 'blocked', 'detail': str(error)}
+        if media['status'] == 'failed':
             failures.append('media contract or source appearance did not pass; inspect mediaChecks')
-    report = {'status': 'failed' if failures else 'passed', "passed": not failures, "failures": failures, "duration": round(dur, 2), "volume": vol,
+        elif media['status'] != 'passed':
+            blocked.append('required media checks could not complete; inspect mediaChecks')
+    status = 'failed' if failures else 'blocked' if blocked else 'passed'
+    exit_code = {'passed': 0, 'failed': 1, 'blocked': 2}[status]
+    report = {'status': status, "passed": status == 'passed', "failures": failures, 'blocked': blocked, "duration": round(dur, 2), "volume": vol,
            'mediaChecks': media,
            "quiet_threshold_db": th, 'text_reader': txt["reader"], "sheet": str(output_value) if output_value else None}
     if a.json:
         print(json.dumps(report, ensure_ascii=False))
-        return 0 if not failures else 1
+        return exit_code
     print(f'quality gate · {a.video.name} · {dur:.1f} s · {W}x{H}')
     print(f"  black frame: {('none' if not blacks_value else len(blacks_value))}")
     if vol:
@@ -325,7 +333,12 @@ def main(argv: list[str] | None = None) -> int:
         for f in failures:
             print(f'  - {f}')
         print('Fix the findings above, render again, and rerun the quality gate before delivery.')
-        return 1
+        return exit_code
+    if blocked:
+        print('BLOCKED:')
+        for reason in blocked:
+            print(f'  - {reason}')
+        return exit_code
     print("PASS")
     return 0
 

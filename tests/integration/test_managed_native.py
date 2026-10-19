@@ -36,11 +36,12 @@ class ManagedNativeTests(unittest.TestCase):
             original = content_hash(source)
             inspection = inspect_sources([source], False)
             config = propose_settings(inspection, {'delivery': {'subtitleFormats': ['srt', 'vtt'], 'workspaceRoot': str(root / 'Downloads/editonny')}})['config']
+            config['corrections'] = {'Colore': 'Color'}
             project = create_workspace(root / 'Downloads/editonny', 'Conformance', inspection, config, confirmation(config, inspection))
             cut = seed_source(project)
             edit = cut.parent
             (edit / 'transcripts/cut.json').write_text(json.dumps({'words': [
-                {'text': 'Color', 'start': 0.1, 'end': 0.8}, {'text': 'stays', 'start': 0.9, 'end': 1.5},
+                {'text': 'Colore', 'start': 0.1, 'end': 0.8}, {'text': 'stays', 'start': 0.9, 'end': 1.5},
                 {'text': 'original', 'start': 1.6, 'end': 2.8}]}))
             for args in (['prepare'], ['sample', '0', '8'], ['hf', 'lint'], ['hf', 'check'],
                          ['hf', 'render', '--quality', 'draft', '--crf', '10', '--output', 'renders/sample.mp4']):
@@ -59,6 +60,10 @@ class ManagedNativeTests(unittest.TestCase):
             self.assertEqual(report['status'], 'passed', report)
             delivered = publish_export(project, candidate, report)
             self.assertEqual(len(delivered['subtitles']), 2)
+            for subtitle in delivered['subtitles']:
+                text = Path(subtitle['path']).read_text()
+                self.assertIn('Color', text)
+                self.assertNotIn('Colore', text)
             self.assertEqual(content_hash(source), original)
             for at in (0.5, 4.5, 8.5):
                 run('ffmpeg', '-v', 'error', '-ss', at, '-i', candidate, '-frames:v', '1', root / f'frame-{at}.png')

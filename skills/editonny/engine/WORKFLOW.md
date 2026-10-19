@@ -40,7 +40,7 @@ For revisions use `workspace revise --project '<PROJECT>' --changes '<SESSION>/c
 
 ## 1. Inspect and transcribe
 
-Never move, replace, or delete originals. Check duration, dimensions, rotation, frame rate, audio tracks, HDR, and storage availability before processing. Download iCloud placeholders through the local operating system or ask the user to make them available. A missing source is not an empty clip.
+Never move, replace, or delete originals. Check duration, dimensions, rotation, frame rate, audio tracks, HDR, and storage availability before processing. Download iCloud placeholders through the local operating system or ask the user to make them available. A missing source is not an empty clip. Cadence inspection demuxes actual picture presentation timestamps; equal average/nominal FPS alone cannot prove CFR. Explicit audio-track selection and multi-track source editing are not implemented: disclose the limitation before acceptance and ask for a separately prepared, confirmed single-track derivative instead of choosing a track silently.
 
 ```sh
 uv run --directory '<ENGINE>' python helpers/icloud.py '<VIDEOS>'
@@ -100,7 +100,7 @@ python3 '<EDITONNY>/scripts/editonny.py' workspace export --project '<PROJECT>' 
 
 Publication reruns actual-media checks and requires every required check to be `passed`; `failed`, `blocked` and `not_checked` never mean PASS. Appearance is measured on corresponding source/output samples outside measured time-dependent overlay bounds, not a guessed lower half of the frame. Decode, geometry/rational rate, precision/color tags, encoded audio targets and enabled-caption layout are checked too. Unknown interpretation, missing OCR, stale sample/reference or failed measurement blocks the affected delivery. A contact sheet alone does not approve motion.
 
-Final filenames are unique (`title-v001-final[-02].mp4`). Requested `delivery.subtitleFormats: ["srt", "vtt"]` use measured cut words without implicit translation/retranscription. Translated sidecar generation is not implemented: disclose this before acceptance and do not label original-language sidecars as translated; a requested translation needs separately prepared/verified timed text and a supported route. Video, subtitles and SHA-256 delivery manifest are staged in the export directory; the manifest is published last as the completion marker. Failures roll back only task-owned published files, preserving every earlier export. Hard-link support on the destination volume is required for no-overwrite publication; an unsupported volume errors clearly. Report successful paths only after publication completes.
+Final filenames are unique (`title-v001-final[-02].mp4`). Requested `delivery.subtitleFormats: ["srt", "vtt"]` use measured cut words and the same accepted text corrections as native captions, without implicit translation/retranscription. Translated sidecar generation is not implemented: disclose this before acceptance and do not label original-language sidecars as translated; a requested translation needs separately prepared/verified timed text and a supported route. Video, subtitles and SHA-256 delivery manifest are staged in the export directory; the manifest is published last as the completion marker. Failures roll back only task-owned published files, preserving every earlier export. Hard-link support on the destination volume is required for no-overwrite publication; an unsupported volume errors clearly. Report successful paths only after publication completes.
 
 ## References and worksheets
 

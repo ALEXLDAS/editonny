@@ -18,6 +18,7 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 from fractions import Fraction
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +115,20 @@ def _rotation_of(stream: dict) -> int:
     return rot % 360 if rot else 0
 
 
+@lru_cache(maxsize=64)
+def _observed_cadence(path: str, stream: int, rate: str, time_base: str, signature: tuple) -> dict:
+    # Demux timestamps without decoding; the stat identity invalidates the in-process probe cache.
+    process = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', str(stream), '-show_packets',
+        '-show_entries', 'packet=pts', '-of', 'json', path], capture_output=True, text=True, timeout=600, check=True)
+    packets = json.loads(process.stdout).get('packets', [])
+    if not packets or any('pts' not in packet for packet in packets):
+        raise ValueError('Source presentation timing is unknown; preservation cannot assume CFR')
+    timestamps = sorted(int(packet['pts']) for packet in packets)
+    tick, fps = Fraction(time_base), Fraction(rate)
+    irregular = any(abs((pts - timestamps[0]) * tick - Fraction(i) / fps) > tick for i, pts in enumerate(timestamps))
+    return {'timing': 'vfr' if irregular else 'cfr', 'observedPackets': len(timestamps), 'method': 'presentation timestamps'}
+
+
 def probe_video(path: Path | str) -> dict:
     """Normalized facts about a media file.
 
@@ -181,6 +196,11 @@ def probe_video(path: Path | str) -> dict:
             profile=v.get('profile', ''),
             is_hdr=transfer in ("arib-std-b67", "smpte2084"),
         )
+        source = Path(path).resolve()
+        st = source.stat()
+        cadence = _observed_cadence(str(source), v['index'], fps_str, v['time_base'],
+            (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns))
+        out.update(is_vfr=cadence['timing'] == 'vfr', cadence=cadence)
     return out
 
 

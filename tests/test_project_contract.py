@@ -12,6 +12,12 @@ from workflow_fixtures import config, confirmation
 
 
 class ProjectContractTests(unittest.TestCase):
+    def test_unsupported_audio_track_selection_cannot_be_confirmed(self):
+        value = config()
+        value['workflow']['audio']['tracks'] = [1]
+        with self.assertRaisesRegex(ValueError, 'track selection.*not implemented'):
+            self.c.validate_contract(value)
+
     @classmethod
     def setUpClass(cls):
         assert (HELPERS / 'project_contract.py').is_file(), 'Confirmed workflow contract is not implemented'

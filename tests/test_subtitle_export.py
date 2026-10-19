@@ -10,6 +10,19 @@ sys.path.insert(0, str(HELPERS))
 
 
 class SubtitleExportTests(unittest.TestCase):
+    def test_sidecars_apply_the_same_accepted_text_corrections(self):
+        from export_subtitles import export_subtitles
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); project = root / 'project'; project.mkdir()
+            edit = root / 'edit'; (edit / 'transcripts').mkdir(parents=True)
+            (project / 'project.json').write_text(json.dumps({'edit': '../edit', 'corrections': {'Codecs': 'Codex'}}))
+            (edit / 'transcripts/cut.json').write_text(json.dumps({'words': [{'text': 'Codecs', 'start': 0.1, 'end': 0.9}]}))
+            for format_name in ('srt', 'vtt'):
+                output = root / ('captions.' + format_name)
+                export_subtitles(project, format_name, output)
+                self.assertIn('Codex', output.read_text())
+                self.assertNotIn('Codecs', output.read_text())
+
     def test_srt_vtt_preserve_unicode_negation_and_timing_without_overwrite(self):
         self.assertTrue((HELPERS / 'export_subtitles.py').exists(), 'Subtitle delivery is missing')
         module = importlib.import_module('export_subtitles')

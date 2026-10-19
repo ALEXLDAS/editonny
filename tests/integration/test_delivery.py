@@ -14,6 +14,22 @@ from workspace import create_workspace, publish_export, record_review, render_de
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_managed_composition_rejects_unapproved_visual_extras(self):
+        from compose_final import build_plan, ComposeError
+        from project_contract import load_contract, settings_hash
+        with tempfile.TemporaryDirectory() as tmp:
+            source, project = self.prepare(Path(tmp)); edit = project.parent / 'edit'
+            data = edit / 'edit_data.json'
+            base = {'base': str(source), 'contractHash': settings_hash(load_contract(project)), 'captions': {'enabled': False}}
+            extras = ({'transitions': [{'type': 'flash', 'at': 0}]}, {'hook': {'text': 'Extra title'}},
+                      {'motion': [{'template': 'label', 'start': 0}]}, {'edit_type': 'greenScreen', 'greenScreen': {}})
+            for extra in extras:
+                data.write_text(json.dumps({**base, **extra}))
+                with self.subTest(extra=extra), self.assertRaisesRegex(ComposeError, 'confirmed'):
+                    build_plan(data, str(edit / 'candidate.mp4'), False)
+            data.write_text(json.dumps({**base, 'motion': {'enabled': False, 'items': []}, 'hook': {'enabled': False}}))
+            build_plan(data, str(edit / 'candidate.mp4'), False)
+
     def test_managed_cut_cannot_replace_unused_original_or_previous_export(self):
         from common import content_hash
         from project_contract import settings_hash

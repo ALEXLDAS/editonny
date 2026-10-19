@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +12,13 @@ spec.loader.exec_module(package)
 
 
 class PackageTests(unittest.TestCase):
+    def test_plugin_release_metadata_matches_the_portable_skill(self):
+        version = (ROOT / 'skills/editonny/VERSION').read_text().strip()
+        for name in ('.codex-plugin/plugin.json', '.claude-plugin/plugin.json'):
+            self.assertEqual(json.loads((ROOT / name).read_text())['version'], version, name)
+        marketplace = json.loads((ROOT / '.claude-plugin/marketplace.json').read_text())
+        self.assertEqual(marketplace['plugins'][0]['version'], version)
+
     def test_packages_reject_symlinked_source_roots(self):
         with tempfile.TemporaryDirectory(prefix='editonny package roots ') as temporary:
             base = Path(temporary)
