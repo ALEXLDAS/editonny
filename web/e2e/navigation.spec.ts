@@ -1,31 +1,35 @@
 import { expect, test } from '@playwright/test';
 
 const PAGES = {
-  'en-US': { prefix: '/en', create: '/en/create', catalog: '/en/catalog', examples: '/en/examples', install: '/en/install', nav: ['Home', 'Create a request', 'Catalog', 'Examples'], install_: 'Install' },
-  'pt-BR': { prefix: '/pt-br', create: '/pt-br/criar', catalog: '/pt-br/catalogo', examples: '/pt-br/exemplos', install: '/pt-br/instalacao', nav: ['Início', 'Criar pedido', 'Catálogo', 'Exemplos'], install_: 'Instalar' },
-  es: { prefix: '/es', create: '/es/crear', catalog: '/es/catalogo', examples: '/es/ejemplos', install: '/es/instalacion', nav: ['Inicio', 'Crear pedido', 'Catálogo', 'Ejemplos'], install_: 'Instalar' },
+  'en-US': { prefix: '/en', create: '/en/create', lab: 'Lab', menu: 'Open menu', footer: [['Requests', '/en/examples'], ['Motion scenes', '/en/catalog'], ['Create a request', '/en/create'], ['Installation guide', '/en/install']] },
+  'pt-BR': { prefix: '/pt-br', create: '/pt-br/criar', lab: 'Laboratório', menu: 'Abrir menu', footer: [['Pedidos', '/pt-br/exemplos'], ['Cenas de motion', '/pt-br/catalogo'], ['Criar pedido', '/pt-br/criar'], ['Guia de instalação', '/pt-br/instalacao']] },
+  es: { prefix: '/es', create: '/es/crear', lab: 'Laboratorio', menu: 'Abrir menú', footer: [['Pedidos', '/es/ejemplos'], ['Escenas de motion', '/es/catalogo'], ['Crear pedido', '/es/crear'], ['Guía de instalación', '/es/instalacion']] },
 } as const;
 
 for (const [locale, page] of Object.entries(PAGES)) {
-  test(`${locale}: the header reaches every page with localized URLs`, async ({ page: browser, isMobile }) => {
-    await browser.goto(page.prefix);
-    const open = async () => { if (isMobile) await browser.getByRole('button', { name: /menu|menú/i }).click(); };
-    const targets = [page.create, page.catalog, page.examples, page.prefix];
-    // Desktop links live in the header; on phones they move into the menu dialog.
-    const scope = () => (isMobile ? browser.getByRole('dialog') : browser.getByRole('banner'));
-    for (const [i, label] of [page.nav[1], page.nav[2], page.nav[3], page.nav[0]].entries()) {
-      await open();
-      await scope().getByRole('link', { name: label, exact: true }).click();
-      await expect(browser).toHaveURL(new RegExp(`${targets[i]}$`));
-      await open();
-      await expect(scope().getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
-      if (isMobile) await browser.keyboard.press('Escape');
+  test(`${locale}: header sections lead back to the home page and the footer reaches every page`, async ({ page: browser, isMobile }) => {
+    await browser.goto(page.create);
+    // Desktop section links live in the header; on phones they move into the menu dialog.
+    if (isMobile) await browser.getByRole('button', { name: page.menu }).click();
+    await browser.getByRole(isMobile ? 'dialog' : 'banner').getByRole('link', { name: page.lab, exact: true }).click();
+    await expect(browser).toHaveURL(new RegExp(`${page.prefix}#lab$`));
+    await expect(browser.locator('#lab')).toBeInViewport();
+    for (const [label, path] of page.footer) {
+      await browser.getByRole('contentinfo').getByRole('link', { name: label, exact: true }).click();
+      await expect(browser).toHaveURL(new RegExp(`${path}$`));
     }
-    await open();
-    await scope().getByRole('link', { name: page.install_, exact: true }).click();
-    await expect(browser).toHaveURL(new RegExp(`${page.install}$`));
   });
 }
+
+test('the phone menu lists the standalone pages and marks the current one', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'phone menu');
+  await page.goto('/pt-br');
+  await page.getByRole('button', { name: 'Abrir menu' }).click();
+  await page.getByRole('dialog').getByRole('link', { name: 'Catálogo', exact: true }).click();
+  await expect(page).toHaveURL(/\/pt-br\/catalogo$/);
+  await page.getByRole('button', { name: 'Abrir menu' }).click();
+  await expect(page.getByRole('dialog').getByRole('link', { name: 'Catálogo', exact: true })).toHaveAttribute('aria-current', 'page');
+});
 
 test('the language menu switches locale, keeps the page and query, and remembers the choice', async ({ page, context }) => {
   await page.goto('/en/catalog?q=title');

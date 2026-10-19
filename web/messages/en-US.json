@@ -4,8 +4,8 @@
     "tagline": "You have the story. We give it rhythm.",
     "ogAlt": "editonny — local video editing through conversation",
     "home": {
-      "title": "editonny — give your story a rhythm",
-      "description": "Your local video studio, guided by conversation. Cuts, captions, sound, and motion with the AI you already use."
+      "title": "editonny — video editing through conversation",
+      "description": "Editonny is a video editing skill for Codex and Claude Code, 100% free and open source. Cut pauses, caption, clean up audio, reframe, and create motion scenes by asking in plain language."
     },
     "create": {
       "title": "Create a request — editonny",
@@ -30,7 +30,15 @@
     "create": "Create a request",
     "catalog": "Catalog",
     "examples": "Examples",
-    "install": "Install"
+    "install": "Install",
+    "demo": "Demo",
+    "features": "Features",
+    "lab": "Lab",
+    "library": "Library",
+    "guide": "Guide",
+    "openSource": "Open source",
+    "pages": "Pages",
+    "getSkill": "Get the skill"
   },
   "Header": {
     "homeLabel": "home page",
@@ -39,11 +47,15 @@
     "menuTitle": "Menu"
   },
   "Footer": {
-    "tagline": "One story at a time. A complete workflow.",
-    "guide": "Guide",
-    "start": "Start",
+    "tagline": "You have the story. We give it rhythm.",
+    "label": "Footer",
+    "madeBy": "Made by",
+    "requests": "Requests",
+    "scenes": "Motion scenes",
+    "install": "Installation guide",
+    "requirements": "Requirements and costs",
+    "note": "Demos on this page are illustrative. Editonny is open source and runs on your computer, with your AI agent.",
     "credits": "Created by {name}.",
-    "links": "Author and project links",
     "license": "Open source under the MIT license."
   },
   "Language": {
@@ -57,7 +69,8 @@
   },
   "Common": {
     "skip": "Skip to content",
-    "newTab": "(opens in a new tab)"
+    "newTab": "(opens in a new tab)",
+    "creatorName": "Matheus Gomes"
   },
   "NotFound": {
     "title": "This page is not here.",
@@ -66,103 +79,332 @@
   },
   "Home": {
     "hero": {
-      "badge": "NEW",
-      "news": "Editing and motion in one workflow, on your computer",
-      "line1": "You have",
-      "line2": "the story.",
-      "line3": "We give it",
-      "words": "rhythm.|cuts.|motion.|captions.|sound.",
-      "lead": "From raw footage to the last detail. Cuts, captions, sound, and motion with the AI you already use, and a video ready to post.",
-      "primary": "Create my first request",
-      "secondary": "Install the skill",
-      "local": "100% LOCAL"
+      "creatorRole": "Creator of Editonny",
+      "creatorStatus": "100% free forever · open source",
+      "eyebrow": "Conversational video editing skill",
+      "line1": "You ask.",
+      "line2": "Your video gets",
+      "words": "rhythm.|cuts.|captions.|motion.",
+      "leadA": "Describe the edit in plain language — ",
+      "leadHighlight": "cut pauses, add captions, fix the audio, reframe, create motion scenes",
+      "leadB": " — and your AI agent does it on your computer.",
+      "explore": "Explore features",
+      "metaFree": "100% free",
+      "metaOpen": "Open source",
+      "metaAgents": "Codex and Claude Code"
     },
-    "phone": {
-      "alt": "Illustration of a vertical video being edited, not a rendered video",
-      "hookTop": "Nobody told you",
-      "hookBottom": "this about coffee",
-      "caption": "First, ninety-four degrees. Then, the bloom.",
-      "cuts": "14 cuts",
-      "wordsLost": "0 words lost",
-      "rendering": "Rendering",
-      "renderMeta": "1080p · 9:16",
-      "render": "Render",
-      "voice": "VOICE · NOISE REMOVED",
-      "motion": "Motion",
-      "beforeAfter": "Before and after"
+    "bench": {
+      "title": "WORKBENCH / DEMO-PROJECT",
+      "badge": "Illustrative demo",
+      "request": "YOUR REQUEST",
+      "req1": "Cut the pauses",
+      "req2": ", ",
+      "req3": "add captions",
+      "req4": " and ",
+      "req5": "highlight these three steps with motion",
+      "req6": ".",
+      "check1": "Pauses and mistakes removed",
+      "check2": "Captions synced to the speech",
+      "check3": "“Three stacked steps” scene applied",
+      "check4": "Sample ready for your review",
+      "chapterRaw": "Raw",
+      "chapterPauses": "01 Pauses",
+      "chapterCaptions": "02 Captions",
+      "chapterMotion": "03 Motion",
+      "chapterResult": "04 Result",
+      "chapters": "Demo steps",
+      "replay": "Replay",
+      "replayLabel": "Replay the sequence",
+      "marked": "3 pauses · 1 mistake",
+      "badgeRaw": "RAW",
+      "badgeEditing": "EDITING",
+      "badgeFinal": "FINAL",
+      "caption": "to edit a video you only need three steps",
+      "method": "3-STEP METHOD",
+      "step1": "Record",
+      "step2": "Cut",
+      "step3": "Publish",
+      "sampleReady": "Sample to review",
+      "trackVideo": "VIDEO",
+      "trackVoice": "VOICE",
+      "trackCaption": "CAPTION",
+      "trackMotion": "MOTION",
+      "motionChip": "✦ Three stacked steps",
+      "note": "Interface animation to explain the workflow. Its pace does not reflect real processing time."
     },
-    "tapes": {
-      "one": "Clean cuts|Word-by-word captions|Motion|Custom soundtrack|Zero noise|{scenes} scenes",
-      "two": "9:16|16:9|1:1|4:5|Claude Code|Codex|100% local"
+    "marquee": "Pause cutting|Captions|Audio|Reframing|Motion|{scenes} scenes|{requests} requests",
+    "anatomy": {
+      "eyebrow": "Anatomy of an edit",
+      "titleA": "Every request is ",
+      "highlight": "a layer.",
+      "lead": "Pull the edit apart and see what each part of the request does. Put it back together and it becomes the video.",
+      "plate1Title": "Raw footage",
+      "plate2Title": "Cut",
+      "plate3Title": "Caption",
+      "plate4Title": "Motion",
+      "plate1Text": "The material as recorded: takes, breaths, pauses and repeats.",
+      "plate2Text": "Markers define what goes. Clips move closer and the rhythm shows up.",
+      "plate3Text": "Text follows the speech word by word, highlighting what matters.",
+      "plate4Text": "A piece of speech becomes a scene: list, comparison, number or diagram.",
+      "tagRaw": "01 · RAW",
+      "tagCut": "02 · CUT",
+      "tagCaption": "03 · CAPTION",
+      "captionA": "YOU NEED ",
+      "captionB": "THREE",
+      "captionC": " STEPS",
+      "assemble": "Assemble the edit",
+      "separate": "Separate the layers"
     },
-    "stats": {
-      "label": "editonny in numbers",
-      "scenes": "motion scenes in the catalog",
-      "requests": "requests ready to adapt",
-      "formats": "formats: vertical, square, feed, horizontal",
-      "local": "local. Nothing is uploaded from here."
+    "features": {
+      "eyebrow": "Two services, one flow",
+      "titleA": "Fewer operations. ",
+      "highlight": "More direction.",
+      "lead": "You say what you want to say. Editor handles cutting and finishing; Motion turns parts of your speech into scenes.",
+      "editorTag": "SERVICE / EDITOR",
+      "editorTitle": "Story, cuts and finishing.",
+      "editorLink": "See editing requests",
+      "motionTag": "SERVICE / MOTION",
+      "motionTitle": "Speech becomes a scene.",
+      "motionLink": "Explore all {scenes} scenes",
+      "editor": {
+        "cuts": {
+          "title": "Pause and mistake cuts",
+          "text": "Removes hesitations and repeats without clipping words."
+        },
+        "story": {
+          "title": "Storytelling",
+          "text": "Picks the clearest takes and shapes a beginning, middle and end."
+        },
+        "captions": {
+          "title": "Captions",
+          "text": "Synced to the speech, highlighting the important words."
+        },
+        "audio": {
+          "title": "Audio adjustments",
+          "text": "Volume, voice and music balanced to sound right on a phone."
+        },
+        "reframe": {
+          "title": "Reframing",
+          "text": "Vertical, horizontal, square or feed — the subject stays in frame."
+        }
+      },
+      "motion": {
+        "lists": {
+          "title": "Animated lists",
+          "text": "Steps that land on the beat of your speech."
+        },
+        "comparisons": {
+          "title": "Comparisons",
+          "text": "Before and after, this or that, side by side."
+        },
+        "numbers": {
+          "title": "Numbers",
+          "text": "Figures and results you mention get the spotlight."
+        },
+        "diagrams": {
+          "title": "Diagrams",
+          "text": "Abstract ideas become easy-to-follow visuals."
+        },
+        "catalog": {
+          "title": "{scenes} catalog scenes",
+          "text": "Transitions, pointers, proof cards, titles and more."
+        }
+      }
     },
-    "bento": {
-      "eyebrow": "Everything in one workflow",
-      "titleA": "Everything an editor does.",
-      "titleB": "In one",
-      "highlight": "conversation.",
-      "lead": "Editing and motion work together on your computer. You review a sample before finishing the whole video.",
-      "cutKicker": "EDITOR / CUT",
-      "cutTitle": "Cut with intention.",
-      "cutText": "Removes pauses, repetitions, and mistakes without losing words or meaning.",
-      "raw": "RAW · 01:12",
-      "analyzing": "ANALYZING PAUSES…",
-      "done": "CUT · 00:45 ✓",
-      "captionsKicker": "CAPTIONS",
-      "captionsTitle": "Every word, on time.",
-      "captionsText": "Word-by-word captions for people watching without sound.",
-      "captionsSample": "Stop losing people who watch without sound",
-      "sceneGroup": "General",
-      "sceneName": "Revenue counter",
-      "sceneWhen": "Motion that explains: numbers, steps, comparisons.",
-      "formatsKicker": "FORMATS",
-      "formatsTitle": "One video, everywhere.",
-      "formatsText": "Reels, Stories, feed, and YouTube from the same footage.",
-      "soundKicker": "SOUND",
-      "soundTitle": "Clean voice. The right track.",
-      "soundText": "Background noise out, a soundtrack that fits the mood.",
-      "reviewKicker": "REVIEW",
-      "reviewTitle": "You approve before the final.",
-      "reviewText": "The preview opens in your browser: mark the section, say what to change, approve. The AI renders again.",
-      "beatHook": "Hook",
-      "beatSteps": "Steps",
-      "beatCta": "Call to action",
-      "quoteHook": "Nobody told you",
-      "quoteSteps": "94 degrees",
-      "quoteCta": "Save it",
-      "timeline": "Example review timeline"
+    "lab": {
+      "eyebrow": "Lab",
+      "titleA": "Input, request, ",
+      "highlight": "result.",
+      "lead": "Play with the controls and watch each request work. Use the same phrases in your Reels, ads and lessons.",
+      "tabCut": "Raw × edited",
+      "tabCaptions": "Captions",
+      "tabMotion": "Motion",
+      "tabFormat": "Framing",
+      "tabsLabel": "Lab",
+      "schematic": "ILLUSTRATIVE SCHEMATIC",
+      "tokens": "So…|pause 1.2 s|to edit a video|you need|uh,|three steps.|pause 0.8 s|First, record.|Then cut…|Then cut.|And publish.",
+      "cutRaw": "Raw",
+      "cutEdited": "Edited",
+      "cutInfoRaw": "2 pauses · 2 mistakes marked",
+      "cutInfoEdited": "2 pauses and 2 mistakes removed",
+      "captionsLabel": "Captions",
+      "fontImpact": "Impact",
+      "fontClean": "Clean",
+      "fontHand": "Handwritten",
+      "fontMarker": "Marker",
+      "captionSample": "every word on time with emphasis on what matters",
+      "before": "BEFORE",
+      "after": "AFTER",
+      "question": "The question everyone always asks?",
+      "answer": "THE ANSWER, STRAIGHT TO THE POINT.",
+      "input": "INPUT",
+      "request": "REQUEST",
+      "output": "RESULT",
+      "copy": "Copy request",
+      "copied": "Request copied ✓",
+      "catalogScene": "Catalog scene:",
+      "footnote": "Illustrative schematic. The real composition is rendered by the agent from your footage.",
+      "cta": "All of this is free and open source.",
+      "cut": {
+        "input": "A spoken recording with long pauses, a hesitation and a repeated sentence.",
+        "request": "Cut the pauses and mistakes without clipping words, keeping the expressive pauses.",
+        "output": "Continuous speech with rhythm. Words and meaning stay exactly as spoken."
+      },
+      "captions": {
+        "input": "The same clip, already cut, with no text on screen.",
+        "request": "Add readable captions, highlighting the spoken word.",
+        "output": "Captions synced word by word. You choose the lettering style."
+      },
+      "format": {
+        "input": "A video shot vertically, subject in the center.",
+        "request": "Adapt the video to {format} keeping the face and subject in frame.",
+        "output": "Reframing that keeps the subject. The AI checks the framing in the chosen format."
+      },
+      "motionOutput": "The moment becomes a full-screen scene with the words from your speech. Captions step aside during the scene.",
+      "picks": {
+        "steps": {
+          "label": "Three steps",
+          "request": "When I list the method, turn the three steps into an animated composition.",
+          "input": "A moment where the speech sums up a three-step method."
+        },
+        "beforeAfter": {
+          "label": "Before and after",
+          "request": "In the comparison, show how it was and how it turned out, with the two numbers I mention.",
+          "input": "A moment where the speech compares how it was and how it turned out."
+        },
+        "number": {
+          "label": "Number spotlight",
+          "request": "When I mention revenue, highlight the amount with a number scene.",
+          "input": "A moment where the speech mentions revenue or a result in money."
+        },
+        "question": {
+          "label": "Question and answer",
+          "request": "When I answer the audience's question, show the question and the answer on screen.",
+          "input": "A moment where the speech answers a common audience question."
+        }
+      }
     },
     "how": {
       "eyebrow": "How it works",
-      "titleA": "Fewer operations.",
-      "highlight": "More direction.",
-      "lead": "This guide prepares the request. Editing happens on your computer, with your AI and the installed package.",
-      "cta": "Build my request",
-      "step1Title": "Say what you want to tell",
-      "step1Text": "Choose the goal, point to the video folder, and set the tone. No timeline skills required.",
-      "step2Title": "Get the first cut right",
-      "step2Text": "The AI checks the environment, works the cut, and prepares an 8–15 second sample. You judge the pace and the look.",
-      "step3Title": "Add the finish",
-      "step3Text": "Captions, sound, and motion help tell the story. After your review, the AI finishes and checks the file."
+      "titleA": "The site teaches. ",
+      "highlight": "Your computer edits.",
+      "lead": "Editonny is a skill installed on your computer. This page doesn't receive or edit videos — it's the reference to discover features, learn the flow and write requests.",
+      "step1Title": "Download from GitHub",
+      "step2Title": "Install with one request",
+      "step3Title": "Talk to your agent",
+      "step1Text": "The code is open and free. Download the ZIP or clone the repository.",
+      "step2Text": "Open the folder in Claude Code or Codex and paste the install request. It does the rest.",
+      "step3Text": "Call $editonny or /editonny, point to your video folder and ask. You review a sample before the full video.",
+      "needTitle": "You'll need",
+      "needAgent": "Compatible AI agent",
+      "needAgentValue": "Codex or Claude Code",
+      "needPythonValue": "3.9 or later",
+      "needUvValue": "Python manager",
+      "needFfmpeg": "FFmpeg and ffprobe",
+      "needFfmpegValue": "in the terminal",
+      "needNode": "Node.js and npx",
+      "needNodeValue": "22.13+ or 24+",
+      "needNote": "The installer sets up the engine dependencies. System tools must be available in the terminal.",
+      "costTitle": "Third-party costs",
+      "cost1Title": "Editonny",
+      "cost2Title": "Your AI agent",
+      "cost3Title": "Transcription and rendering",
+      "cost1Text": "is free and open source. No subscription, no paid plan.",
+      "cost2Text": "may require its own subscription, purchased separately.",
+      "cost3Text": "run on your machine. No video is sent through this site."
     },
-    "starts": {
-      "eyebrow": "A good starting point",
-      "title": "Start with an intention.",
-      "all": "See all {count} requests",
-      "action": "Use this starting point"
+    "library": {
+      "eyebrow": "Open library",
+      "titleA": "One idea. ",
+      "highlight": "Many shapes.",
+      "lead": "{requests} ready-made requests and {scenes} motion scenes. Explore freely.",
+      "tabPrompts": "Requests",
+      "tabScenes": "Motion scenes",
+      "tabsLabel": "Open library",
+      "search": "Search the library",
+      "placeholderPrompts": "Try: lesson, audio, ad, captions…",
+      "placeholderScenes": "Try: comparison, title, steps, arrow…",
+      "agent": "AGENT",
+      "allObjectives": "All goals",
+      "allFamilies": "All families",
+      "filters": "Filters",
+      "promptsCount": "{count, plural, one {# request} other {# requests}}",
+      "scenesCount": "{count, plural, one {# scene} other {# scenes}}",
+      "resultsFor": "for “{query}”",
+      "action": "View and copy",
+      "thumbsNote": "Thumbnails are explanatory schematics, not scene renders.",
+      "emptyA": "Nothing found for",
+      "emptyB": "Try another term or clear the filters.",
+      "more": "Show more ({count})",
+      "professions": "Professions",
+      "catalogLink": "Open the full catalog",
+      "examplesLink": "Open the full request library"
     },
-    "callout": {
-      "line1": "Your next video",
-      "line2": "starts with",
-      "accent": "a request.",
-      "text": "Build the brief in two minutes and take it to Claude Code or Codex.",
-      "cta": "Let's create"
+    "guide": {
+      "eyebrow": "Installation guide",
+      "titleA": "From download to ",
+      "highlight": "first request.",
+      "step1Title": "Download from GitHub",
+      "step2Title": "Open the folder in your agent",
+      "step3Title": "Paste the install request",
+      "step4Title": "Make your first request",
+      "step1Text": "Open the repository, click Code → Download ZIP and unzip it. Or clone it with git.",
+      "step2Text": "Open the Editonny folder in Claude Code or Codex — either works.",
+      "step3Text": "It installs or updates the skill globally, prepares the environment and validates it in Claude Code and Codex. End to end, on its own.",
+      "step4Text": "Open a new conversation and call /editonny in Claude Code or $editonny in Codex. Point to your video folder and ask for a sample.",
+      "restart": "Close and reopen your agent after installing so it discovers the skill.",
+      "askKicker": "INSTALL AND UPDATE REQUEST",
+      "askLead": "Works for a first install and for updates. Paste it with the Editonny folder open in your agent:",
+      "copyInstall": "Copy install request",
+      "installNote": "No terminal commands. If the agent needs anything, it asks first.",
+      "installCopied": "Install request copied ✓",
+      "firstVideo": "Use “{title}”",
+      "terminal": "Prefer the terminal? See the installation commands",
+      "faqFreeTitle": "Is it really free? What runs locally?",
+      "faqFreeBody": "Yes. Editonny is 100% free and open source, with no paid plan. This site builds requests and browses the catalog; it doesn't upload or edit anything in the browser. Transcription and rendering run on your machine; your AI agent follows its provider's terms and may require its own subscription.",
+      "faqCatalogTitle": "Does the catalog work in any format?",
+      "faqCatalogBody": "Scenes show their source format, usually vertical. The AI adapts and checks framing when your video has another aspect ratio. A visual reference does not guarantee an identical render without review."
+    },
+    "offer": {
+      "eyebrow": "Do the math",
+      "titleA": "An editor costs ",
+      "highlight": "R$ 42k a year.",
+      "titleB": " Editonny costs zero. Forever.",
+      "lead": "It's not a fair fight. And it's free.",
+      "raceTitle": "IN ONE WORKDAY",
+      "editorName": "Hired editor",
+      "editorCost": "R$ 3,500–10,000/month",
+      "editonnyName": "Editonny",
+      "editonnyCost": "R$ 0 · open source",
+      "editing": "editing…",
+      "delivered": "1 delivered",
+      "videoWord": "video",
+      "videosWord": "videos",
+      "barLabel": "1 video every ~5 min",
+      "result": "more videos than an editor, same day. For free.",
+      "raceReplay": "Replay",
+      "raceSkip": "Show the result",
+      "tag": "OPEN SOURCE",
+      "oldPrice": "R$ 3,500",
+      "price": "R$ 0",
+      "promo": "ONE MONTH OF AN EDITOR*",
+      "forever": "FOREVER.",
+      "title": "Free. Open. Forever.",
+      "repo": "Get the skill on GitHub",
+      "guide": "See installation guide",
+      "included1": "Editonny skill: Editor + Motion",
+      "included2": "{scenes} motion scenes",
+      "included3": "Installer and diagnostic",
+      "included4": "Local review preview",
+      "included5": "{requests} ready-made requests",
+      "creatorNote": "Open code, no subscription, no catch. Use it, study it and contribute.",
+      "promoNote": "*Yes, we crossed out one month of an editor. Editonny costs nothing.",
+      "procrast": "Every month without Editonny costs R$ 3,500 in editing. And it's free.",
+      "footnote": "Illustrative comparison: editor at 1 video per workday; Editonny at a 5-minute average per video, varying with length and footage. Your AI agent may have its own subscription."
+    },
+    "bar": {
+      "label": "Demo",
+      "resources": "Features"
     }
   },
   "Create": {

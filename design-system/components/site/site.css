@@ -15,12 +15,13 @@
 .ds-chip[data-size="sm"] { min-height: 34px; padding: var(--space-2) var(--space-3); }
 .ds-chip[data-tone="orange"] { --chip-on-bg: var(--accent); --chip-on-fg: var(--text-on-accent); }
 .ds-chip[data-tone="sun"] { --chip-on-bg: var(--sun-400); --chip-on-fg: var(--ink-950); }
-.ds-chip:is(:hover, [data-force~="hover"]):not(:disabled) { border-color: var(--line-strong); color: var(--text-1); }
+.ds-chip:is(:hover, [data-force~="hover"]):not(:disabled, [aria-pressed="true"]) { border-color: var(--line-strong); color: var(--text-1); }
 .ds-chip:is(:active, [data-force~="active"]):not(:disabled) { transform: scale(0.95); }
 .ds-chip:is(:focus-visible, [data-force~="focus"]) { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .ds-chip[aria-pressed="true"] { color: var(--chip-on-fg); background: var(--chip-on-bg); border-color: transparent; }
 .ds-chip:disabled { opacity: 0.45; cursor: not-allowed; }
-.ds-chip__count { font-family: var(--font-mono); font-size: var(--size-eyebrow); opacity: 0.6; }
+/* 78% keeps the count at 4.5:1 on the selected orange and on light paper. */
+.ds-chip__count { font-family: var(--font-mono); font-size: var(--size-eyebrow); opacity: 0.78; }
 
 .ds-creator {
   align-self: flex-start; max-width: 100%; display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-1-5) var(--space-4) var(--space-1-5) var(--space-1-5);

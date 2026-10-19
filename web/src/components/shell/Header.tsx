@@ -1,24 +1,30 @@
 'use client';
 import { Button, SiteHeader } from '@editonny/design-system';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import NextLink from 'next/link';
 import { ThemeToggle } from '@/features/theme/ThemeToggle';
-import { Link, usePathname } from '@/i18n/navigation';
+import { getPathname } from '@/i18n/navigation';
+import type { AppLocale } from '@/i18n/routing';
+import { REPOSITORY_URL } from '@/lib/links';
 import { LanguageMenu } from './LanguageMenu';
 import { MobileMenu } from './MobileMenu';
-import { NAV } from './nav';
+import { SECTIONS } from './nav';
+import { NewTabLink } from './NewTabLink';
 import styles from './shell.module.css';
 
+/** Floating header: wordmark, links to the home sections (a menu below 1100 px), language, theme, and the repository. */
 export function Header() {
   const t = useTranslations();
-  const pathname = usePathname();
+  const locale = useLocale() as AppLocale;
+  const home = getPathname({ locale, href: '/' });
   return (
-    <SiteHeader linkAs={Link} homeHref="/" homeLabel={t('Header.homeLabel')} navLabel={t('Nav.label')} wordmarkSize={22} active={pathname}
-      links={NAV.map(item => ({ label: t(`Nav.${item.key}`), href: item.href }))}
+    <SiteHeader linkAs={NextLink} homeHref={home} homeLabel={t('Header.homeLabel')} navLabel={t('Nav.label')} wordmarkSize={20}
+      links={SECTIONS.map(section => ({ label: t(`Nav.${section.key}`), href: `${home}#${section.id}` }))}
       right={<>
         <LanguageMenu />
         <ThemeToggle labels={{ toDark: t('Theme.toDark'), toLight: t('Theme.toLight') }} />
-        <Button href="/install" as={Link} size="sm" variant={pathname === '/install' ? 'volt' : 'primary'} iconRight="arrow-up-right" className={styles.installCta}>{t('Nav.install')}</Button>
-        <MobileMenu />
+        <Button href={REPOSITORY_URL} as={NewTabLink} size="sm" icon="github" label={`${t('Nav.getSkill')} ${t('Common.newTab')}`} className={styles.headerCta}>{t('Nav.getSkill')}</Button>
+        <MobileMenu home={home} />
       </>} />
   );
 }

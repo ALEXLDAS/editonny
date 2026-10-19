@@ -43,6 +43,7 @@
   --size-2xs: 10px;
   --size-fluid-hero: clamp(60px, 7.6vw, 124px);
   --size-fluid-page: clamp(56px, 6.4vw, 100px);
+  --size-fluid-landing: clamp(42px, 6.6vw, 100px);
   --size-fluid-section: clamp(44px, 5vw, 72px);
   --size-fluid-stat: clamp(64px, 7vw, 108px);
   --size-fluid-callout: clamp(72px, 9vw, 150px);

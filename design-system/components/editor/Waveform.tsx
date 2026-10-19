@@ -14,9 +14,12 @@ export type WaveformProps = BaseProps & {
   cuts?: Array<[number, number]>;
 };
 
-/** Deterministic bar heights shared by Waveform and Timeline. */
+/**
+ * Deterministic bar heights shared by Waveform and Timeline.
+ * Rounded to two decimals because Math.sin differs in the last digits between Node and browsers, which breaks hydration.
+ */
 export const barHeights = (count: number, a = 1.3, b = 0.41, floor = 18): number[] =>
-  Array.from({ length: count }, (_, i) => floor + Math.abs(Math.sin(i * a) * 52 + Math.sin(i * b) * 28));
+  Array.from({ length: count }, (_, i) => Math.round((floor + Math.abs(Math.sin(i * a) * 52 + Math.sin(i * b) * 28)) * 100) / 100);
 
 export function Waveform({ bars = 48, height = 64, playing = true, color, muted, progress, cuts = [], className, style }: WaveformProps = {}) {
   return (

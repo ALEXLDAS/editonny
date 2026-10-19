@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getPathname } from '@/i18n/navigation';
 import { routing, type AppLocale, type AppPathname } from '@/i18n/routing';
+import { AUTHOR, REPOSITORY_URL } from './links';
+
+export { AUTHOR, REPOSITORY_URL };
 
 const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 /** Canonical origin: NEXT_PUBLIC_SITE_URL, else the Vercel production domain, else local development. */
 export const SITE_URL = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? (vercelUrl ? `https://${vercelUrl}` : 'http://localhost:3000'));
-
-export const REPOSITORY_URL = 'https://github.com/soumatheusgomes/editonny';
-export const AUTHOR = { name: 'Matheus Gomes', instagram: 'https://instagram.com/matheusgomes', email: 'eu@matheusgom.es' };
 
 /**
  * DESIGN.md colors for surfaces that cannot read CSS variables (web manifest, generated Open Graph images).

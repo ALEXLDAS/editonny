@@ -309,7 +309,7 @@ Primitives never change with the theme; components consume only semantic roles, 
 | `--success` `--warning` `--danger` `--info` | volt, sun, rec, sky | olive-700, amber-700, crimson-700, azure-700 | Status text and outlines |
 
 - Orange carries black text (`--text-on-accent`), never white. One primary orange action per view.
-- Solid blocks (orange, volt, white, fire gradient) are the main compositional motif for call-outs, bento tiles, and tapes.
+- Solid blocks (orange, volt, white, fire gradient) are the main compositional motif for call-outs, service and offer cards, and tapes.
 - Footage, captions, and glass controls over media use the theme-independent `--on-media`, `--glass-*`, and `--media-*` tokens.
 - Text pairs meet WCAG AA 4.5:1 for body text. `--fog-500` was added because the export's `--fog-600` measured 3.7:1 on cards; `--fog-600` remains for decorative strokes only.
 
@@ -325,7 +325,7 @@ Sizes come only from `--size-*` tokens (10–160 px) and the fluid `--size-fluid
 
 ## Layout
 
-Spacing uses the `--space-*` scale (2–128 px, including the 2, 6, 10, 14, and 28 px half steps). Containers are 1360–1440 px with a 56 px gutter. Guide pages are airy (about 110 px between sections); the preview is compact (14–16 px card padding). Hero layouts use two columns (copy × 9:16 phone), bento sections use 12 columns, and every layout collapses to one column without horizontal scrolling at 390 px.
+Spacing uses the `--space-*` scale (2–128 px, including the 2, 6, 10, 14, and 28 px half steps). Containers are 1360–1440 px with a 56 px gutter. Guide pages are airy (about 110 px between sections); the preview is compact (14–16 px card padding). Hero layouts use two columns (copy × a 9:16 workbench or phone), the landing hero headline uses `--size-fluid-landing`, card grids wrap with `auto-fit`, and every layout collapses to one column without horizontal scrolling at 390 px.
 
 ## Elevation & Depth
 

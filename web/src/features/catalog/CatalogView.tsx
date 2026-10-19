@@ -22,7 +22,7 @@ export function useSceneLabels(): Partial<SceneCardLabels> {
   return { before: t('before'), after: t('after'), cta: t('cta'), cheer: t('cheer'), zoom: t('zoom'), chat: [t('chat1'), t('chat2'), t('chat3')], hint: t('hint') };
 }
 
-function SceneDialog({ scene, index, onClose }: { scene: Scene; index: number; onClose(): void }) {
+export function SceneDialog({ scene, index, onClose }: { scene: Scene; index: number; onClose(): void }) {
   const t = useTranslations('Catalog');
   const l = useTranslations('Library');
   const locale = useLocale() as AppLocale;

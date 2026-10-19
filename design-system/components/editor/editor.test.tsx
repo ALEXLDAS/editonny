@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KineticCaption, MarkItem, Timeline, Transport, Waveform } from '../index';
 import { stubOffscreen } from '../offscreen.testing';
+import { barHeights } from './Waveform';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -48,6 +49,11 @@ describe('editor controls', () => {
     const { container } = render(<Waveform bars={10} cuts={[[0, 0.2]]} />);
     expect(container.firstChild).toHaveAttribute('aria-hidden', 'true');
     expect(container.querySelectorAll('[data-cut="true"]')).toHaveLength(2);
+  });
+
+  it('bar heights stay identical across JavaScript engines', () => {
+    // Node and Chrome disagree in the last digits of Math.sin, which broke hydration of server-rendered bars.
+    for (const bar of [...barHeights(64), ...barHeights(96, 1.7, 0.37, 22)]) expect(Number(bar.toFixed(2))).toBe(bar);
   });
 
   it('KineticCaption announces the whole text', () => {

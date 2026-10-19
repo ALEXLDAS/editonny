@@ -90,15 +90,14 @@ test('phones get a sticky copy bar until the request card is on screen', async (
   await expect(bar).toBeHidden();
 });
 
-test('the same example can be applied again after editing the brief', async ({ page, isMobile }) => {
-  test.skip(isMobile, 'header navigation');
+test('the same example can be applied again after editing the brief', async ({ page }) => {
   // Client-side navigation keeps the Create page mounted, which is where a stale guard would hide the second request.
   await page.goto('/en/create?example=lesson');
   const goal = page.getByLabel('What would you like to create?');
   await expect(goal).toHaveValue(/Edit the lesson with a short opening/);
   for (const edit of ['Something else', 'Changed again']) {
     await goal.fill(edit);
-    await page.getByRole('banner').getByRole('link', { name: 'Examples', exact: true }).click();
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Requests', exact: true }).click();
     await page.getByRole('button', { name: /A lesson with a clear opening/ }).click();
     await page.getByRole('dialog').getByRole('link', { name: 'Customize request' }).click();
     await expect(page).toHaveURL(/\/en\/create$/);

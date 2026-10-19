@@ -60,11 +60,11 @@ test('every locale page advertises all alternates and x-default', async ({ page 
 
 test('pages send the browser only the interface text their interactive parts use', async ({ request }) => {
   const home = await (await request.get('/en')).text();
-  expect(home).not.toContain(en.Install.faq1Body);
+  expect(home).not.toContain(en.Install.step2Text);
   expect(home).not.toContain(en.Create.lead);
   const install = await (await request.get('/en/install')).text();
   expect(install).not.toContain(en.Create.lead);
-  expect(install).not.toContain(en.Home.bento.analyzing);
+  expect(install).not.toContain(en.Home.bench.marked);
 });
 
 test('the design-system route is not localized', async ({ page }) => {

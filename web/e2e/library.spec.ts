@@ -77,11 +77,10 @@ test('without clipboard access the scene dialog selects the request itself', asy
   expect(selected).toContain('(revenue-counter)');
 });
 
-test('leaving a search through same-page navigation clears it, and Back restores it', async ({ page, isMobile }) => {
+test('leaving a search through same-page navigation clears it, and Back restores it', async ({ page }) => {
   await page.goto('/en/catalog?q=comparison');
   await expect(page.getByLabel('Search scenes')).toHaveValue('comparison');
-  if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click();
-  await page.getByRole(isMobile ? 'dialog' : 'banner').getByRole('link', { name: 'Catalog', exact: true }).click();
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Motion scenes', exact: true }).click();
   await expect(page).toHaveURL(/\/en\/catalog$/);
   await expect(page.getByLabel('Search scenes')).toHaveValue('');
   await expect(page.getByText('145 scenes')).toBeVisible();
@@ -110,11 +109,10 @@ test('a tall dialog scrolls so its actions stay reachable on short screens', asy
   await context.close();
 });
 
-test('navigating away mid-search drops the pending search', async ({ page, isMobile }) => {
-  test.skip(isMobile, 'header link');
+test('navigating away mid-search drops the pending search', async ({ page }) => {
   await page.goto('/en/catalog?q=comparison');
   await page.getByLabel('Search scenes').fill('new search');
-  await page.getByRole('banner').getByRole('link', { name: 'Catalog', exact: true }).click();
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Motion scenes', exact: true }).click();
   await page.waitForTimeout(600);
   await expect(page).toHaveURL(/\/en\/catalog$/);
   await expect(page.getByLabel('Search scenes')).toHaveValue('');

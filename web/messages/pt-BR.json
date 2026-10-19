@@ -4,8 +4,8 @@
     "tagline": "Você tem a história. A gente dá o ritmo.",
     "ogAlt": "editonny — edição de vídeo local por conversa",
     "home": {
-      "title": "editonny — dê ritmo à sua história",
-      "description": "Seu estúdio de vídeo local, guiado por conversa. Cortes, legendas, som e motion com a IA que você já usa."
+      "title": "editonny — edição de vídeo por conversa",
+      "description": "Editonny é uma skill de edição de vídeo por conversa para Codex e Claude Code, 100% grátis e open source. Corte pausas, legende, trate o áudio, reenquadre e crie cenas de motion pedindo em linguagem natural."
     },
     "create": {
       "title": "Criar pedido — editonny",
@@ -30,7 +30,15 @@
     "create": "Criar pedido",
     "catalog": "Catálogo",
     "examples": "Exemplos",
-    "install": "Instalar"
+    "install": "Instalar",
+    "demo": "Demonstração",
+    "features": "Recursos",
+    "lab": "Laboratório",
+    "library": "Biblioteca",
+    "guide": "Guia",
+    "openSource": "Open source",
+    "pages": "Páginas",
+    "getSkill": "Acessar skill"
   },
   "Header": {
     "homeLabel": "página inicial",
@@ -39,11 +47,15 @@
     "menuTitle": "Menu"
   },
   "Footer": {
-    "tagline": "Uma história por vez. Um fluxo completo.",
-    "guide": "Guia",
-    "start": "Começar",
+    "tagline": "Você tem a história. A gente dá o ritmo.",
+    "label": "Rodapé",
+    "madeBy": "Feito por",
+    "requests": "Pedidos",
+    "scenes": "Cenas de motion",
+    "install": "Guia de instalação",
+    "requirements": "Requisitos e custos",
+    "note": "As demonstrações desta página são ilustrativas. O Editonny é open source e roda no seu computador, com seu agente de IA.",
     "credits": "Criado por {name}.",
-    "links": "Links do autor e do projeto",
     "license": "Código aberto sob a licença MIT."
   },
   "Language": {
@@ -57,7 +69,8 @@
   },
   "Common": {
     "skip": "Pular para o conteúdo",
-    "newTab": "(abre em nova aba)"
+    "newTab": "(abre em nova aba)",
+    "creatorName": "Matheus Gomes"
   },
   "NotFound": {
     "title": "Esta página não está aqui.",
@@ -66,103 +79,332 @@
   },
   "Home": {
     "hero": {
-      "badge": "NOVO",
-      "news": "Edição e motion em um só fluxo, no seu computador",
-      "line1": "Você tem",
-      "line2": "a história.",
-      "line3": "A gente traz",
-      "words": "ritmo.|cortes.|motion.|legendas.|som.",
-      "lead": "Do bruto ao último detalhe. Cortes, legendas, som e motion com a IA que você já usa, e um vídeo pronto para postar.",
-      "primary": "Criar meu primeiro pedido",
-      "secondary": "Instalar a skill",
-      "local": "100% LOCAL"
+      "creatorRole": "Criador do Editonny",
+      "creatorStatus": "100% grátis pra sempre · open source",
+      "eyebrow": "Skill de edição de vídeo por conversa",
+      "line1": "Você pede.",
+      "line2": "O vídeo ganha",
+      "words": "ritmo.|corte.|legenda.|motion.",
+      "leadA": "Descreva a edição em linguagem natural — ",
+      "leadHighlight": "cortar pausas, legendar, tratar o áudio, reenquadrar, criar cenas de motion",
+      "leadB": " — e seu agente de IA executa no seu computador.",
+      "explore": "Explorar recursos",
+      "metaFree": "100% grátis",
+      "metaOpen": "Open source",
+      "metaAgents": "Codex e Claude Code"
     },
-    "phone": {
-      "alt": "Ilustração de um vídeo vertical sendo editado, não um vídeo renderizado",
-      "hookTop": "Ninguém te contou",
-      "hookBottom": "isso sobre café",
-      "caption": "Primeiro, noventa e quatro graus. Depois, o bloom.",
-      "cuts": "14 cortes",
-      "wordsLost": "0 palavras perdidas",
-      "rendering": "Renderizando",
-      "renderMeta": "1080p · 9:16",
-      "render": "Render",
-      "voice": "VOZ · RUÍDO REMOVIDO",
-      "motion": "Motion",
-      "beforeAfter": "Antes e depois"
+    "bench": {
+      "title": "BANCADA / PROJETO-DEMO",
+      "badge": "Demonstração ilustrativa",
+      "request": "SEU PEDIDO",
+      "req1": "Corte as pausas",
+      "req2": ", ",
+      "req3": "coloque legendas",
+      "req4": " e ",
+      "req5": "destaque estes três passos com motion",
+      "req6": ".",
+      "check1": "Pausas e erros removidos",
+      "check2": "Legendas sincronizadas com a fala",
+      "check3": "Cena “Três passos empilhados” aplicada",
+      "check4": "Amostra pronta para sua revisão",
+      "chapterRaw": "Bruto",
+      "chapterPauses": "01 Pausas",
+      "chapterCaptions": "02 Legendas",
+      "chapterMotion": "03 Motion",
+      "chapterResult": "04 Resultado",
+      "chapters": "Etapas da demonstração",
+      "replay": "Repetir",
+      "replayLabel": "Repetir a sequência",
+      "marked": "3 pausas · 1 erro",
+      "badgeRaw": "BRUTO",
+      "badgeEditing": "EDITANDO",
+      "badgeFinal": "FINAL",
+      "caption": "pra editar um vídeo você precisa de três passos",
+      "method": "MÉTODO EM 3 PASSOS",
+      "step1": "Grave",
+      "step2": "Corte",
+      "step3": "Publique",
+      "sampleReady": "Amostra para revisar",
+      "trackVideo": "VÍDEO",
+      "trackVoice": "VOZ",
+      "trackCaption": "LEGENDA",
+      "trackMotion": "MOTION",
+      "motionChip": "✦ Três passos empilhados",
+      "note": "Animação de interface para explicar o fluxo. O ritmo da animação não indica o tempo real de processamento."
     },
-    "tapes": {
-      "one": "Cortes limpos|Legendas palavra a palavra|Motion|Trilha sob medida|Ruído zero|{scenes} cenas",
-      "two": "9:16|16:9|1:1|4:5|Claude Code|Codex|100% local"
+    "marquee": "Corte de pausas|Legendas|Áudio|Reenquadramento|Motion|{scenes} cenas|{requests} pedidos",
+    "anatomy": {
+      "eyebrow": "Anatomia de uma edição",
+      "titleA": "Cada pedido é ",
+      "highlight": "uma camada.",
+      "lead": "Separe a edição e veja o que cada parte do pedido faz. Junte de novo e ela vira o vídeo.",
+      "plate1Title": "Vídeo bruto",
+      "plate2Title": "Corte",
+      "plate3Title": "Legenda",
+      "plate4Title": "Motion",
+      "plate1Text": "O material como foi gravado: tomadas, respiros, pausas e repetições.",
+      "plate2Text": "Marcadores delimitam o que sai. Os trechos se aproximam e o ritmo aparece.",
+      "plate3Text": "O texto acompanha a fala palavra por palavra, com destaque no que importa.",
+      "plate4Text": "Um trecho da fala vira cena: lista, comparação, número ou diagrama.",
+      "tagRaw": "01 · BRUTO",
+      "tagCut": "02 · CORTE",
+      "tagCaption": "03 · LEGENDA",
+      "captionA": "VOCÊ PRECISA DE ",
+      "captionB": "TRÊS",
+      "captionC": " PASSOS",
+      "assemble": "Montar a edição",
+      "separate": "Separar as camadas"
     },
-    "stats": {
-      "label": "editonny em números",
-      "scenes": "cenas de motion no catálogo",
-      "requests": "pedidos prontos para adaptar",
-      "formats": "formatos: vertical, quadrado, feed, horizontal",
-      "local": "local. Nada sobe para a nuvem por aqui."
+    "features": {
+      "eyebrow": "Dois serviços, um fluxo",
+      "titleA": "Menos operações. ",
+      "highlight": "Mais direção.",
+      "lead": "Você conta o que quer dizer. O Editor cuida do corte e do acabamento; o Motion transforma trechos da fala em cenas.",
+      "editorTag": "SERVIÇO / EDITOR",
+      "editorTitle": "Narrativa, corte e acabamento.",
+      "editorLink": "Ver pedidos de edição",
+      "motionTag": "SERVIÇO / MOTION",
+      "motionTitle": "A fala vira cena.",
+      "motionLink": "Explorar as {scenes} cenas",
+      "editor": {
+        "cuts": {
+          "title": "Cortes de pausas e erros",
+          "text": "Tira hesitações e repetições sem atropelar as palavras."
+        },
+        "story": {
+          "title": "Narrativa",
+          "text": "Escolhe as tomadas mais claras e organiza começo, meio e fim."
+        },
+        "captions": {
+          "title": "Legendas",
+          "text": "Sincronizadas com a fala, com destaque nas palavras importantes."
+        },
+        "audio": {
+          "title": "Ajustes de áudio",
+          "text": "Volume, voz e trilha equilibrados para ouvir bem no celular."
+        },
+        "reframe": {
+          "title": "Reenquadramento",
+          "text": "Vertical, horizontal, quadrado ou feed — o assunto continua no quadro."
+        }
+      },
+      "motion": {
+        "lists": {
+          "title": "Listas animadas",
+          "text": "Passos e etapas que entram no ritmo da fala."
+        },
+        "comparisons": {
+          "title": "Comparações",
+          "text": "Antes e depois, isto ou aquilo, lado a lado."
+        },
+        "numbers": {
+          "title": "Números",
+          "text": "Valores e resultados que você cita ganham destaque."
+        },
+        "diagrams": {
+          "title": "Diagramas",
+          "text": "Ideias abstratas viram esquemas fáceis de seguir."
+        },
+        "catalog": {
+          "title": "{scenes} cenas de catálogo",
+          "text": "Transições, apontadores, cartões de prova, títulos e mais."
+        }
+      }
     },
-    "bento": {
-      "eyebrow": "Tudo em um fluxo",
-      "titleA": "Tudo que um editor faz.",
-      "titleB": "Em uma",
-      "highlight": "conversa.",
-      "lead": "Edição e motion trabalham juntos no seu computador. Você revisa uma amostra antes de finalizar o vídeo inteiro.",
-      "cutKicker": "EDITOR / CORTE",
-      "cutTitle": "Corte com intenção.",
-      "cutText": "Tira pausas, repetições e erros sem perder palavras nem o sentido da fala.",
-      "raw": "BRUTO · 01:12",
-      "analyzing": "ANALISANDO PAUSAS…",
-      "done": "CORTE · 00:45 ✓",
-      "captionsKicker": "LEGENDAS",
-      "captionsTitle": "Cada palavra, no tempo.",
-      "captionsText": "Legendas palavra a palavra, pensadas para quem assiste sem som.",
-      "captionsSample": "Pare de perder quem assiste sem som",
-      "sceneGroup": "Universais",
-      "sceneName": "Dinheiro subindo",
-      "sceneWhen": "Motion que explica: números, passos, comparações.",
-      "formatsKicker": "FORMATOS",
-      "formatsTitle": "Um vídeo, todo lugar.",
-      "formatsText": "Reels, Stories, feed e YouTube a partir do mesmo material.",
-      "soundKicker": "SOM",
-      "soundTitle": "Voz limpa. Trilha certa.",
-      "soundText": "Ruído de fundo fora e uma trilha com o clima do vídeo.",
-      "reviewKicker": "REVISÃO",
-      "reviewTitle": "Você aprova antes do final.",
-      "reviewText": "A prévia abre no navegador: marque o trecho, diga o que mudar e aprove. A IA renderiza de novo.",
-      "beatHook": "Gancho",
-      "beatSteps": "Passos",
-      "beatCta": "Chamada",
-      "quoteHook": "Ninguém te contou",
-      "quoteSteps": "94 graus",
-      "quoteCta": "Salva aí",
-      "timeline": "Linha do tempo de revisão de exemplo"
+    "lab": {
+      "eyebrow": "Laboratório",
+      "titleA": "Entrada, pedido, ",
+      "highlight": "resultado.",
+      "lead": "Mexa nos controles e veja cada pedido agir. Use as mesmas frases nos seus Reels, anúncios e aulas.",
+      "tabCut": "Bruto × editado",
+      "tabCaptions": "Legendas",
+      "tabMotion": "Motion",
+      "tabFormat": "Enquadramento",
+      "tabsLabel": "Laboratório",
+      "schematic": "ESQUEMA ILUSTRATIVO",
+      "tokens": "Então…|pausa 1,2 s|pra editar um vídeo|você precisa de|ãh,|três passos.|pausa 0,8 s|Primeiro, grava.|Depois corta…|Depois corta.|E publica.",
+      "cutRaw": "Bruto",
+      "cutEdited": "Editado",
+      "cutInfoRaw": "2 pausas · 2 erros marcados",
+      "cutInfoEdited": "2 pausas e 2 erros removidos",
+      "captionsLabel": "Legendas",
+      "fontImpact": "Impacto",
+      "fontClean": "Limpa",
+      "fontHand": "Manuscrita",
+      "fontMarker": "Marcador",
+      "captionSample": "cada palavra no seu tempo com destaque no que importa",
+      "before": "ANTES",
+      "after": "DEPOIS",
+      "question": "A dúvida que o público sempre faz?",
+      "answer": "A RESPOSTA, DIRETO AO PONTO.",
+      "input": "ENTRADA",
+      "request": "PEDIDO",
+      "output": "RESULTADO",
+      "copy": "Copiar pedido",
+      "copied": "Pedido copiado ✓",
+      "catalogScene": "Cena do catálogo:",
+      "footnote": "Esquema ilustrativo. A composição real é renderizada pelo agente a partir do seu material.",
+      "cta": "Tudo isso é grátis e open source.",
+      "cut": {
+        "input": "Uma gravação de fala com pausas longas, uma hesitação e uma frase repetida.",
+        "request": "Corte as pausas e os erros, sem atropelar as palavras e preservando as pausas expressivas.",
+        "output": "Fala contínua e com ritmo. As palavras e o sentido da fala ficam como foram ditos."
+      },
+      "captions": {
+        "input": "O mesmo trecho de fala, já cortado, sem nenhum texto na tela.",
+        "request": "Coloque legendas legíveis, com destaque na palavra falada.",
+        "output": "Legendas sincronizadas palavra por palavra. O estilo do lettering é escolhido por você."
+      },
+      "format": {
+        "input": "Um vídeo gravado na vertical, com o assunto no centro.",
+        "request": "Adapte o vídeo para {format} mantendo o rosto e o assunto no quadro.",
+        "output": "Reenquadramento que preserva o assunto. A IA confere o enquadramento no formato escolhido."
+      },
+      "motionOutput": "O trecho vira uma cena de tela cheia com os textos da sua fala. A legenda sai durante a cena.",
+      "picks": {
+        "steps": {
+          "label": "Três passos",
+          "request": "Quando eu listar o método, transforme os três passos em uma composição animada.",
+          "input": "Um trecho em que a fala resume um método em três etapas."
+        },
+        "beforeAfter": {
+          "label": "Antes e depois",
+          "request": "Na comparação, mostre como era e como ficou, com os dois números que eu falo.",
+          "input": "Um trecho em que a fala compara como era e como ficou."
+        },
+        "number": {
+          "label": "Número em destaque",
+          "request": "Quando eu citar o faturamento, destaque o valor em reais com uma cena de número.",
+          "input": "Um trecho em que a fala cita faturamento ou resultado em reais."
+        },
+        "question": {
+          "label": "Pergunta e resposta",
+          "request": "Quando eu responder a dúvida do público, mostre a pergunta e a resposta em tela.",
+          "input": "Um trecho em que a fala responde uma dúvida frequente do público."
+        }
+      }
     },
     "how": {
       "eyebrow": "Como funciona",
-      "titleA": "Menos operações.",
-      "highlight": "Mais direção.",
-      "lead": "Este guia prepara o pedido. A edição acontece no seu computador, com a sua IA e o pacote instalado.",
-      "cta": "Montar meu pedido",
-      "step1Title": "Conte o que quer dizer",
-      "step1Text": "Escolha o objetivo, indique a pasta dos vídeos e defina o tom. Não precisa saber usar uma linha do tempo.",
-      "step2Title": "Acerte o primeiro corte",
-      "step2Text": "A IA confere o ambiente, trabalha o corte e prepara uma amostra de 8–15 segundos. Você avalia o ritmo e o visual.",
-      "step3Title": "Dê o acabamento",
-      "step3Text": "Legendas, som e motion ajudam a contar a história. Depois da sua revisão, a IA finaliza e verifica o arquivo."
+      "titleA": "O site ensina. ",
+      "highlight": "Seu computador edita.",
+      "lead": "Editonny é uma skill instalada no seu computador. Esta página não recebe nem edita vídeos — ela é a referência para descobrir recursos, aprender o fluxo e montar pedidos.",
+      "step1Title": "Baixe do GitHub",
+      "step2Title": "Instale com um pedido",
+      "step3Title": "Converse com seu agente",
+      "step1Text": "O código é aberto e gratuito. Baixe o ZIP ou clone o repositório.",
+      "step2Text": "Abra a pasta no Claude Code ou no Codex e cole o pedido de instalação. Ele faz o resto.",
+      "step3Text": "Chame $editonny ou /editonny, indique a pasta dos vídeos e peça. Você revisa uma amostra antes do vídeo inteiro.",
+      "needTitle": "Você vai precisar",
+      "needAgent": "Agente de IA compatível",
+      "needAgentValue": "Codex ou Claude Code",
+      "needPythonValue": "3.9 ou superior",
+      "needUvValue": "gerenciador Python",
+      "needFfmpeg": "FFmpeg e ffprobe",
+      "needFfmpegValue": "no terminal",
+      "needNode": "Node.js e npx",
+      "needNodeValue": "22.13+ ou 24+",
+      "needNote": "O instalador configura as dependências do motor. As ferramentas de sistema precisam estar disponíveis no terminal.",
+      "costTitle": "Custos de terceiros",
+      "cost1Title": "O Editonny",
+      "cost2Title": "Seu agente de IA",
+      "cost3Title": "Transcrição e render",
+      "cost1Text": "é grátis e open source. Sem assinatura, sem plano pago.",
+      "cost2Text": "pode exigir assinatura própria, contratada à parte.",
+      "cost3Text": "rodam na sua máquina. Nenhum vídeo é enviado por este site."
     },
-    "starts": {
-      "eyebrow": "Um bom ponto de partida",
-      "title": "Comece com uma intenção.",
-      "all": "Ver os {count} pedidos",
-      "action": "Usar este ponto de partida"
+    "library": {
+      "eyebrow": "Biblioteca aberta",
+      "titleA": "Uma ideia. ",
+      "highlight": "Muitas formas.",
+      "lead": "{requests} pedidos prontos e {scenes} cenas de motion. Explore à vontade.",
+      "tabPrompts": "Pedidos",
+      "tabScenes": "Cenas de motion",
+      "tabsLabel": "Biblioteca aberta",
+      "search": "Buscar na biblioteca",
+      "placeholderPrompts": "Tente: aula, áudio, anúncio, legendas…",
+      "placeholderScenes": "Tente: comparação, título, passos, seta…",
+      "agent": "AGENTE",
+      "allObjectives": "Todos os objetivos",
+      "allFamilies": "Todas as famílias",
+      "filters": "Filtros",
+      "promptsCount": "{count, plural, one {# pedido} other {# pedidos}}",
+      "scenesCount": "{count, plural, one {# cena} other {# cenas}}",
+      "resultsFor": "para “{query}”",
+      "action": "Ver e copiar",
+      "thumbsNote": "As miniaturas são esquemas explicativos, não renders das cenas.",
+      "emptyA": "Nada encontrado para",
+      "emptyB": "Tente outro termo ou limpe os filtros.",
+      "more": "Mostrar mais ({count})",
+      "professions": "Profissões",
+      "catalogLink": "Abrir o catálogo completo",
+      "examplesLink": "Abrir a biblioteca completa de pedidos"
     },
-    "callout": {
-      "line1": "Seu próximo vídeo",
-      "line2": "começa com",
-      "accent": "um pedido.",
-      "text": "Monte o briefing em dois minutos e leve para o Claude Code ou o Codex.",
-      "cta": "Vamos criar"
+    "guide": {
+      "eyebrow": "Guia de instalação",
+      "titleA": "Do download ao ",
+      "highlight": "primeiro pedido.",
+      "step1Title": "Baixe do GitHub",
+      "step2Title": "Abra a pasta no seu agente",
+      "step3Title": "Cole o pedido de instalação",
+      "step4Title": "Faça seu primeiro pedido",
+      "step1Text": "Abra o repositório, clique em Code → Download ZIP e descompacte. Se preferir, clone com git.",
+      "step2Text": "Abra a pasta do Editonny no Claude Code ou no Codex — tanto faz qual.",
+      "step3Text": "Ele instala ou atualiza a skill de forma global, prepara o ambiente e valida no Claude Code e no Codex. Do começo ao fim, sozinho.",
+      "step4Text": "Abra uma nova conversa e chame /editonny no Claude Code ou $editonny no Codex. Informe a pasta dos vídeos e peça uma amostra.",
+      "restart": "Feche e abra seu agente depois da instalação para que ele descubra a skill.",
+      "askKicker": "PEDIDO DE INSTALAÇÃO E ATUALIZAÇÃO",
+      "askLead": "Serve para instalar pela primeira vez e para atualizar. Cole com a pasta do Editonny aberta no seu agente:",
+      "copyInstall": "Copiar pedido de instalação",
+      "installNote": "Sem comandos no terminal. Se o agente precisar de algo, ele pergunta antes.",
+      "installCopied": "Pedido de instalação copiado ✓",
+      "firstVideo": "Usar “{title}”",
+      "terminal": "Prefere o terminal? Veja os comandos de instalação",
+      "faqFreeTitle": "É grátis mesmo? O que roda localmente?",
+      "faqFreeBody": "Sim. O Editonny é 100% grátis e open source, sem plano pago. Este site monta pedidos e consulta o catálogo; não faz upload nem edição no navegador. A transcrição e o render rodam na sua máquina; seu agente de IA segue os termos do provedor dele e pode exigir assinatura própria.",
+      "faqCatalogTitle": "O catálogo funciona em qualquer formato?",
+      "faqCatalogBody": "As cenas mostram o formato de origem, em geral vertical. A IA adapta e verifica o enquadramento quando o vídeo tem outra proporção. Uma referência visual não garante um render idêntico sem revisão."
+    },
+    "offer": {
+      "eyebrow": "Faça as contas",
+      "titleA": "Um editor custa ",
+      "highlight": "R$ 42 mil por ano.",
+      "titleB": " O Editonny custa zero. Para sempre.",
+      "lead": "Não é uma briga justa. E ainda é de graça.",
+      "raceTitle": "EM UM DIA DE TRABALHO",
+      "editorName": "Editor contratado",
+      "editorCost": "R$ 3.500 a 10.000/mês",
+      "editonnyName": "Editonny",
+      "editonnyCost": "R$ 0 · open source",
+      "editing": "editando…",
+      "delivered": "1 entregue",
+      "videoWord": "vídeo",
+      "videosWord": "vídeos",
+      "barLabel": "1 vídeo a cada ~5 min",
+      "result": "mais vídeos que um editor, no mesmo dia. De graça.",
+      "raceReplay": "Repetir",
+      "raceSkip": "Ver o resultado",
+      "tag": "OPEN SOURCE",
+      "oldPrice": "R$ 3.500",
+      "price": "R$ 0",
+      "promo": "UM MÊS DE EDITOR*",
+      "forever": "PARA SEMPRE.",
+      "title": "Grátis. Aberto. Para sempre.",
+      "repo": "Acessar skill no GitHub",
+      "guide": "Ver guia de instalação",
+      "included1": "Skill Editonny: Editor + Motion",
+      "included2": "{scenes} cenas de motion",
+      "included3": "Instalador e diagnóstico",
+      "included4": "Preview local de revisão",
+      "included5": "{requests} pedidos prontos",
+      "creatorNote": "Código aberto, sem assinatura e sem pegadinha. Use, estude e contribua.",
+      "promoNote": "*Sim, riscamos o preço de um mês de editor. O Editonny não custa nada.",
+      "procrast": "Cada mês sem o Editonny custa R$ 3.500 de editor. E ele é grátis.",
+      "footnote": "Comparação ilustrativa: editor a 1 vídeo por dia de trabalho; Editonny com média de 5 minutos por vídeo, que varia com a duração e o material. Seu agente de IA pode ter assinatura própria."
+    },
+    "bar": {
+      "label": "Demonstração",
+      "resources": "Recursos"
     }
   },
   "Create": {

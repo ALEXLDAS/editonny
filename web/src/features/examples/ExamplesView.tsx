@@ -18,7 +18,7 @@ import type { Example } from './examples';
 
 type ExamplesViewProps = { examples: Example[]; categories: Array<{ key: string; label: string }> };
 
-function ExampleDialog({ example, onClose }: { example: Example; onClose(): void }) {
+export function ExampleDialog({ example, onClose }: { example: Example; onClose(): void }) {
   const t = useTranslations('Examples');
   const l = useTranslations('Library');
   const locale = useLocale() as AppLocale;
