@@ -24,12 +24,14 @@ def frame_times(path: Path) -> list[float]:
     return times
 
 
-def render_vfr(edl: dict, edit: Path, probes: dict, contract: dict | None, media: dict, output: Path) -> int:
+def render_vfr(edl: dict, edit: Path, probes: dict, contract: dict | None, media: dict, output: Path,
+               parent_edl: dict | None = None) -> int:
     """This route intentionally has hard joins; picture switches, crops and J-cuts need CFR consent."""
     from render_cut import acquire_lock, ffmpeg, loudnorm_measure, true_peak_db
     if any(r.get('picture_source') or r.get('crop') or r.get('gain_db', 0) for r in edl['ranges']):
         raise ValueError('VFR cut-only does not support alternate pictures, crops or interval gain; confirm a CFR route for those changes')
-    if edl.get('jcut', {}).get('enabled'):
+    requested_jcut = edl.get('jcut')
+    if requested_jcut is True or (isinstance(requested_jcut, dict) and requested_jcut.get('enabled')):
         raise ValueError('VFR hard joins cannot apply requested J-cuts; confirm CFR timing or disable J-cuts')
     first = next(iter(probes.values()))['info']
     if contract and (contract['workflow']['video']['width'], contract['workflow']['video']['height']) != (first['display_width'], first['display_height']):
@@ -75,6 +77,11 @@ def render_vfr(edl: dict, edit: Path, probes: dict, contract: dict | None, media
                 'src_start': start, 'src_end': end, 'out_start': position, 'out_end': position + duration,
                 'sourceFrameTimes': selected, 'outputFrameTimes': [position + t - start for t in selected]})
             position += duration
+        if contract:
+            from project_contract import read_json, validate_edl_scope
+            effective = {**edl, 'ranges': [{**interval, 'start': segment['src_start'], 'end': segment['src_end']}
+                for interval, segment in zip(edl['ranges'], segments)]}
+            validate_edl_scope(contract, read_json(edit / 'source_manifest.json'), effective, parent_edl=parent_edl)
         if has_audio:
             chains.append(''.join(labels) + f'concat=n={len(labels)}:v=0:a=1[a]')
         with tempfile.TemporaryDirectory(prefix='vfr-', dir=clips) as tmp:

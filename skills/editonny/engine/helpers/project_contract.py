@@ -281,7 +281,8 @@ def managed_config(edit: Path, operation: str | None = None) -> dict | None:
 
 
 def validate_edl_scope(config: dict, manifest: dict, edl: dict, parent_edl: dict | None = None) -> None:
-    sources = {s['id']: str(Path(s['path']).resolve()) for s in manifest['sources']}
+    from workspace import selected_sources
+    sources = {s['id']: str(Path(s['path']).resolve()) for s in selected_sources(manifest, config)['sources']}
     paths = {key: str(Path(path).resolve()) for key, path in edl['sources'].items()}
     if any(path not in sources.values() for path in paths.values()):
         raise ValueError('EDL includes a source outside the confirmed selection')

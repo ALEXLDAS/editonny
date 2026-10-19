@@ -7,11 +7,45 @@ import tempfile
 import unittest
 
 HELPERS = Path(__file__).resolve().parents[2] / 'skills/editonny/engine/helpers'
-sys.path.insert(0, str(HELPERS))
+sys.path[:0] = [str(HELPERS), str(Path(__file__).resolve().parents[1])]
 from common import output_fps_for, probe_video
 
 
 class MediaTimingTests(unittest.TestCase):
+    def test_vfr_snapping_cannot_remove_protection_or_unrelated_parent_content(self):
+        from intake import inspect_sources, propose_settings
+        from workspace import create_workspace, revise_workspace, record_confirmation
+        from project_contract import load_contract, settings_hash
+        from workflow_fixtures import confirmation
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); source = root / 'sparse.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=gray:s=128x64:r=30:d=1',
+                '-vf', r'select=eq(n\,0)+eq(n\,15)+eq(n\,24),setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709',
+                '-fps_mode', 'vfr', '-bf', '0', '-c:v', 'libx264', str(source)], check=True)
+            manifest = inspect_sources([source], False)
+            source_id = manifest['sources'][0]['id']
+            for scope in ('full', 'intervals'):
+                with self.subTest(scope=scope):
+                    c = propose_settings(manifest, {'captions': False, 'delivery': {'workspaceRoot': str(root / 'downloads')}})['config']
+                    if scope == 'full':
+                        c['workflow']['editing']['protectedIntervals'] = [{'sourceId': source_id, 'start': .1, 'end': .2}]
+                    project = create_workspace(root / 'downloads', scope, manifest, c, confirmation(c, manifest))
+                    edl = {'sources': {'s': str(source)}, 'ranges': [{'id': 'a', 'source': 's', 'start': .1, 'end': .8}]}
+                    (project.parent / 'edit/edl.json').write_text(json.dumps(edl))
+                    if scope == 'intervals':
+                        project = revise_workspace(project, {'workflow': {'editing': {'intervals': [
+                            {'sourceId': source_id, 'start': .6, 'end': .7}]}}}, 'intervals')
+                        changed = load_contract(project)
+                        accepted = confirmation(changed, manifest); accepted['parentSettingsHash'] = settings_hash(c)
+                        record_confirmation(project, accepted)
+                        c = changed
+                    edl['contractHash'] = settings_hash(c)
+                    path = project.parent / 'edit/edl.json'; path.write_text(json.dumps(edl))
+                    result = subprocess.run([sys.executable, str(HELPERS / 'render_cut.py'), str(path)], capture_output=True, text=True)
+                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertRegex(result.stderr, 'protected|scope')
+                    self.assertFalse((path.parent / 'cut.mp4').exists())
+
     def test_equal_nominal_and_average_rates_do_not_hide_irregular_timestamps(self):
         from intake import inspect_sources, propose_settings
         from render_vfr import frame_times
@@ -38,7 +72,7 @@ class MediaTimingTests(unittest.TestCase):
                             '-vf', "select='eq(mod(n,3),0)+eq(mod(n,7),1)'", '-fps_mode', 'vfr',
                             '-c:v', 'libx264', '-pix_fmt', 'yuv420p', str(source)], check=True)
             edl = edit / 'edl.json'
-            edl.write_text(json.dumps({'sources': {'s': str(source)}, 'ranges': [
+            edl.write_text(json.dumps({'jcut': False, 'sources': {'s': str(source)}, 'ranges': [
                 {'id': 'a', 'source': 's', 'start': 0, 'end': 0.4},
                 {'id': 'b', 'source': 's', 'start': 0.5, 'end': 0.9}]}))
             result = subprocess.run([sys.executable, str(HELPERS / 'render_cut.py'), str(edl), '--no-jcut'], capture_output=True, text=True)

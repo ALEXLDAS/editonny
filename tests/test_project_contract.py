@@ -12,6 +12,16 @@ from workflow_fixtures import config, confirmation
 
 
 class ProjectContractTests(unittest.TestCase):
+    def test_edl_cannot_use_an_observed_source_removed_from_the_selection(self):
+        manifest = {'sources': [{'id': 'source', 'path': '/selected.mp4'},
+                                {'id': 'removed', 'path': '/removed.mp4'}]}
+        value = config()
+        allowed = {'sources': {'s': '/selected.mp4'}, 'ranges': [{'source': 's', 'start': 0, 'end': 1}]}
+        self.c.validate_edl_scope(value, manifest, allowed)
+        removed = {'sources': {'s': '/removed.mp4'}, 'ranges': [{'source': 's', 'start': 0, 'end': 1}]}
+        with self.assertRaisesRegex(ValueError, 'confirmed selection'):
+            self.c.validate_edl_scope(value, manifest, removed)
+
     def test_unsupported_audio_track_selection_cannot_be_confirmed(self):
         value = config()
         value['workflow']['audio']['tracks'] = [1]

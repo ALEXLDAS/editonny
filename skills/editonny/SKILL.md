@@ -1,11 +1,17 @@
 ---
 name: editonny
-description: Use when editing local videos, Reels, ads, sales videos, lessons, combining takes, adding captions or visual scenes, adapting a reference, or refining an existing edit.
+description: Use when installing, preparing, diagnosing, or updating editonny, or editing local videos, Reels, ads, sales videos, lessons, combining takes, adding captions or visual scenes, adapting a reference, or refining an existing edit.
 ---
 
 # editonny
 
 One portable entry point for local video editing and visual storytelling. Follow the user's conversation language. Preserve recorded speech and its language unless translation was requested; prompt language does not identify speech language.
+
+## Installation and preflight
+
+For installation or setup requests, follow [the complete setup procedure](references/setup.md) before declaring readiness: prepare system tools, the locked engine, the pinned renderer/browser, the default local transcription model, local OCR for caption verification, and bundled resources. Registration alone is not a complete installation. Setup uses disposable synthetic fixtures, not user footage; it does not require an editing-settings summary.
+
+On **every invocation**, including resumed edits, resolve the physical package, run `doctor --json`, check the required local capabilities/caches, and consult the official GitHub repository for updates as described in setup. Show available updates and ask whether to apply them; never update automatically. If the user declines or the network is unavailable, continue with the working local version and disclose the update-check status. Before installing or repairing anything during an editing request, explain the missing requirement and obtain authorization covering that change. Keep the editing confirmation below intact.
 
 ## Every new editing job starts with confirmation
 
@@ -44,7 +50,7 @@ python3 <EDITONNY>/scripts/editonny.py inspect /selected/video.mp4 --json
 python3 <EDITONNY>/scripts/editonny.py scene --project /path/project --use three-steps --start 5 --end 9
 ```
 
-If requirements are missing, read [setup](references/setup.md). Loading instructions does not prove the engine is installed or can render. Install the single package rather than creating separate processing or scene installations.
+Read [setup](references/setup.md) for installation, preflight, updates, or missing requirements. Loading instructions does not prove the engine is installed or can render. Install the single package rather than creating separate processing or scene installations.
 
 ## Standard editing cleanup
 
@@ -54,7 +60,7 @@ This is the default for every full edit even when the user did not enumerate cle
 
 ## Start or resume
 
-1. Resolve the physical package and run `doctor`; its fingerprint distinguishes this checkout from an older personal installation. Never update personal installations automatically.
+1. Complete the preflight above; the diagnostic fingerprint distinguishes this checkout from an older personal installation. An update requires the user's acceptance and a fresh preflight before continuing.
 2. Read [the engine workflow](engine/WORKFLOW.md), inspect only selected footage, prepare the complete summary above, and wait for explicit confirmation.
 3. Before creating anything permanent, verify the execution host and include its actual destination in the summary. A remote host's Downloads is not the person's Mac. Explain access and obtain a concrete destination/transfer choice; no upload or cache-download fallback by assumption. A denied/full Downloads folder is an actionable error, not permission to choose another folder.
 4. After acceptance, use `workspace init` with the real summary/reply record and execution context. Default local root: `~/Downloads/editonny/YYYY-MM-DD-title/revisions/v001/{edit,project,exports}`. Only finals, requested subtitles and delivery manifests enter `exports/`; working files stay in the revision. Never scatter intermediates in Downloads, deliver a cache path or overwrite a previous final.

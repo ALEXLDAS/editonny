@@ -2847,7 +2847,8 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
     """base_clip: the green screen clip, already on the output grid and size, used in place of the base."""
     W, H, fps, nf = plan.W, plan.H, plan.fps, plan.nf
     from media_policy import encoder_args, frame_tags
-    active_tracks = any(value for value in tracks.values())
+    active_tracks = bool(tracks.get('motion')) or any(
+        track and track[0] and track[1] for name, track in tracks.items() if name in ('mid', 'captions', 'top'))
     if not inserts and not active_tracks and not cam and base_clip is None and (W, H) == (plan.base_w, plan.base_h) and abs(fps - plan.base_fps) < 1e-6:
         ffmpeg_cmd(['-v', 'error', '-y', '-i', plan.base, '-map', '0:v:0', '-c:v', 'copy', '-an',
                     '-frames:v', nf, '-movflags', '+faststart', str(tmp_video)], 'preserve unchanged video essence')

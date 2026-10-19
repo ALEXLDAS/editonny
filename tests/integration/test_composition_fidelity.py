@@ -2,6 +2,7 @@ from fractions import Fraction
 import json
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 
@@ -9,8 +10,8 @@ HELPERS = Path(__file__).resolve().parents[2] / 'skills/editonny/engine/helpers'
 sys.path.insert(0, str(HELPERS))
 from common import probe_video
 from fidelity import measure_fidelity
-from media_fixtures import make_patches
-from compose_final import ComposeError, build_plan, run_video
+from media_fixtures import make_hdr_patches, make_patches
+from compose_final import ComposeError, build_plan, build_tracks, run_video
 
 
 class CompositionFidelityTests(unittest.TestCase):
@@ -66,6 +67,26 @@ class CompositionFidelityTests(unittest.TestCase):
             facts = probe_video(output)
             self.assertEqual(facts['color_range'], 'pc')
             self.assertEqual(facts['color_space'], 'smpte170m')
+
+    def test_empty_built_tracks_preserve_hdr_packets_with_audio_only_effects(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / 'source.mp4'; make_hdr_patches(source, 'smpte2084')
+            data = root / 'edit_data.json'
+            data.write_text(json.dumps({'base': str(source), 'captions': {'enabled': False}}))
+            output = root / 'composed.mp4'
+            plan = build_plan(data, str(output), False)
+            tracks = build_tracks(plan, [])
+            self.assertEqual(tracks['mid'], (None, [], []))
+            self.assertEqual(tracks['top'], (None, [], []))
+            tracks['sfx_events'] = [{'frame': 0, 'name': 'whoosh'}]
+            run_video(plan, [], tracks, None, output)
+            def packets(path):
+                return subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                    '-show_packets', '-show_data_hash', 'sha256', '-show_entries', 'packet=data_hash',
+                    '-of', 'csv=p=0', str(path)])
+            self.assertEqual(packets(source), packets(output))
+            self.assertEqual(probe_video(output)['pix_fmt'], 'yuv420p10le')
 
 
 if __name__ == '__main__':

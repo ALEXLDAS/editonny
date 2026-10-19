@@ -242,14 +242,17 @@ def verify_media(candidate: Path, project: Path, reference: dict | None = None) 
             if reference is None:
                 raise ValueError('Requested geometry/scenes need explicit corresponding reference intervals and masks')
         segments = timeline.get('segments', [])
+        selected_paths = {str(Path(s['path']).resolve()) for s in manifest['sources']}
+        for segment in segments:
+            paths = [segment.get('source_path'), segment.get('picture_path') or segment.get('source_path')]
+            if any(not path or str(Path(path).resolve()) not in selected_paths for path in paths):
+                raise ValueError('Timeline references footage outside the confirmed selection')
         intervals = []
         for segment in segments[:8]:
             midpoint = (float(segment['out_start']) + float(segment['out_end'])) / 2
             source = segment.get('picture_path') or segment.get('source_path')
             if not source:
                 raise ValueError('Timeline does not identify source-picture correspondence')
-            if str(Path(source).resolve()) not in {str(Path(s['path']).resolve()) for s in manifest['sources']}:
-                raise ValueError('Timeline references footage outside the confirmed selection')
             source_time = float(segment.get('picture_src_start', segment.get('src_start', 0))) + midpoint - float(segment['out_start'])
             if segment.get('sourceFrameTimes'):
                 index = len(segment['sourceFrameTimes']) // 2

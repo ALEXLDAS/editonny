@@ -1,6 +1,6 @@
 # Installation and recovery
 
-Reviewed on 2026-10-18 against the repository installer and CLI. Run commands from the complete checkout unless a different path is shown. `python3` may be named `python` or `py` on your system; the launcher needs Python 3.9+.
+Reviewed on 2026-10-19 against the repository installer and CLI. Run commands from the complete checkout unless a different path is shown. `python3` may be named `python` or `py` on your system; the launcher needs Python 3.9+.
 
 `doctor --json` reports the resolved physical package/engine path, code fingerprint, recorded installation fingerprint and actual FFmpeg filters/encoders. `doctor --probe-media` explicitly runs a short SDR encode/probe; basic doctor does not render. Neither is universal fidelity certification. A checkout change does not update an existing personal installation: review the printed origin, then explicitly run the existing installer when you intend to replace that installation. No installation is changed by inspection or workspace commands.
 
@@ -15,9 +15,14 @@ New edits inspect and confirm settings before workspace creation. The local root
 | Python >=3.10,<3.14 inside uv | Engine runtime |
 | FFmpeg and ffprobe on PATH | Cuts, audio, media processing, and inspection |
 | Node.js 22.13+ or 24+, with npx | HyperFrames rendering and developer checks |
+| Local OCR: Apple Vision/Swift compiler or Tesseract with supported language data | Required recognition and layout checks for enabled captions |
 | Configured Codex or Claude Code | Conversation and skill execution |
 
-The installer does not install system programs. Obtain them from the official [uv](https://docs.astral.sh/uv/getting-started/installation/), [Python](https://www.python.org/downloads/), [Node.js](https://nodejs.org/en/download), and [FFmpeg](https://ffmpeg.org/download.html) sources. First use may download dependencies, the rendering browser, or transcription models. Installed instructions alone do not validate tool availability or rendering.
+These versions describe the current package. For installation or updates, read its manifests, locks and pinned renderer requirements as described in the portable [complete setup procedure](../skills/editonny/references/setup.md). That procedure is the operational source for agents, including standalone/plugin installations.
+
+The Python installer registers the package and synchronizes its locked engine; it does not install system programs, preload a transcription model, or prepare the rendering browser. Its “Installation ready” message covers that installer step only. Obtain system tools from the official [uv](https://docs.astral.sh/uv/getting-started/installation/), [Python](https://www.python.org/downloads/), [Node.js](https://nodejs.org/en/download), and [FFmpeg](https://ffmpeg.org/download.html) sources.
+
+For a complete agent-led installation, ask the agent to read `skills/editonny/SKILL.md` and follow its setup reference before running the installer. The request should cover compatible local tools, the locked environment, the pinned renderer/browser, the default transcription model, working local OCR, bundled-media verification, and disposable synthetic checks. Verify actual OCR recognition too; basic doctor and the render smoke do not exercise it. Prepare first-use downloads during setup and report any declined or failed step explicitly. Optional paid generators are not prerequisites. Check FFmpeg's actual capabilities rather than assuming a “Full” distribution supports every route; Dolby dynamic metadata remains blocked by the current engine, not repaired by installing another application.
 
 ## Register the shared skill
 
@@ -52,6 +57,8 @@ uv sync --locked --directory ~/.local/share/editonny/engine
 
 For a development checkout, use `skills/editonny/engine` and `python3 editonny.py doctor`. Developer setup belongs in [setup](setup.md); reproducible checks and observed limits in [validation](validation.md).
 
+Every skill invocation, including resumed jobs, runs a read-only local preflight and checks the official GitHub repository for updates. Check capabilities and caches needed by the requested operation; basic doctor alone does not prove model/browser readiness. No render, download, repair, or installation update happens automatically as part of that preflight. A working local installation remains usable if the update check is unavailable or the user declines an update.
+
 ## Bundled media
 
 The complete plugin archive includes all 79 original videos inside `visuals/`, together with scenes, images, fonts, and audio. Of 145 catalog scenes, 35 reference bundled clips. No external media-library configuration or separate media download is required. Clips retain their original bytes, dimensions, and transparency unless an explicitly documented local asset rebuild is needed.
@@ -68,7 +75,9 @@ Recovery validates the sources before copying, preserves originals, refuses dest
 
 ## Update and unregister
 
-Run the installer from the new checkout. It compares source and installed content, refuses foreign destinations, preserves `.env` and `engine/.env`, and backs up the previous copy under `~/.local/share/editonny-backups/`. Reinstallation also repairs missing or modified package resources while retaining the previous installation in backup.
+The agent checks the official repository on every invocation and reports the installed version, available stable release (or clearly identified unreleased revision), source and check status. Installed archives may have no `.git`; version/provenance uncertainty is reported honestly. An unavailable GitHub check does not mean “up to date.” When a newer version exists, the agent explains it and asks whether to update before changing the installation. Dependency versions follow that package's compatibility contracts and locks, rather than independent upgrades to every upstream latest release.
+
+After acceptance, run the installer from the new separate checkout. It compares source and installed content, refuses foreign destinations, preserves `.env` and `engine/.env`, and backs up the previous copy under `~/.local/share/editonny-backups/`. Reinstallation also repairs missing or modified package resources while retaining the previous installation in backup. Managed plugins use their host's supported updater instead of editing plugin caches directly. Repeat the complete setup/readiness checks after updating.
 
 Keep personal projects and footage outside the installed skill. Other personal files inside it remain in the backup rather than merging into the new package. Verify the update before removing any backup. No conversion of previous experimental project formats is provided.
 

@@ -12,6 +12,34 @@ import project_contract
 
 
 class EditingScopeTests(unittest.TestCase):
+    def test_default_jcuts_cannot_trim_a_protected_pause(self):
+        from intake import inspect_sources, propose_settings
+        from workspace import create_workspace
+        from workflow_fixtures import confirmation
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); source = root / 'source.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=gray:s=128x64:r=24:d=10',
+                '-vf', 'setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709',
+                '-c:v', 'libx264', str(source)], check=True)
+            manifest = inspect_sources([source], False)
+            for start, end in ((2.95, 3), (5, 5.1)):
+                with self.subTest(start=start):
+                    c = propose_settings(manifest, {'captions': False, 'delivery': {'workspaceRoot': str(root / 'downloads')}})['config']
+                    c['workflow']['editing']['protectedIntervals'] = [
+                        {'sourceId': manifest['sources'][0]['id'], 'start': start, 'end': end}]
+                    project = create_workspace(root / 'downloads', f'Protected {start}', manifest, c, confirmation(c, manifest))
+                    edl = project.parent / 'edit/edl.json'
+                    edl.write_text(json.dumps({'sources': {'s': str(source)}, 'contractHash': project_contract.settings_hash(c),
+                        'ranges': [{'id': 'a', 'source': 's', 'start': 0, 'end': 3},
+                                   {'id': 'b', 'source': 's', 'start': 5, 'end': 7}]}))
+                    command = [sys.executable, str(ROOT / 'skills/editonny/engine/helpers/render_cut.py'), str(edl)]
+                    result = subprocess.run(command, capture_output=True, text=True)
+                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn('protected', result.stderr)
+                    self.assertFalse((edl.parent / 'cut.mp4').exists())
+                    result = subprocess.run([*command, '--no-jcut'], capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_interval_render_keeps_the_parent_before_and_after_the_requested_window(self):
         from intake import inspect_sources, propose_settings
         from workspace import create_workspace, revise_workspace, record_confirmation

@@ -8,6 +8,9 @@ import { pageMetadata } from '@/lib/site';
 
 const STARTS = ['lesson', 'introduce', 'demonstrate'];
 
+// shortcut: home prefetch triggers unused CSS warnings; restore after the router fix.
+export const prefetch = 'force-disabled';
+
 export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
   return pageMetadata((await params).locale as AppLocale, 'home');
 }

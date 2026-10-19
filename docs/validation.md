@@ -2,6 +2,30 @@
 
 Reviewed on 2026-10-19 on macOS Apple Silicon with Node.js 24.21.0, launcher Python 3.9.6, engine Python 3.13.16, FFmpeg 9.0.2 and HyperFrames 0.8.171. Results below apply only to the named tests, profiles and environment. Historical sections remain dated and do not certify the current engine universally.
 
+## Installation instructions and recurring preflight
+
+On 2026-10-19, a native read-only Codex baseline evaluation found that the previous setup instructions allowed browser/model downloads to remain deferred and did not require GitHub update checks. The revised portable skill and setup reference were evaluated with fresh-installation, offline captions-only resumption, same-version/unknown-provenance update, and Dolby metadata scenarios. The simulation covered preparing first-use resources, reporting incomplete preparation, checking updates without requiring `.git`, preserving accepted editing scope, and requiring acceptance before updates. This is behavioral instruction evidence, not an installation on a clean machine.
+
+The skill validator and local documentation-link/installation-locale checks passed. `npm run check` passed (86 Python, 15 Node and 130 Vitest tests, lint, both typechecks and 49 registered icons). `npm run test:browser` built the production guide and passed 168 desktop/mobile tests with 28 existing conditional skips, including installation request copying, accessibility and overflow checks. Basic `doctor --json` returned success. The cached HyperFrames 0.8.171 CLI help confirmed `browser ensure` and `doctor --json`; current uv/HyperFrames documentation was consulted through Context7. An independent native Codex review of baseline `1fe151fd` plus the instruction/docs/locale working-tree changes found no blocking issue; its diagnostic exit-code observation was made explicit in setup.
+
+The initial setup change touched only instructions, documentation and localized guide text; publication-review corrections are recorded below. No fresh system installation, model/browser download, GitHub update application or personal-installation replacement was performed. The Python installer's completion message still covers registration/environment synchronization only; the agent's full readiness claim additionally requires the setup procedure's results. Re-evaluate the behavioral scenarios when setup/preflight/update instructions or their referenced runtime contracts change; validate installation on the actual target OS before claiming platform readiness.
+
+## Publication review of the complete pending range
+
+On 2026-10-19, the user requested three further sequential independent native Codex reviews before publication. Their scope starts at remote baseline `05d3ded`, includes the six existing local commits through `1fe151fd`, and includes the current working-tree changes. The three completed cycles identified six issues, all reproduced before correction:
+
+| Cycle | Finding and correction | Focused proof |
+|---|---|---|
+| 1 | Setup omitted local OCR; it now prepares the selected reader/compiler/language data and requires synthetic recognition before readiness. Empty built visual-track tuples falsely triggered effects; only actual visual tracks now disable video stream copying. | Helper/caller inspection and instruction evaluation; four composition tests, including real `build_tracks` HDR packet-payload preservation with audio-only events. |
+| 2 | Retained manifests allowed deselected footage in an EDL, while appearance sampling ignored source membership after segment eight. The shared validator now uses selected IDs and final verification checks every audio/picture source path. J-cuts could trim protected pauses; effective audio/picture spans are now checked against scope before extraction and after actual frame counts. | Ten contract tests, fourteen delivery tests, and four editing-scope tests; regressions cover a deselected source, an unauthorized ninth timeline segment, outgoing-tail and incoming-picture protection, and successful hard-join alternatives. |
+| 3 | VFR timestamp snapping bypassed effective-scope validation, and valid `jcut: false` crashed that route. Effective VFR spans now use the shared scope validator before rendering, with the verified parent EDL passed by the caller; explicit false reaches supported hard joins. | Five real media-timing tests, including sparse-VFR protected/interval cases and successful irregular-timestamp preservation with explicit false. The third reviewer independently rechecked planner behavior and closed both findings. |
+
+A fresh production build under `CI=true` reproduced unused home CSS preload warnings on other guide routes. The home route now disables its own speculative prefetch with a documented temporary limit; console assertions remain unchanged. The complete isolated browser suite then passed 168 tests with 28 existing conditional skips.
+
+The unchanged preview-browser test passed in isolated runs, including the final required gate (17.2 seconds). Concurrent execution with other gates reproduced draft-restoration timeouts. A bounded six-session investigation reproduced five empty-draft waits and one navigation timeout; pre-fill instrumentation changed the result. A separate static page with the same input-to-localStorage mechanism preserved all values across 18 concurrent genuine reloads, so generic browser storage loss was not established. The smallest responsible input/application/context mechanism remains unresolved. No speculative product patch, weaker assertion or blanket retry was added. Run the preview gate separately from competing media/browser suites; simultaneous video-session reliability remains a known limitation, not a validated capability.
+
+After the fixes, `npm run check` passed with 87 Python, 15 Node and 130 Vitest tests plus lint/typechecks/icons; `npm run test:engine` passed 74 tests with its one opt-in native skip. The synthetic render smoke and separately enabled native conformance test passed again; the smoke midpoint frame was inspected. Earlier smoke frames at 1, 1.5 and 2 seconds were also inspected; its three-second MP4 had H.264 1080×1920/24 FPS video and AAC stereo audio. The final diagnostic passed and bundled-media verification found all 79 videos valid. These checks used Node.js 24.22.0 and do not establish natural-speech quality or universal media fidelity. Fresh installation remains untested; personal installations remain unchanged.
+
 ## Confirmed editing and source appearance (1.1.0)
 
 The original incident cannot be attributed to one exact source/export pair because no authorized pair was supplied. Controlled tests reproduced source-wide range/matrix changes: the old path forced limited-range BT.709/yuv420p and automatic HDR-to-SDR treatment. Setting filter metadata alone is insufficient: actual encoder range/color flags must agree too. The replacement policy preserves observed properties or blocks the unsupported route, with no approximate tone-map fallback.
@@ -34,14 +58,14 @@ Reproductions used synthetic media and temporary homes/directories. A normal sam
 
 | Check | Result |
 |---|---|
-| `npm ci --ignore-scripts` | Passed (2026-10-19); workspace installed from one lockfile; `npm audit --omit=dev` reports zero production vulnerabilities; five high development-only advisories trace to `braces` through `eslint-config-next`'s file globbing (no fixed version exists; lint runs only on repository files) |
+| `npm ci --ignore-scripts` | Passed (2026-10-19); workspace installed from one lockfile; `npm audit --omit=dev` reports zero production vulnerabilities; five high development-only advisories trace to `braces` through `eslint-config-next`'s file globbing. The fresh audit proposes a major downgrade to `eslint-config-next` 14.2.35 rather than a compatible fix for the pinned stack; pins remain unchanged and lint runs only on repository files. |
 | `npm run build` | Passed (2026-10-19); Next.js 16.4.2 production build: every page prerendered for `en-US`, `pt-BR`, and `es`, the `/design-system` showcase, sitemap, robots, manifest, icon, and the localized Open Graph images |
-| `npm run check` | Passed (2026-10-19); rule self-check, ESLint, both typechecks, 86 Python tests, 15 Node tests, 130 Vitest tests, and the icon registry check |
+| `npm run check` | Passed (2026-10-19); rule self-check, ESLint, both typechecks, 87 Python tests, 15 Node tests, 130 Vitest tests, and the icon registry check |
 | `python3 editonny.py doctor` | Passed; local tools, engine interpreter, catalog, and pinned HyperFrames configuration present |
 | `python3 editonny.py media status` | Passed; 79/79 bundled videos valid, zero missing or invalid |
-| `npm run test:engine` | Passed (2026-10-19); 70 integration tests, one explicit native-render job skipped in ordinary discovery and separately run successfully |
-| `npm run test:browser` | Passed twice in a row (2026-10-19); 168 Playwright tests (28 project-specific skips) on desktop Chromium 1440×900 and a Pixel 7 phone profile (see below) |
-| `npm run test:preview` | Passed; marks, trims, drafts, and approval confirmation |
+| `npm run test:engine` | Passed (2026-10-19); 74 integration tests, one explicit native-render job skipped in ordinary discovery and separately run successfully |
+| `npm run test:browser` | Passed (2026-10-19) in an isolated production build with `CI=true`; 168 Playwright tests (28 project-specific skips) on desktop Chromium 1440×900 and a Pixel 7 phone profile (see below) |
+| `npm run test:preview` | Passed in isolation; marks, trims, drafts, and approval confirmation. Concurrent video/browser load also reproduced unresolved draft-restoration failures, as recorded above. |
 | `npm run test:scenes` | Passed; covered 2D templates, parameter variants, seeking, and selected visual scenes |
 | `python3 scripts/smoke_engine.py` | Passed; pinned HyperFrames lint, check, snapshots, and synthetic video render |
 | `python3 scripts/package.py` | Passed (2026-10-19); plugin ZIP with SHA-256 (2,137 files); inspected: no `web/`, `design-system/`, `.next`, `node_modules`, or `.env` entries |
@@ -72,7 +96,7 @@ The first GitHub Actions run of the sanitized snapshot failed on Ubuntu because 
 
 GitHub Actions checks Node.js 22.13.0 and 24 using Python 3.11. Two FFmpeg-dependent voice tests are skipped when those system tools are absent; that limitation is distinct from the local engine/browser/render evidence above. Confirm the latest run on the repository's Actions page rather than interpreting an earlier failed run as the current result.
 
-The 1.1.0 workflow adds a separate Ubuntu engine job with FFmpeg/Tesseract, locked uv engine tests, the synthetic pinned render smoke and explicit managed-native conformance. This job has been authored but has not been run remotely from this local checkout; local macOS success is not an Ubuntu result.
+The 1.1.0 workflow adds a separate Ubuntu engine job with FFmpeg/Tesseract, locked uv engine tests, the synthetic pinned render smoke and explicit managed-native conformance. Check the [repository's Actions runs](https://github.com/soumatheusgomes/editonny/actions/workflows/verify.yml) for the exact published commit; local macOS success is not an Ubuntu result.
 
 ## README visual refresh
 

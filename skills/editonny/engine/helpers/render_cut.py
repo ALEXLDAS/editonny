@@ -1070,7 +1070,7 @@ def _render(args: argparse.Namespace) -> int:
             raise CutError('VFR cut-only preserves source geometry; inspect the full-resolution candidate instead of a resized frame-grid preview', 2)
         from render_vfr import render_vfr
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        return render_vfr(edl, edit_dir, probes, contract, media_plan, out_path)
+        return render_vfr(edl, edit_dir, probes, contract, media_plan, out_path, parent_edl=parent if contract else None)
     timeline_path = out_path.with_name(f'{out_path.stem}_timeline.json')
     clips_dir = edit_dir / "clips"
     clips_dir.mkdir(parents=True, exist_ok=True)
@@ -1088,6 +1088,25 @@ def _render(args: argparse.Namespace) -> int:
 
     t_plan = time.time()
     plans = plan_cut(edl, edit_dir, fps, jcut, probes, jobs, W, H, sync)
+
+    def validate_effective_scope():
+        if not contract or (contract['workflow']['editing']['scope'] != 'intervals' and
+                            not contract['workflow']['editing'].get('protectedIntervals')):
+            return
+        for picture in (False, True):
+            ranges = []
+            for plan, original in zip(plans, edl['ranges']):
+                audio = not picture and plan.info.get('has_audio')
+                start = plan.audio_start if audio else (plan.pic_start - plan.pic_a) / plan.pic_b
+                end = (plan.audio_start + plan.audio_frames / fps if audio else
+                       (plan.pic_start + plan.frames / fps - plan.pic_a) / plan.pic_b)
+                ranges.append({**original, 'start': start, 'end': end})
+            try:
+                validate_edl_scope(contract, manifest, {**edl, 'ranges': ranges}, parent_edl=parent)
+            except ValueError as error:
+                raise CutError(f'Planned cut violates confirmed scope: {error}. Disable J-cuts or adjust ranges to preserve the scope.', 2) from None
+
+    validate_effective_scope()
     out_position = 0
     for plan in plans:
         plan.out_start_frame = out_position
@@ -1107,6 +1126,7 @@ def _render(args: argparse.Namespace) -> int:
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         futures = [pool.submit(extract, p, cfg) for p in plans]
         plans = [f.result() for f in futures]
+    validate_effective_scope()
     t_ext = time.time() - t_ext
     for a, b in zip(plans, plans[1:]):
         if b.joined and abs(a.audio_start + (a.lead + a.frames) / fps - b.audio_start) > 0.5 / SR:

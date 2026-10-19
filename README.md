@@ -54,7 +54,9 @@ python3 ~/.local/share/editonny/scripts/editonny.py media status
 
 Restart your agent. Invoke **`$editonny` in Codex** or **`/editonny` in Claude Code**. Use `--target codex` or `--target claude` to register one agent. One shared installation lives at `~/.local/share/editonny`; agent entries are links to it.
 
-The first use may download dependencies, transcription models, or the rendering browser. Local transcription and rendering do not require an LLM API key. Your agent subscription is separate. External generators are optional and require authorization before costs or media transmission.
+These commands register the skill and prepare its Python environment. For a complete installation before the first edit, ask your agent to read `skills/editonny/SKILL.md` and follow its [setup procedure](skills/editonny/references/setup.md): prepare compatible local tools, the pinned renderer/browser, the default transcription model, local OCR for caption verification, bundled media, and synthetic readiness checks. Report pending downloads or failed checks before calling setup complete. Each use checks local readiness and GitHub updates; applying an update requires your acceptance.
+
+Local transcription and rendering do not require an LLM API key. Your agent subscription is separate. External generators are optional and require authorization before costs or media transmission.
 
 See [installation and recovery](docs/installation.md) for prerequisites, isolated installation, plugin loading, updates, and removal.
 

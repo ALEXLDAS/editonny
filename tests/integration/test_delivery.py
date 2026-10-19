@@ -14,6 +14,24 @@ from workspace import create_workspace, publish_export, record_review, render_de
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_all_timeline_sources_must_belong_to_the_confirmed_selection(self):
+        from common import content_hash
+        from fidelity import verify_media
+        with tempfile.TemporaryDirectory() as tmp:
+            source, project = self.prepare(Path(tmp))
+            timeline = {'duration': 1 / 24, 'fps_str': '24', 'segments': [
+                {'out_start': i / 216, 'out_end': (i + 1) / 216, 'src_start': 0,
+                 'source_path': str(source)} for i in range(9)]}
+            timeline['segments'][-1]['source_path'] = str(Path(tmp) / 'outside.mp4')
+            (project.parent / 'edit/cut_timeline.json').write_text(json.dumps(timeline))
+            record_review(project, source, {'reviewer': 'agent', 'notes': 'Complete one-frame sample inspected',
+                'findings': [], 'intervals': [[0, 1 / 24]], 'artifactHash': content_hash(source),
+                'dependencies': render_dependencies(project)})
+            report = verify_media(source, project)
+            appearance = next(c for c in report['checks'] if c['name'] == 'appearance')
+            self.assertEqual(appearance['status'], 'blocked', report)
+            self.assertIn('confirmed selection', appearance['detail'])
+
     def test_managed_composition_rejects_unapproved_visual_extras(self):
         from compose_final import build_plan, ComposeError
         from project_contract import load_contract, settings_hash
