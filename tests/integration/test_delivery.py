@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -10,7 +11,7 @@ sys.path[:0] = [str(ROOT / 'skills/editonny/engine/helpers'), str(ROOT / 'tests'
 from media_fixtures import make_patches
 from intake import inspect_sources, propose_settings
 from workflow_fixtures import confirmation
-from workspace import create_workspace, publish_export, record_review, render_dependencies
+from workspace import create_workspace, publish_export, record_review, render_dependencies, revise_workspace
 
 
 class DeliveryTests(unittest.TestCase):
@@ -60,7 +61,7 @@ class DeliveryTests(unittest.TestCase):
             edit = project.parent / 'edit'; edl = edit / 'edl.json'
             edl.write_text(json.dumps({'sources': {'a': str(first)}, 'contractHash': settings_hash(config),
                 'ranges': [{'id': 'a', 'source': 'a', 'start': 0, 'end': 1 / 24}]}))
-            previous = project.parent / 'exports/previous.mp4'; previous.write_bytes(b'previous export')
+            previous = project.parents[2] / 'exports/previous.mp4'; previous.write_bytes(b'previous export')
             for destination in (second, previous):
                 before = content_hash(destination)
                 result = subprocess.run([sys.executable, str(ROOT / 'skills/editonny/engine/helpers/render_cut.py'),
@@ -173,10 +174,34 @@ class DeliveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); source, project = self.prepare(root)
             outside = root / 'outside'; outside.mkdir()
-            exports = project.parent / 'exports'; exports.rmdir(); exports.symlink_to(outside, target_is_directory=True)
+            exports = project.parents[2] / 'exports'; exports.rmdir(); exports.symlink_to(outside, target_is_directory=True)
             with self.assertRaisesRegex(ValueError, 'symlink|destination|layout'):
                 publish_export(project, source, verify_media(source, project))
             self.assertEqual(list(outside.iterdir()), [])
+
+    def test_export_does_not_follow_a_deliveries_symlink(self):
+        from fidelity import verify_media
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); source, project = self.prepare(root)
+            outside = root / 'outside'; outside.mkdir()
+            (project.parent / 'edit/deliveries').symlink_to(outside, target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, 'symlink|destination|layout'):
+                publish_export(project, source, verify_media(source, project))
+            self.assertEqual(list(outside.iterdir()), [])
+            self.assertEqual(list((project.parents[2] / 'exports').iterdir()), [])
+
+    def test_export_does_not_follow_a_replaced_edit_symlink(self):
+        from fidelity import verify_media
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); source, project = self.prepare(root)
+            edit = project.parent / 'edit'; outside = root / 'outside-edit'
+            edit.rename(outside); edit.symlink_to(outside, target_is_directory=True)
+            report = verify_media(source, project)
+            self.assertEqual(report['status'], 'passed', report)
+            with self.assertRaisesRegex(ValueError, 'symlink|destination|layout'):
+                publish_export(project, source, report)
+            self.assertFalse((outside / 'deliveries').exists())
+            self.assertEqual(list((project.parents[2] / 'exports').iterdir()), [])
 
     def test_failed_subtitle_stage_removes_partial_task_files(self):
         from unittest.mock import patch
@@ -199,7 +224,7 @@ class DeliveryTests(unittest.TestCase):
             with patch('export_subtitles.export_subtitles', side_effect=fail_subtitles):
                 with self.assertRaisesRegex(ValueError, 'Interrupted subtitle'):
                     publish_export(project, source, verify_media(source, project))
-            self.assertEqual(list((project.parent / 'exports').iterdir()), [])
+            self.assertEqual(list((project.parents[2] / 'exports').iterdir()), [])
 
     def test_preserve_audio_cannot_deliver_a_muted_candidate(self):
         from common import content_hash
@@ -268,7 +293,42 @@ class DeliveryTests(unittest.TestCase):
             second = publish_export(project, source, report)
             self.assertNotEqual(first['artifact'], second['artifact'])
             self.assertEqual(Path(first['artifact']).read_bytes(), source.read_bytes())
-            self.assertEqual(len(list((project.parent / 'exports').iterdir())), 4)
+            # Only the videos reach exports/; each delivery manifest stays with its revision.
+            self.assertEqual(sorted(p.name for p in (project.parents[2] / 'exports').iterdir()),
+                             sorted(Path(r['artifact']).name for r in (first, second)))
+            records = project.parent / 'edit/deliveries'
+            self.assertEqual(sorted(p.stem for p in records.iterdir()), sorted(Path(r['artifact']).stem for r in (first, second)))
+            revised = revise_workspace(project, {}, 'full')
+            self.assertFalse((revised.parent / 'edit/deliveries').exists())
+            from common import content_hash
+            record_review(revised, source, {'reviewer': 'agent', 'notes': 'Inspected complete synthetic one-frame reference',
+                          'findings': [], 'intervals': [[0, 1 / 24]], 'artifactHash': content_hash(source), 'dependencies': render_dependencies(revised)})
+            third = publish_export(revised, source, verify_media(source, revised))
+            self.assertEqual(Path(third['artifact']).parent, project.parents[2] / 'exports')
+            self.assertIn('-v002-', Path(third['artifact']).name)
+            self.assertEqual(Path(first['artifact']).read_bytes(), source.read_bytes())
+            self.assertEqual(len(list(records.iterdir())), 2)
+            self.assertEqual([p.stem for p in (revised.parent / 'edit/deliveries').iterdir()], [Path(third['artifact']).stem])
+
+    def test_failed_manifest_link_rolls_back_the_published_video(self):
+        import errno
+        from unittest.mock import patch
+        from fidelity import verify_media
+        with tempfile.TemporaryDirectory() as tmp:
+            source, project = self.prepare(Path(tmp))
+            report = verify_media(source, project)
+            first = publish_export(project, source, report)
+            link = os.link
+            def cross_device(source_path, final):
+                if Path(final).suffix == '.json':
+                    raise OSError(errno.EXDEV, 'Invalid cross-device link')
+                return link(source_path, final)
+            with patch('os.link', side_effect=cross_device):
+                with self.assertRaises(OSError):
+                    publish_export(project, source, report)
+            exports = project.parents[2] / 'exports'
+            self.assertEqual([p.name for p in exports.iterdir()], [Path(first['artifact']).name])
+            self.assertEqual(len(list((project.parent / 'edit/deliveries').iterdir())), 1)
 
     def test_gate_rejects_unrequested_brightness_change_with_identical_tags(self):
         self.assertTrue((ROOT / 'skills/editonny/engine/helpers/fidelity.py').exists(), 'Fidelity gate is not implemented')

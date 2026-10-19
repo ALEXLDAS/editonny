@@ -38,12 +38,16 @@ class WorkspaceTests(unittest.TestCase):
             c = config(root / 'downloads')
             approval = confirmation(c, inspection)
             project = self.w.create_workspace(root / 'downloads', 'Interview', inspection, c, approval)
-            self.assertEqual(project.parts[-3:], ('revisions', 'v001', 'project'))
+            self.assertEqual(project.parts[-3:], ('project', 'v001', 'project'))
+            self.assertEqual(sorted(p.name for p in project.parents[2].iterdir()), ['exports', 'project'])
             second = self.w.create_workspace(root / 'downloads', 'Interview', inspection, c, approval)
             self.assertNotEqual(project, second)
             cut = project.parent / 'edit/cut.mp4'
             cut.write_bytes(b'approved cut')
+            asset = project / 'assets/deliveries/photo.png'
+            asset.parent.mkdir(parents=True); asset.write_bytes(b'composition asset')
             revised = self.w.revise_workspace(project, {'captions': {'enabled': False}}, 'captions')
+            self.assertEqual((revised / 'assets/deliveries/photo.png').read_bytes(), b'composition asset')
             (revised.parent / 'edit/cut.mp4').write_bytes(b'revised cut')
             self.assertEqual(cut.read_bytes(), b'approved cut')
             self.assertEqual(self.w.read_status(revised)['confirmation'], 'required')
@@ -62,7 +66,7 @@ class WorkspaceTests(unittest.TestCase):
             candidate.write_bytes(b'candidate')
             with self.assertRaises(ValueError):
                 self.w.publish_export(project, candidate, {'status': 'failed'})
-            self.assertEqual(list((project.parent / 'exports').iterdir()), [])
+            self.assertEqual(list((project.parents[2] / 'exports').iterdir()), [])
 
     def test_old_summary_cannot_confirm_new_hash(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -124,7 +124,7 @@ The browser guide includes **54 editing examples**, a prompt builder, and the sc
 
 1. Choose a goal in the guide, specify the footage folder, and copy the request (in the guide's language) to your agent.
 2. The skill inspects selected sources, proposes every editing setting and **waits for your confirmation**, even with a detailed prompt. Defaults preserve the original image, geometry and FPS; color filters and conversions are never automatic.
-3. After acceptance, work stays in **Downloads/editonny/date-title/revisions/v001/**, with separate edit, project and export folders. Review an **8–15 second** sample; select user approval if you want the agent to wait at this later step too.
+3. After acceptance, work stays in **Downloads/editonny/date-title/**: finished videos in **exports/**, editing files in **project/**. Review an **8–15 second** sample; select user approval if you want the agent to wait at this later step too.
 4. Complete a supported render route and publish uniquely named MP4/subtitle files with a matching verification manifest. Unsupported color/timing paths block clearly; remote execution must identify an accessible destination.
 
 Keep footage, editable projects, and personal libraries outside the installed skill. Sample numbers, offers, testimonials, and brands in scenes are illustrative and must be replaced with supplied facts. Never treat generated visuals as evidence.

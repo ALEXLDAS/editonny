@@ -4,7 +4,7 @@ Reviewed on 2026-10-19 against the repository installer and CLI. Run commands fr
 
 `doctor --json` reports the resolved physical package/engine path, code fingerprint, recorded installation fingerprint and actual FFmpeg filters/encoders. `doctor --probe-media` explicitly runs a short SDR encode/probe; basic doctor does not render. Neither is universal fidelity certification. A checkout change does not update an existing personal installation: review the printed origin, then explicitly run the existing installer when you intend to replace that installation. No installation is changed by inspection or workspace commands.
 
-New edits inspect and confirm settings before workspace creation. The local root is `~/Downloads/editonny`; revisions contain separate edit/project/export folders. Remote execution needs an explicit accessible destination and never treats its own Downloads as the person's Mac. Keep personal footage outside the installed package. See the portable skill's `engine/WORKFLOW.md` for confirmation, revisions, sample evidence, fidelity limits and export commands.
+New edits inspect and confirm settings before workspace creation. The local root is `~/Downloads/editonny`; each job holds `exports/` for finished videos and `project/` for its revisions' working files. Remote execution needs an explicit accessible destination and never treats its own Downloads as the person's Mac. Keep personal footage outside the installed package. See the portable skill's `engine/WORKFLOW.md` for confirmation, revisions, sample evidence, fidelity limits and export commands.
 
 ## Requirements
 

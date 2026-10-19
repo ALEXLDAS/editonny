@@ -18,7 +18,7 @@ def config(root=Path('/approved/workspace')):
                 'visuals': {'scenes': 'off', 'allowedSceneIds': [], 'cameraMotion': False,
                             'transitions': 'off', 'backgroundTreatment': 'none'},
                 'review': {'sample': 'agent'},
-                'delivery': {'directory': '../exports', 'workspaceRoot': str(root), 'executionContext': 'local',
+                'delivery': {'directory': '../../../exports', 'workspaceRoot': str(root), 'executionContext': 'local',
                              'basename': 'interview', 'subtitleFormats': [], 'variants': []}}}
 
 

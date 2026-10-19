@@ -28,6 +28,14 @@ def edit_directory(project: Path, config: dict | None = None) -> Path:
     return (Path(project).resolve() / (config or load_contract(project))['edit']).resolve()
 
 
+def managed_revision(project: Path) -> Path:
+    """The `<job>/project/vNNN` directory owning this project; its job keeps one shared `exports/`."""
+    revision = Path(project).resolve().parent
+    if revision.parent.name != 'project' or not re.fullmatch(r'v\d{3,}', revision.name):
+        raise ValueError('Only a managed revision can be revised or delivered')
+    return revision
+
+
 def selected_sources(manifest: dict, config: dict) -> dict:
     ids = config['workflow']['sourceIds']
     by_id = {s['id']: s for s in manifest.get('sources', [])}
@@ -149,7 +157,7 @@ def create_workspace(parent: Path, title: str, inspection: dict, config: dict, c
     else:
         raise ValueError('Could not reserve a unique workspace name')
     try:
-        revision = root / 'revisions/v001'
+        revision = root / 'project/v001'
         edit = ensure_edit_dirs(revision / 'edit')
         project = revision / 'project'
         engine = Path(__file__).resolve().parents[1]
@@ -163,7 +171,7 @@ def create_workspace(parent: Path, title: str, inspection: dict, config: dict, c
         save_json(project / 'project.json', template)
         save_json(edit / 'source_manifest.json', manifest)
         save_json(edit / 'state.json', {'revision': 'v001', 'project': '../project', 'phase': 'awaiting_confirmation', 'artifacts': {}})
-        (revision / 'exports').mkdir()
+        (root / 'exports').mkdir()
         record_confirmation(project, confirmation)
         return project
     except BaseException:
@@ -195,9 +203,7 @@ def revise_workspace(project: Path, changes: dict, scope: str, variant: str | No
     config = validate_contract(config)
     if config['workflow']['delivery']['workspaceRoot'] != original['workflow']['delivery']['workspaceRoot']:
         raise ValueError('Moving the workspace root requires a new confirmed initialization at that destination')
-    revision = project.parent
-    if revision.parent.name != 'revisions' or not re.fullmatch(r'v\d{3,}', revision.name):
-        raise ValueError('Only a managed revision can be revised without shared mutable data')
+    revision = managed_revision(project)
     with revision_lock(project):
         for number in range(int(revision.name[1:]) + 1, 10000):
             destination = revision.parent / f'v{number:03d}'
@@ -209,11 +215,13 @@ def revise_workspace(project: Path, changes: dict, scope: str, variant: str | No
         else:
             raise ValueError('Could not reserve a new revision')
         try:
-            ignore = shutil.ignore_patterns('.workflow.lock', '.render.lock', 'preview_cache', 'renders', 'node_modules', '__pycache__')
+            transient = shutil.ignore_patterns('.workflow.lock', '.render.lock', 'preview_cache', 'renders', 'node_modules', '__pycache__')
+            def ignore(directory, names):
+                # Delivery records describe the parent's exports, not this revision's.
+                return transient(directory, names) | ({'deliveries'} if Path(directory) == revision / 'edit' else set())
             for name in ('edit', 'project'):
                 shutil.copytree(revision / name, destination / name, ignore=ignore)
             ensure_edit_dirs(destination / 'edit')
-            (destination / 'exports').mkdir()
             save_json(destination / 'project/project.json', config)
             save_json(destination / 'edit/state.json', {'revision': destination.name, 'parentRevision': revision.name,
                       'parentSettingsHash': settings_hash(original), 'phase': 'awaiting_confirmation', 'project': '../project', 'artifacts': {}})
@@ -430,17 +438,21 @@ def publish_export(project: Path, candidate: Path, verification: dict, variant: 
     fresh = verify_media(candidate, project)
     if fresh['status'] != 'passed':
         raise ValueError('Candidate failed final delivery verification')
-    destination = project.parent / 'exports'
-    if destination.is_symlink() or destination.resolve() != destination:
-        raise ValueError('Export destination layout changed through a symlink; restore the confirmed revision directory')
-    destination.mkdir(exist_ok=True)
-    revision = project.parent.name
+    owner = managed_revision(project)
+    destination = owner.parent.parent / 'exports'
+    # Manifests stay with the revision so exports/ holds only what the person uses.
+    records = owner / 'edit/deliveries'
+    for folder in (destination, records):
+        if folder.is_symlink() or folder.resolve() != folder:
+            raise ValueError('Export destination layout changed through a symlink; restore the confirmed job directory')
+        folder.mkdir(exist_ok=True)
+    revision = owner.name
     stem = f"{config['workflow']['delivery']['basename']}-{revision}-{variant}"
     with revision_lock(project):
         for number in range(1, 10000):
             name = stem if number == 1 else f'{stem}-{number:02d}'
             output = destination / f'{name}{candidate.suffix}'
-            sidecar = destination / f'{name}-delivery.json'
+            sidecar = records / f'{name}.json'
             subtitle_outputs = {fmt: destination / f'{name}.{fmt}' for fmt in config['workflow']['delivery']['subtitleFormats']}
             if any(p.exists() for p in (output, sidecar, *subtitle_outputs.values())):
                 continue

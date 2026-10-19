@@ -137,8 +137,8 @@ def validate_contract(config: dict) -> dict:
         raise ValueError('delivery.workspaceRoot must identify the confirmed absolute workspace destination')
     delivery['workspaceRoot'] = str(Path(root).expanduser().resolve())
     _choice(delivery, 'executionContext', ('local', 'remote'))
-    if delivery.get('directory') != '../exports':
-        raise ValueError('Managed delivery directory must be ../exports inside this revision')
+    if delivery.get('directory') != '../../../exports':
+        raise ValueError('Managed delivery directory must be ../../../exports, the shared exports folder of the job')
     basename = delivery.get('basename')
     if not isinstance(basename, str) or not basename or any(c in basename for c in ('/', '\\', '\x00')) or basename.startswith('.'):
         raise ValueError('delivery.basename must be a safe visible filename')

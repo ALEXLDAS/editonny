@@ -102,7 +102,7 @@ def propose_settings(inspection: dict, requested: dict) -> dict:
                           'processingPeak': -1.5, 'truePeakLimit': -1.0, 'denoise': 'off', 'music': False, 'effects': False, 'tracks': 'source'},
                 'visuals': {'scenes': 'off', 'allowedSceneIds': [], 'cameraMotion': False, 'transitions': 'off', 'backgroundTreatment': 'none'},
                 'review': {'sample': 'agent'},
-                'delivery': {'directory': '../exports', 'workspaceRoot': str(Path.home() / 'Downloads/editonny'),
+                'delivery': {'directory': '../../../exports', 'workspaceRoot': str(Path.home() / 'Downloads/editonny'),
                              'executionContext': 'local', 'basename': basename, 'subtitleFormats': [], 'variants': []}}
     for section in ('language', 'editing', 'encoding', 'audio', 'visuals', 'review', 'delivery'):
         workflow[section].update(copy.deepcopy(requested.get(section, {})))
