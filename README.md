@@ -80,19 +80,19 @@ Three real scenes from the bundled library. These silent, cropped excerpts use s
   <a href="docs/assets/readme/captions.gif">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/captions-still.png" />
-    <img src="docs/assets/readme/captions.gif" alt="Timed chromatic captions reveal “Your story. Your rhythm.”" width="280" loading="lazy" />
+    <img src="docs/assets/readme/captions.gif" alt="Timed chromatic captions reveal “Your story. Your rhythm.”" width="260" loading="lazy" />
   </picture>
   </a>
   <a href="docs/assets/readme/explain.gif">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/explain-still.png" />
-    <img src="docs/assets/readme/explain.gif" alt="An illustrative building rises floor by floor beside a changing floor count." width="280" loading="lazy" />
+    <img src="docs/assets/readme/explain.gif" alt="An illustrative building rises floor by floor beside a changing floor count." width="260" loading="lazy" />
   </picture>
   </a>
   <a href="docs/assets/readme/motion.gif">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/motion-still.png" />
-    <img src="docs/assets/readme/motion.gif" alt="Planets orbit a rotating Sun in the solar system scene." width="280" loading="lazy" />
+    <img src="docs/assets/readme/motion.gif" alt="Planets orbit a rotating Sun in the solar system scene." width="260" loading="lazy" />
   </picture>
   </a>
 </p>

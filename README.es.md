@@ -82,19 +82,19 @@ Tres escenas reales de la biblioteca incluida. Los fragmentos son silenciosos y 
   <a href="docs/assets/readme/captions.gif">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/captions-still.png" />
-    <img src="docs/assets/readme/captions.gif" alt="Subtítulos cromáticos sincronizados revelan “Your story. Your rhythm.”" width="280" loading="lazy" />
+    <img src="docs/assets/readme/captions.gif" alt="Subtítulos cromáticos sincronizados revelan “Your story. Your rhythm.”" width="260" loading="lazy" />
   </picture>
   </a>
   <a href="docs/assets/readme/explain.gif">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/explain-still.png" />
-    <img src="docs/assets/readme/explain.gif" alt="Un edificio ilustrativo crece planta por planta junto a un contador." width="280" loading="lazy" />
+    <img src="docs/assets/readme/explain.gif" alt="Un edificio ilustrativo crece planta por planta junto a un contador." width="260" loading="lazy" />
   </picture>
   </a>
   <a href="docs/assets/readme/motion.gif">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/motion-still.png" />
-    <img src="docs/assets/readme/motion.gif" alt="Planetas orbitan un Sol en rotación en la escena del sistema solar." width="280" loading="lazy" />
+    <img src="docs/assets/readme/motion.gif" alt="Planetas orbitan un Sol en rotación en la escena del sistema solar." width="260" loading="lazy" />
   </picture>
   </a>
 </p>
