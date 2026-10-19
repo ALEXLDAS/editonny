@@ -40,7 +40,7 @@ For revisions use `workspace revise --project '<PROJECT>' --changes '<SESSION>/c
 
 ## 1. Inspect and transcribe
 
-Never move, replace, or delete originals. Check duration, dimensions, rotation, frame rate, audio tracks, HDR, and storage availability before processing. Download iCloud placeholders through the local operating system or ask the user to make them available. A missing source is not an empty clip. Cadence inspection demuxes actual picture presentation timestamps; equal average/nominal FPS alone cannot prove CFR. Explicit audio-track selection and multi-track source editing are not implemented: disclose the limitation before acceptance and ask for a separately prepared, confirmed single-track derivative instead of choosing a track silently.
+Never move, replace, or delete originals. Check duration, dimensions, rotation, frame rate, audio tracks, HDR, and storage availability before processing. Download iCloud placeholders through the local operating system or ask the user to make them available. A missing source is not an empty clip. Cadence inspection demuxes actual picture presentation timestamps; equal average/nominal FPS alone cannot prove CFR. Explicit audio-track selection and multi-track source editing are not implemented: disclose the limitation before acceptance and ask for a separately prepared, confirmed single-track derivative instead of choosing a track silently. A stream-copy derivative keeps the source video timescale (`-video_track_timescale` set to the source time-base denominator) and is inspected again: a finer timescale exposes the source's own timestamp rounding, and cadence inspection then reports VFR.
 
 ```sh
 uv run --directory '<ENGINE>' python helpers/icloud.py '<VIDEOS>'

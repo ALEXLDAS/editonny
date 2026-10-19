@@ -117,7 +117,7 @@ The skill now tells agents not to show engine errors or repair requests to users
 
 One read-only native Codex review (`gpt-6-astra`, ChatGPT authentication) reported one Important finding: revisions keep deselected sources in the manifest, so planning from all of them rejected a valid cut. It was reproduced; native and FFmpeg composition now plan from the selected sources only, with a regression case. Afterwards `npm run check` passed with 90 Python and 132 Vitest tests, `npm run test:engine` passed 77 tests with its opt-in native skip, the separately enabled native conformance passed (exercising the snap at 24 FPS), the pinned render smoke passed with its one-second frame inspected, and `doctor` passed.
 
-Limits: the original clip was not re-rendered. Snap evidence covers synthetic H.264 at 24 FPS and 263400/4391, not every renderer time base. Cadence detection still tolerates one time-base tick, so a stream-copy remux to a finer timescale (1/600 to 1/19200 in this edit) can reclassify a CFR phone source as VFR; this is recorded, not changed.
+Limits: the original clip was not re-rendered. Snap evidence covers synthetic H.264 at 24 FPS and 263400/4391, not every renderer time base. A stream-copy remux to a finer timescale (1/600 to 1/19200 in this edit) reclassified the CFR phone source as VFR. Cadence detection was not loosened, because its existing test requires detecting a 1/50-frame shift; the workflow now requires derivatives to keep the source timescale.
 
 ## README visual refresh
 
