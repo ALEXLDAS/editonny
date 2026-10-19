@@ -1,28 +1,44 @@
+**English** · [Português](README.pt-BR.md) · [Español](README.es.md)
+
+<a id="top"></a>
+
+<p align="center">
+  <picture>
+    <source media="(max-width: 640px)" srcset="docs/assets/readme/hero-mobile.svg" />
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/hero-still.svg" />
+    <img src="docs/assets/readme/hero.svg" alt="editonny: an editorial local video studio with an animated video, voice, and visuals timeline." width="1600" />
+  </picture>
+</p>
+
 # editonny
+
+**Your story. Your rhythm. One local editing workflow.**
 
 Local video editing, guided by conversation. One portable skill brings together transcription, precise cutting, captions, framing, audio, and a library of **145 visual scenes** for **Codex** and **Claude Code**.
 
-**English** · [Português](README.pt-BR.md) · [Español](README.es.md)
+[Start editing](#install) · [See the motion](#motion) · [Explore the guide](#open-the-guide) · [Star history](#community)
 
-## What it does
+<p align="center">
+  <a href="https://github.com/soumatheusgomes/editonny/stargazers"><img src="https://img.shields.io/github/stars/soumatheusgomes/editonny?style=flat&amp;label=Stars&amp;color=354935&amp;labelColor=242721" alt="GitHub stars" /></a>
+  <a href="https://github.com/soumatheusgomes/editonny/actions/workflows/verify.yml"><img src="https://github.com/soumatheusgomes/editonny/actions/workflows/verify.yml/badge.svg?branch=main" alt="GitHub Actions verification" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-354935?labelColor=242721" alt="MIT license for first-party code" /></a>
+</p>
 
-Describe the result and point your agent at a video folder. editonny helps it inspect the recording, choose complete takes, measure cuts against the waveform, assemble a project, review a representative sample, and export a checked MP4.
+| Visual scenes | Editing examples | Bundled videos |
+| :---: | :---: | :---: |
+| **145** ways to explain | **54** starting points | **79** original clips |
 
-Standard editing cleanup removes unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions while preserving complete words, natural pacing, intentional pauses, and meaning. Narrow revisions stay within the requested scope. Original footage is preserved. Speech can remain in its original language; an English product does not require English recordings.
+## Start with one request
 
-The browser guide includes **54 editing examples**, a prompt builder, and the scene catalog. Every editing prompt includes the shared cleanup policy. The guide does not upload files or edit video in the browser.
+Install the skill, open your agent in the footage folder, and describe the edit. You direct the result; editonny brings the local tools and visual library.
 
-## Open the guide
-
-Open [web/index.html](web/index.html) directly in a current browser. Keep the complete `web/` folder together; no server or dependency installation is needed to browse it.
-
-Alternatively, from this repository:
-
-```sh
-python3 editonny.py guide
+```text
+$editonny
+Edit a 45-second vertical video from /path/to/footage.
+Keep complete takes, clean pauses, breaths, and mistakes, and add clear captions.
+Use visual scenes only where they explain the story.
+Verify an 8–15 second sample before finishing the export.
 ```
-
-This opens `http://127.0.0.1:4173`. Stop it with `Ctrl+C`; use `--port 0 --no-open` for an available port without opening a browser.
 
 ## Install
 
@@ -42,7 +58,66 @@ The first use may download dependencies, transcription models, or the rendering 
 
 See [installation and recovery](docs/installation.md) for prerequisites, isolated installation, plugin loading, updates, and removal.
 
+## Open the guide
+
+Open [web/index.html](web/index.html) directly in a current browser. Keep the complete `web/` folder together; no server or dependency installation is needed to browse it.
+
+Alternatively, from this repository:
+
+```sh
+python3 editonny.py guide
+```
+
+This opens `http://127.0.0.1:4173`. Stop it with `Ctrl+C`; use `--port 0 --no-open` for an available port without opening a browser.
+
+<a id="motion"></a>
+
+## Words, ideas, and objects in motion
+
+Three real scenes from the bundled library. These silent, cropped excerpts use synthetic text and illustrative scene content; they are examples, not customer footage.
+
+<p align="center">
+  <a href="docs/assets/readme/captions.gif">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/captions-still.png" />
+    <img src="docs/assets/readme/captions.gif" alt="Timed chromatic captions reveal “Your story. Your rhythm.”" width="280" loading="lazy" />
+  </picture>
+  </a>
+  <a href="docs/assets/readme/explain.gif">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/explain-still.png" />
+    <img src="docs/assets/readme/explain.gif" alt="An illustrative building rises floor by floor beside a changing floor count." width="280" loading="lazy" />
+  </picture>
+  </a>
+  <a href="docs/assets/readme/motion.gif">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/motion-still.png" />
+    <img src="docs/assets/readme/motion.gif" alt="Planets orbit a rotating Sun in the solar system scene." width="280" loading="lazy" />
+  </picture>
+  </a>
+</p>
+
+[Timed captions](skills/editonny/visuals/scenes/text-chromatic.html) · [Illustrated explanations](skills/editonny/visuals/scenes/building-panel.html) · [Spatial motion](skills/editonny/visuals/scenes/solar-system.html)
+
+Previews play once for 4.5 seconds. Reduced-motion preferences select still images. Open a preview to replay it.
+
+## What it does
+
+Describe the result and point your agent at a video folder. editonny helps it inspect the recording, choose complete takes, measure cuts against the waveform, assemble a project, review a representative sample, and export a checked MP4.
+
+Standard editing cleanup removes unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions while preserving complete words, natural pacing, intentional pauses, and meaning. Narrow revisions stay within the requested scope. Original footage is preserved. Speech can remain in its original language; an English product does not require English recordings.
+
+The browser guide includes **54 editing examples**, a prompt builder, and the scene catalog. Every editing prompt includes the shared cleanup policy. The guide does not upload files or edit video in the browser.
+
 ## Editing workflow
+
+<p align="center">
+  <picture>
+    <source media="(max-width: 640px)" srcset="docs/assets/readme/workflow-mobile.svg" />
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/readme/workflow-still.svg" />
+    <img src="docs/assets/readme/workflow.svg" alt="A local editing workflow: describe your intent, edit the footage, review an 8–15 second sample, and export a checked MP4." width="1600" />
+  </picture>
+</p>
 
 1. Choose a goal in the guide, specify the footage folder, and copy the English request to your agent.
 2. The skill checks the environment, inspects speech, selects takes, and applies measured cleanup.
@@ -63,6 +138,9 @@ Keep footage, editable projects, and personal libraries outside the installed sk
 | `scripts/`, `tests/` | Packaging, render checks, and regression tests |
 
 New projects use `project.json` and English commands, fields, and scene IDs. This is a clean pre-release foundation; previous experimental project formats are unsupported.
+
+<details>
+<summary><strong>Development, verification, and distribution</strong></summary>
 
 ## Develop and validate
 
@@ -91,6 +169,25 @@ python3 scripts/package.py
 
 This creates separate site and plugin ZIPs with SHA-256 files in `dist/`. The plugin includes the guide, canonical documentation, complete skill, and **79 bundled videos**; projects receive only clips they use. The site includes only the public guide. Distribute or host only the appropriate archive contents. Building packages does not publish them or update your global installation.
 
+</details>
+
+<a id="community"></a>
+
+## Follow the story
+
+If editonny helps your next video, give the project a star. Follow its progress, report a problem, or share an idea for a scene.
+
+<a href="https://www.star-history.com/?repos=soumatheusgomes%2Feditonny&amp;type=date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=soumatheusgomes/editonny&amp;type=date&amp;theme=dark" />
+    <img src="https://api.star-history.com/chart?repos=soumatheusgomes/editonny&amp;type=date" alt="Star history for soumatheusgomes/editonny" width="1000" loading="lazy" />
+  </picture>
+</a>
+
+[Star the project](https://github.com/soumatheusgomes/editonny/stargazers) · [Report an issue](https://github.com/soumatheusgomes/editonny/issues) · [Open star history](https://www.star-history.com/?repos=soumatheusgomes%2Feditonny&type=date)
+
+Live star history is provided by [Star History](https://www.star-history.com/blog/how-to-use-github-star-history/) and depends on that service. The badge above shows the real GitHub star count.
+
 ## Author and contact
 
 Created and maintained by **Matheus Gomes**.
@@ -104,3 +201,5 @@ Created and maintained by **Matheus Gomes**.
 First-party code and documentation use the [MIT License](LICENSE.md). Third-party libraries, models, fonts, audio, and media retain their own licenses and attribution; MIT does not relicense those resources. Consult the [third-party notices](skills/editonny/engine/THIRD_PARTY_NOTICES.md) and the notices beside assets before redistribution.
 
 [Product](PRODUCT.md) · [Architecture](docs/architecture.md) · [Interface](docs/design.md) · [Integrations](docs/integrations.md) · [Development setup](docs/setup.md)
+
+<p align="center"><strong>YOUR STORY. ITS OWN RHYTHM.</strong><br /><a href="#top">Back to top ↑</a></p>

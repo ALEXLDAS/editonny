@@ -44,6 +44,14 @@ The first GitHub Actions run of the sanitized snapshot failed on Ubuntu because 
 
 GitHub Actions checks Node.js 22.13.0 and 24 using Python 3.11. Two FFmpeg-dependent voice tests are skipped when those system tools are absent; that limitation is distinct from the local engine/browser/render evidence above. Confirm the latest run on the repository's Actions page rather than interpreting an earlier failed run as the current result.
 
+## README visual refresh
+
+On 2026-10-18 the README refresh passed `npm run check`: rule self-check, ESLint, 54 Python tests, 22 Node tests, and generated-guide verification. `doctor` also passed. The additional package test and extended archive fixture first failed against the previous packager, then passed after adding the named README artwork directory. Coverage includes artwork inclusion, exclusion of private sibling files and `.env`, and rejection of a symlinked artwork root.
+
+All three READMEs were rendered through GitHub's Markdown API. Local image/link targets and SVG XML were checked. Desktop (1280×960) and mobile (390×844) browser previews showed the intended image sources and no horizontal page overflow. Reduced-motion emulation selected all three PNG posters; the mobile hero reported zero CSS animations. With motion enabled the hero's playhead transform changed across sampled times and every SVG animation finished within 4.4 seconds. The three GIFs contain 36 frames at 480×480, last 4.51 seconds, and have no looping extension. Posters and sampled frames were inspected; combined artwork is approximately 2.33 MB.
+
+Sources, cropping, synthetic content, and ownership limits are recorded in `design.md`. This validates three excerpts, not the complete visual catalog or recorded-speech quality. Browser scene previews are separate from the earlier HyperFrames smoke evidence. The Markdown API prefixes custom IDs with `user-content-`; live GitHub fragment navigation and the final remote CI are checked after publication rather than inferred from the local preview wrapper. External stars/status/chart images were available during the preview; their availability and cache freshness remain outside repository control.
+
 ## Reproduce and invalidate
 
 ```sh

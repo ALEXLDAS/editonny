@@ -26,6 +26,22 @@ class PackageTests(unittest.TestCase):
                     package.build(root, root / 'dist', kind)
             self.assertFalse(list((root / 'dist').glob('*.zip')))
 
+    def test_plugin_rejects_symlinked_readme_art(self):
+        with tempfile.TemporaryDirectory(prefix='editonny readme package ') as temporary:
+            root = Path(temporary) / 'project'
+            source = root / 'skills/editonny'
+            source.mkdir(parents=True)
+            (source / 'VERSION').write_text('1.0.0')
+            outside = Path(temporary) / 'private'
+            outside.mkdir()
+            (outside / 'note.txt').write_text('Must not enter the public package')
+            assets = root / 'docs/assets'
+            assets.mkdir(parents=True)
+            (assets / 'readme').symlink_to(outside, target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, 'symlink'):
+                package.build(root, root / 'dist', 'plugin')
+            self.assertFalse(list((root / 'dist').glob('*.zip')))
+
     def test_packages_have_separate_contents_and_no_local_secrets(self):
         with tempfile.TemporaryDirectory(prefix='editonny package ') as temp:
             root = Path(temp)
@@ -38,7 +54,9 @@ class PackageTests(unittest.TestCase):
                          '.codex-plugin/plugin.json', '.claude-plugin/plugin.json',
                          'install.py', 'editonny.py', 'README.md', 'README.pt-BR.md', 'README.es.md', 'LICENSE.md',
                          'PRODUCT.md', 'docs/architecture.md', 'docs/design.md', 'docs/setup.md',
-                         'docs/installation.md', 'docs/archive/private.pdf']:
+                         'docs/installation.md', 'docs/archive/private.pdf',
+                         'docs/assets/readme/hero.svg', 'docs/assets/readme/captions.gif',
+                         'docs/assets/readme/.env', 'docs/assets/private.txt']:
                 p = root / name
                 p.parent.mkdir(parents=True, exist_ok=True)
                 p.write_text('1.0.0' if p.name == 'VERSION' else 'fixture')
@@ -59,6 +77,9 @@ class PackageTests(unittest.TestCase):
                 self.assertIn('README.es.md', archive.namelist())
                 self.assertIn('PRODUCT.md', archive.namelist())
                 self.assertIn('docs/architecture.md', archive.namelist())
+                self.assertIn('docs/assets/readme/hero.svg', archive.namelist())
+                self.assertIn('docs/assets/readme/captions.gif', archive.namelist())
+                self.assertNotIn('docs/assets/private.txt', archive.namelist())
                 self.assertIn('web/index.html', archive.namelist())
                 self.assertNotIn('web/build-data.mjs', archive.namelist())
                 self.assertNotIn('web/private.mp4', archive.namelist())

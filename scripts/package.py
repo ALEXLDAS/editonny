@@ -41,7 +41,7 @@ def build(root, output, kind):
         base = root
         paths = [root / p for p in ('install.py', 'editonny.py', 'README.md', 'README.pt-BR.md', 'README.es.md', 'LICENSE.md')]
         paths += [root / 'PRODUCT.md'] if (root / 'PRODUCT.md').exists() else []
-        for folder in ('skills', '.codex-plugin', '.claude-plugin', '.agents/plugins', 'web'):
+        for folder in ('skills', '.codex-plugin', '.claude-plugin', '.agents/plugins', 'web', 'docs/assets/readme'):
             reject_symlinks(root / folder, root)
             paths.extend((root / folder).rglob('*'))
         paths += [root / 'docs' / p for p in ('architecture.md', 'design.md', 'installation.md', 'integrations.md', 'setup.md', 'validation.md')
