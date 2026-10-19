@@ -389,6 +389,8 @@ def recover_revision(project: Path) -> dict:
     """Remove only an abandoned operation lock, never running processes or media."""
     lock = edit_directory(project) / '.workflow.lock'
     if lock.exists():
+        if os.name != 'posix':
+            raise ValueError('Automatic lock recovery is POSIX-only; on Windows verify the owner has stopped before manually removing .workflow.lock')
         value = read_json(lock)
         pid = value.get('pid')
         if not isinstance(pid, int) or pid <= 0:

@@ -19,7 +19,7 @@ from workspace import create_workspace, publish_export, record_review, render_de
 
 @unittest.skipUnless(os.environ.get('EDITONNY_NATIVE_CONFORMANCE') == '1', 'Explicit pinned native render conformance job')
 class ManagedNativeTests(unittest.TestCase):
-    def test_captioned_native_source_geometry_audio_and_delivery(self):
+    def test_reviewed_sample_then_full_native_geometry_audio_and_delivery(self):
         (ROOT / '.work').mkdir(exist_ok=True)
         root = Path(tempfile.mkdtemp(prefix='managed native ', dir=ROOT / '.work'))
         def run(*args, cwd=ROOT):
@@ -28,8 +28,8 @@ class ManagedNativeTests(unittest.TestCase):
             return result
         try:
             source = root / 'original.mp4'
-            run('ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=0x56728a:s=360x640:r=24:d=3',
-                '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=3',
+            run('ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=0x56728a:s=360x640:r=24:d=9',
+                '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=9',
                 '-vf', 'setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709',
                 '-c:v', 'libx264', '-qp', '0', '-pix_fmt', 'yuv420p', '-color_range', 'tv',
                 '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-c:a', 'aac', source)
@@ -42,20 +42,25 @@ class ManagedNativeTests(unittest.TestCase):
             (edit / 'transcripts/cut.json').write_text(json.dumps({'words': [
                 {'text': 'Color', 'start': 0.1, 'end': 0.8}, {'text': 'stays', 'start': 0.9, 'end': 1.5},
                 {'text': 'original', 'start': 1.6, 'end': 2.8}]}))
-            for args in (['prepare'], ['compose'], ['hf', 'lint'], ['hf', 'check'],
-                         ['hf', 'render', '--quality', 'draft', '--crf', '10', '--output', 'renders/candidate.mp4']):
+            for args in (['prepare'], ['sample', '0', '8'], ['hf', 'lint'], ['hf', 'check'],
+                         ['hf', 'render', '--quality', 'draft', '--crf', '10', '--output', 'renders/sample.mp4']):
                 result = run(sys.executable, 'build.py', *args, cwd=project)
                 (root / (args[-1].split('/')[-1] + '.log')).write_text(result.stdout + result.stderr)
+            sample = project / 'renders/sample.mp4'
+            reviewed_dependencies = render_dependencies(project)
+            record_review(project, sample, {'reviewer': 'agent', 'notes': 'Representative eight-second controlled caption/voice sample, checked by the conformance gate',
+                'findings': [], 'intervals': [[0, 8]], 'artifactHash': content_hash(sample), 'dependencies': reviewed_dependencies})
+            run(sys.executable, 'build.py', 'compose', cwd=project)
+            self.assertEqual(render_dependencies(project), reviewed_dependencies)
+            run(sys.executable, 'build.py', 'hf', 'render', '--quality', 'draft', '--crf', '10', '--output', 'renders/candidate.mp4', cwd=project)
             candidate = project / 'renders/candidate.mp4'
-            record_review(project, candidate, {'reviewer': 'agent', 'notes': 'Complete three-second controlled caption/voice fixture, checked by the conformance gate',
-                'findings': [], 'intervals': [[0, 3]], 'artifactHash': content_hash(candidate), 'dependencies': render_dependencies(project)})
             report = verify_media(candidate, project)
             (root / 'verification.json').write_text(json.dumps(report, indent=2))
             self.assertEqual(report['status'], 'passed', report)
             delivered = publish_export(project, candidate, report)
             self.assertEqual(len(delivered['subtitles']), 2)
             self.assertEqual(content_hash(source), original)
-            for at in (0.5, 1.5, 2.5):
+            for at in (0.5, 4.5, 8.5):
                 run('ffmpeg', '-v', 'error', '-ss', at, '-i', candidate, '-frames:v', '1', root / f'frame-{at}.png')
             print(f'Managed native evidence: {root}', flush=True)
         finally:

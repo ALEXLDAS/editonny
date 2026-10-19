@@ -24,7 +24,7 @@ Pipeline
      the second one's audio starts on the exact sample where the first one's ends (a camera switch in
      the middle of a sentence does not dip or skip). Their gain_db must match, or the fades stay.
   2. Extract, in parallel, one picture clip (H.264, final quality, upright, scaled+cropped,
-     fps, HDR->SDR, 8-bit guard, grade, bt709/tv tags) and one float WAV (48k stereo,
+     approved FPS, source color/precision, and only a confirmed grade/conversion) and one float WAV (48k stereo,
      gain+limiter, 30 ms fades, sample-exact length) per range into edit/clips/ (cached).
   3. Count the encoded frames of each clip -> out_start/out_end (frame-accurate).
   4. Picture: concat demuxer, stream copy. Audio: adelay in samples + amix normalize=0,
@@ -1059,7 +1059,12 @@ def _render(args: argparse.Namespace) -> int:
     out_path = (Path(os.path.abspath(args.output.expanduser())) if args.output
                 else edit_dir / ("cut_preview.mp4" if args.preview else "cut.mp4"))
     from common import ensure_distinct_output
-    ensure_distinct_output(out_path, [pr['path'] for pr in probes.values()])
+    protected = [pr['path'] for pr in probes.values()]
+    if contract:
+        protected += [source['path'] for source in manifest['sources']]
+    ensure_distinct_output(out_path, protected)
+    if contract and (out_path != edit_dir / ('cut_preview.mp4' if args.preview else 'cut.mp4') or out_path.is_symlink()):
+        raise CutError('Managed cut output belongs to this revision as edit/cut.mp4 (or cut_preview.mp4); use workspace export for delivery', 2)
     if variable_rate:
         if args.preview:
             raise CutError('VFR cut-only preserves source geometry; inspect the full-resolution candidate instead of a resized frame-grid preview', 2)
@@ -1169,6 +1174,8 @@ def _render(args: argparse.Namespace) -> int:
         for pr in probes.values():
             if content_hash(pr['path']) != pr['sha256']:
                 raise CutError('Source changed during rendering; no candidate was published', 2)
+        if contract:
+            managed_config(edit_dir, 'cut')
         os.replace(tmp_out, out_path)
     finally:
         tmp_out.unlink(missing_ok=True)

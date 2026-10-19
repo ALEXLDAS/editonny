@@ -123,6 +123,9 @@ def render_vfr(edl: dict, edit: Path, probes: dict, contract: dict | None, media
             for source in probes.values():
                 if content_hash(source['path']) != source['sha256']:
                     raise ValueError('Source changed during VFR rendering')
+            if contract:
+                from project_contract import managed_config
+                managed_config(edit, 'cut')
             actual = probe_video(candidate)
             os.replace(candidate, output)
         save_json(output.with_name(output.stem + '_timeline.json'), {'duration': position, 'width': first['display_width'],

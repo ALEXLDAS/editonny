@@ -14,6 +14,26 @@ from workspace import create_workspace, publish_export, record_review, render_de
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_managed_cut_cannot_replace_unused_original_or_previous_export(self):
+        from common import content_hash
+        from project_contract import settings_hash
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); first = root / 'first.mp4'; second = root / 'second.mp4'
+            make_patches(first); make_patches(second)
+            inspection = inspect_sources([first, second], False)
+            config = propose_settings(inspection, {'captions': False, 'delivery': {'workspaceRoot': str(root / 'downloads')}})['config']
+            project = create_workspace(root / 'downloads', 'Sources', inspection, config, confirmation(config, inspection))
+            edit = project.parent / 'edit'; edl = edit / 'edl.json'
+            edl.write_text(json.dumps({'sources': {'a': str(first)}, 'contractHash': settings_hash(config),
+                'ranges': [{'id': 'a', 'source': 'a', 'start': 0, 'end': 1 / 24}]}))
+            previous = project.parent / 'exports/previous.mp4'; previous.write_bytes(b'previous export')
+            for destination in (second, previous):
+                before = content_hash(destination)
+                result = subprocess.run([sys.executable, str(ROOT / 'skills/editonny/engine/helpers/render_cut.py'),
+                    str(edl), '--no-jcut', '--output', str(destination)], capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(content_hash(destination), before)
+
     def test_managed_composition_rejects_unapproved_sound_effects(self):
         from compose_final import build_plan, ComposeError
         from project_contract import load_contract, settings_hash

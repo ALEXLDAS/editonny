@@ -101,6 +101,21 @@ class WorkspaceTests(unittest.TestCase):
                 self.w.recover_revision(project)
             self.assertTrue(lock.exists())
 
+    def test_non_posix_recovery_never_sends_a_signal(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); inspection = self.prepare(root); c = config(root / 'downloads')
+            project = self.w.create_workspace(root / 'downloads', 'Lock', inspection, c, confirmation(c, inspection))
+            lock = project.parent / 'edit/.workflow.lock'
+            lock.write_text(json.dumps({'pid': 123, 'token': 'owned'}))
+            kill = Mock()
+            with patch.object(self.w, 'os', SimpleNamespace(name='nt', kill=kill)):
+                with self.assertRaisesRegex(ValueError, 'POSIX|Windows'):
+                    self.w.recover_revision(project)
+            kill.assert_not_called()
+            self.assertTrue(lock.exists())
+
     def test_destination_cannot_change_after_summary_acceptance(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); inspection = self.prepare(root); c = config(root / 'downloads')
