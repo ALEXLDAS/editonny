@@ -5,6 +5,35 @@ from preview_fixture import running_preview
 
 
 class PreviewServerTests(unittest.TestCase):
+    def test_watcher_rejects_approval_after_dependency_change(self):
+        from watch_preview import stale_approval_note
+        info = self.session.file_info('cut.mp4')
+        approval = {'phase': 'cut', 'file': 'cut.mp4', 'file_mtime': info['mtime'], 'file_size': info['size'],
+                    'file_sha256': info['sha256'], 'dependencies_hash': info['dependencies_hash']}
+        self.assertIsNone(stale_approval_note(self.session.edit_dir, approval))
+        (self.session.edit_dir / 'edit_data.json').write_text('{"captions":{"enabled":false}}')
+        self.assertIsNotNone(stale_approval_note(self.session.edit_dir, approval))
+
+    def test_managed_preview_tracks_actual_asset_bytes(self):
+        import sys
+        from pathlib import Path
+        from common import content_hash
+        from preview_server import Session, STYLE_CATALOG_PATH
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from workflow_fixtures import config, confirmation
+        from workspace import create_workspace
+        root = self.session.edit_dir.parent
+        source = root / 'original.mp4'; source.write_bytes(b'selected original')
+        inspection = {'sources': [{'id': 'source', 'path': str(source), 'sha256': content_hash(source), 'streams': [0]}]}
+        settings = config(root / 'Downloads')
+        project = create_workspace(root / 'Downloads', 'Preview', inspection, settings, confirmation(settings, inspection))
+        edit = project.parent / 'edit'; (edit / 'cut.mp4').write_bytes(b'cut')
+        asset = project / 'assets/insert.png'; asset.write_bytes(b'first asset')
+        session = Session(edit, STYLE_CATALOG_PATH, '127.0.0.1', 0)
+        before = session.file_info('cut.mp4')
+        asset.write_bytes(b'other asset')
+        self.assertNotEqual(session.file_info('cut.mp4')['dependencies_hash'], before['dependencies_hash'])
+
     def setUp(self):
         self.fixture = running_preview()
         self.session, self.url = self.fixture.__enter__()

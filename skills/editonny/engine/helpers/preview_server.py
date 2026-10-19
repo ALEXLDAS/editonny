@@ -133,6 +133,23 @@ def now_iso_ms() -> str:
 # ------------------------------------------------------------------ session
 
 
+def preview_dependencies_hash(edit_dir: Path) -> str:
+    from project_contract import digest, read_json
+    project = edit_dir.parent / 'project'
+    config = project / 'project.json'
+    if (edit_dir / 'source_manifest.json').is_file() or (config.is_file() and read_json(config).get('workflow')):
+        from workspace import render_dependencies
+        return digest(render_dependencies(project))
+    dependencies = {}
+    for name in ('edl.json', 'cut_timeline.json', 'edit_data.json', 'captions.json', 'source_manifest.json', 'transcripts/cut.json'):
+        path = edit_dir / name
+        if path.is_file():
+            dependencies[name] = content_hash(path)
+    if config.is_file():
+        dependencies['project'] = content_hash(config)
+    return digest(dependencies)
+
+
 class Session:
     """Everything the handlers need about one edit dir."""
 
@@ -212,16 +229,7 @@ class Session:
             if not cached or cached[0] != key:
                 cached = (key, content_hash(path))
                 self._identities[str(path)] = cached
-        from project_contract import digest
-        dependencies = {}
-        for item in ('edl.json', 'cut_timeline.json', 'edit_data.json', 'captions.json', 'source_manifest.json', 'transcripts/cut.json'):
-            dependency = self.safe_path(item)
-            if dependency and dependency.is_file():
-                dependencies[item] = content_hash(dependency)
-        project_config = self.edit_dir.parent / 'project/project.json'
-        if project_config.is_file():
-            dependencies['project'] = content_hash(project_config)
-        return {"mtime": st.st_mtime, "size": st.st_size, 'sha256': cached[1], 'dependencies_hash': digest(dependencies),
+        return {"mtime": st.st_mtime, "size": st.st_size, 'sha256': cached[1], 'dependencies_hash': preview_dependencies_hash(self.edit_dir),
                 "age": max(0.0, time.time() - st.st_mtime),
                 'display_label': 'Preview derivative; color fidelity requires the master' if 'preview' in rel else 'Exported media; approval identifies these exact bytes'}
 

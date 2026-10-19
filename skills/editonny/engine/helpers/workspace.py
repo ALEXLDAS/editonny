@@ -332,7 +332,15 @@ def record_review(project: Path, candidate: Path, evidence: dict, treatment: boo
     intervals = evidence.get('intervals', [])
     if not intervals or any(not isinstance(i, list) or len(i) != 2 or any(isinstance(t, bool) or not isinstance(t, (float, int)) or not math.isfinite(t) for t in i) or not 0 <= i[0] < i[1] <= duration + 0.001 for i in intervals):
         raise ValueError('Review must identify finite inspected intervals within the actual candidate')
-    if sum(b - a for a, b in intervals) < min(8, duration) - 0.001:
+    timeline = read_json(edit_directory(project) / 'cut_timeline.json')
+    full_duration = timeline.get('duration')
+    if isinstance(full_duration, bool) or not isinstance(full_duration, (int, float)) or not math.isfinite(full_duration) or full_duration <= 0:
+        raise ValueError('Review requires a measured complete cut duration')
+    covered, stop = 0.0, 0.0
+    for start, end in sorted(intervals):
+        covered += max(0, end - max(start, stop))
+        stop = max(stop, end)
+    if covered < min(8, full_duration) - 0.001:
         raise ValueError('Review a representative 8–15 second sample, or the complete shorter clip')
     if evidence.get('artifactHash') != candidate_hash or evidence.get('dependencies') != render_dependencies(project):
         raise ValueError('Review is stale: candidate or composition dependencies changed')

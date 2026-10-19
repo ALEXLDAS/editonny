@@ -270,6 +270,8 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
             raise ComposeError('Camera motion was not confirmed', 2)
         if not workflow['audio']['music'] and _enabled(_section(data, 'music')):
             raise ComposeError('Music was not confirmed', 2)
+        if not workflow['audio']['effects'] and _enabled(_section(data, 'sfx')):
+            raise ComposeError('Sound effects were not confirmed', 2)
         if _section(data, 'audio').get('denoise', 'off') != workflow['audio']['denoise']:
             raise ComposeError('Noise removal conflicts with the confirmed audio settings', 2)
         if _section(data, 'captions').get('enabled', contract.get('captions', {}).get('enabled')) != contract.get('captions', {}).get('enabled'):
@@ -330,8 +332,17 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
     else:
         out_path = edit_dir / ("final_preview.mp4" if preview else "final.mp4")
     out_path = out_path.resolve()
-    if out_path == base:
-        raise ComposeError('Output must not replace the base video or original footage', 2)
+    from common import ensure_distinct_output
+    protected = [base]
+    if contract:
+        from project_contract import read_json
+        protected += [s['path'] for s in read_json(edit_dir / 'source_manifest.json')['sources']]
+    try:
+        ensure_distinct_output(out_path, protected)
+    except ValueError as error:
+        raise ComposeError(str(error), 2) from error
+    if contract and out_path.exists():
+        raise ComposeError('Candidate already exists; use a new filename to preserve prior renders', 2)
 
     plan = Plan(edit_dir=edit_dir, edit_data_path=edit_data_path.resolve(), data=data, base=base,
                 out_path=out_path, preview=preview, full_w=full_w, full_h=full_h, W=W, H=H, fps=fps,
@@ -3342,33 +3353,40 @@ def _compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: bo
     plan.out_path.parent.mkdir(parents=True, exist_ok=True)
     loud = _section(plan.data, "loudness")
     target_i, target_tp = float(loud.get("i", -14)), float(loud.get("tp", -1.0))
-    tmp_out = plan.out_path.with_name(".tmp-" + plan.out_path.name)
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='.compose-', dir=plan.out_path.parent) as temporary:
+        tmp_out = Path(temporary) / 'candidate.mp4'
 
-    def mux(gain_db: float) -> None:
-        policy = plan.data.get('_audio_policy', {})
-        untouched = policy.get('mode') == 'preserve' and policy.get('denoise') == 'off' and not policy.get('music') and not policy.get('effects')
-        if untouched:
-            ffmpeg_cmd(['-v', 'error', '-y', '-i', tmp_video, '-i', plan.base, '-map', '0:v:0', '-map', '1:a?',
-                        '-c', 'copy', '-t', f'{plan.duration:.6f}', '-movflags', '+faststart', '-f', 'mp4', tmp_out],
-                       'preserve original audio streams under the edited picture')
-            return
-        af = ["-af", f'volume={gain_db:.2f}dB'] if abs(gain_db) > 0.001 else []
-        ffmpeg_cmd(["-v", "error", "-y", "-i", tmp_video, "-i", audio_wav, "-map", "0:v:0", "-map", "1:a:0",
-                    "-c:v", "copy", *af, "-c:a", "aac", "-b:a", "192k", "-ar", SR, "-ac", 2,
-                    "-t", f'{plan.duration:.6f}', "-movflags", "+faststart", "-f", "mp4", tmp_out],
-                   'mux video and audio')
+        def mux(gain_db: float) -> None:
+            policy = plan.data.get('_audio_policy', {})
+            untouched = policy.get('mode') == 'preserve' and policy.get('denoise') == 'off' and not policy.get('music') and not policy.get('effects')
+            if untouched:
+                ffmpeg_cmd(['-v', 'error', '-y', '-i', tmp_video, '-i', plan.base, '-map', '0:v:0', '-map', '1:a?',
+                            '-c', 'copy', '-t', f'{plan.duration:.6f}', '-movflags', '+faststart', '-f', 'mp4', tmp_out],
+                           'preserve original audio streams under the edited picture')
+                return
+            af = ["-af", f'volume={gain_db:.2f}dB'] if abs(gain_db) > 0.001 else []
+            ffmpeg_cmd(["-v", "error", "-y", "-i", tmp_video, "-i", audio_wav, "-map", "0:v:0", "-map", "1:a:0",
+                        "-c:v", "copy", *af, "-c:a", "aac", "-b:a", "192k", "-ar", SR, "-ac", 2,
+                        "-t", f'{plan.duration:.6f}', "-movflags", "+faststart", "-f", "mp4", tmp_out],
+                       'mux video and audio')
 
-    mux(0.0)
-    normalize = plan.has_audio and plan.data.get('_audio_policy', {}).get('mode', 'normalize') == 'normalize'
-    final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp) if normalize else None
-    if final_loud and final_loud["input_tp"] > target_tp + 0.05:
-        # the AAC encoder pushed a true peak over the target: trim the gain just enough and encode again
-        mux(target_tp - final_loud["input_tp"] - 0.1)
-        final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp)
-    if normalize and (not final_loud or final_loud['input_tp'] > target_tp):
-        tmp_out.unlink(missing_ok=True)
-        raise ComposeError('Encoded audio did not meet the confirmed peak limit; candidate was not published')
-    os.replace(tmp_out, plan.out_path)
+        mux(0.0)
+        normalize = plan.has_audio and plan.data.get('_audio_policy', {}).get('mode', 'normalize') == 'normalize'
+        final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp) if normalize else None
+        if final_loud and final_loud["input_tp"] > target_tp + 0.05:
+            # the AAC encoder pushed a true peak over the target: trim the gain just enough and encode again
+            mux(target_tp - final_loud["input_tp"] - 0.1)
+            final_loud = loudnorm_measure(tmp_out, i=target_i, tp=target_tp)
+        if normalize and (not final_loud or final_loud['input_tp'] > target_tp):
+            tmp_out.unlink(missing_ok=True)
+            raise ComposeError('Encoded audio did not meet the confirmed peak limit; candidate was not published')
+        if plan.data.get('_audio_policy'):
+            from project_contract import managed_config
+            managed_config(plan.edit_dir)
+            os.link(tmp_out, plan.out_path)
+        else:
+            os.replace(tmp_out, plan.out_path)
     if plan.data.get('_audio_policy'):
         from common import content_hash
         from workspace import record_artifact, render_dependencies

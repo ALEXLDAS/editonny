@@ -244,14 +244,19 @@ def pending_marks_note(edit_dir: Path, approval: dict) -> str | None:
 def stale_approval_note(edit_dir: Path, approval: dict) -> str | None:
     """The approval names the file version the person watched; a newer render needs a new approval."""
     rel, mtime, size = approval.get("file"), approval.get("file_mtime"), approval.get("file_size")
-    if not isinstance(rel, str) or mtime is None:
-        return None
     try:
-        st = (edit_dir / rel).stat()
-    except OSError:
-        return None
-    if abs(st.st_mtime - float(mtime)) <= 0.01 and (size is None or int(size) == st.st_size):
-        return None
+        from common import content_hash
+        from preview_server import preview_dependencies_hash
+        if isinstance(rel, str) and mtime is not None:
+            path = (edit_dir / rel).resolve()
+            path.relative_to(edit_dir.resolve())
+            st = path.stat()
+            if (abs(st.st_mtime - float(mtime)) <= 0.01 and size is not None and int(size) == st.st_size
+                    and content_hash(path) == approval.get('file_sha256')
+                    and preview_dependencies_hash(edit_dir) == approval.get('dependencies_hash')):
+                return None
+    except (OSError, ValueError, TypeError):
+        pass
     name = PHASE_NAME.get(approval.get("phase"), str(approval.get("phase")))
     return (f'[preview] attention: approval refers to an earlier version of {name} ({rel} that has since changed. Review the current export before treating it as approved')
 

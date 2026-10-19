@@ -14,6 +14,62 @@ from workspace import create_workspace, publish_export, record_review, render_de
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_managed_composition_rejects_unapproved_sound_effects(self):
+        from compose_final import build_plan, ComposeError
+        from project_contract import load_contract, settings_hash
+        with tempfile.TemporaryDirectory() as tmp:
+            source, project = self.prepare(Path(tmp))
+            edit = project.parent / 'edit'
+            data = edit / 'edit_data.json'
+            data.write_text(json.dumps({'base': str(source), 'contractHash': settings_hash(load_contract(project)),
+                'captions': {'enabled': False}, 'sfx': {'enabled': True, 'events': [{'name': 'pop', 'at': 0}]}}))
+            with self.assertRaisesRegex(ComposeError, 'effects.*confirmed'):
+                build_plan(data, str(edit / 'candidate.mp4'), False)
+
+    def test_composition_cannot_replace_a_manifest_original_or_existing_candidate(self):
+        from compose_final import build_plan, ComposeError
+        from project_contract import load_contract, settings_hash
+        from workspace import seed_source
+        with tempfile.TemporaryDirectory() as tmp:
+            source, project = self.prepare(Path(tmp))
+            # The fixture has only a timeline; seed the unchanged cut independently.
+            edit = project.parent / 'edit'
+            (edit / 'cut_timeline.json').unlink()
+            seed_source(project)
+            data = edit / 'edit_data.json'
+            data.write_text(json.dumps({'contractHash': settings_hash(load_contract(project)), 'captions': {'enabled': False}}))
+            before = source.read_bytes()
+            with self.assertRaisesRegex(ComposeError, 'original|input media'):
+                build_plan(data, str(source), False)
+            previous = edit / 'previous.mp4'; previous.write_bytes(b'previous candidate')
+            with self.assertRaisesRegex(ComposeError, 'exists|filename'):
+                build_plan(data, str(previous), False)
+            self.assertEqual(source.read_bytes(), before)
+            self.assertEqual(previous.read_bytes(), b'previous candidate')
+
+    def test_sample_review_requires_unique_span_from_the_complete_cut(self):
+        from common import content_hash
+        from workspace import seed_source
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); source = root / 'long.mp4'; sample = root / 'sample.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=gray:s=128x64:r=24:d=10',
+                '-vf', 'setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709',
+                '-c:v', 'libx264', str(source)], check=True)
+            subprocess.run(['ffmpeg', '-v', 'error', '-i', str(source), '-t', '1', '-c', 'copy', str(sample)], check=True)
+            inspection = inspect_sources([source], False)
+            config = propose_settings(inspection, {'captions': False, 'delivery': {'workspaceRoot': str(root / 'downloads')}})['config']
+            project = create_workspace(root / 'downloads', 'Review', inspection, config, confirmation(config, inspection))
+            seed_source(project)
+            evidence = {'reviewer': 'agent', 'notes': 'Inspected fixture', 'findings': [],
+                'intervals': [[0, 1]], 'artifactHash': content_hash(sample), 'dependencies': render_dependencies(project)}
+            with self.assertRaisesRegex(ValueError, 'representative|shorter|unique'):
+                record_review(project, sample, evidence)
+            evidence.update(artifactHash=content_hash(source), intervals=[[0, 1]] * 8)
+            with self.assertRaisesRegex(ValueError, 'representative|shorter|unique'):
+                record_review(project, source, evidence)
+            evidence['intervals'] = [[0, 4], [4, 8]]
+            record_review(project, source, evidence)
+
     def test_vfr_cadence_cannot_be_silently_resampled_to_cfr(self):
         from common import content_hash, probe_video
         from fidelity import verify_media
