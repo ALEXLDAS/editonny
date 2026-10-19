@@ -1,20 +1,22 @@
 # editonny architecture
 
-Source reviewed on 2026-10-18. Changes to entry points, contracts, distribution, dependencies, or resource paths invalidate this map.
+Source reviewed on 2026-10-19. Changes to entry points, contracts, distribution, dependencies, or resource paths invalidate this map.
 
 ## Entry points and ownership
 
 | Entry | Responsibility |
 |---|---|
 | `editonny.py` | Resolve and launch the canonical CLI from any working directory |
-| `skills/editonny/scripts/editonny.py` | Environment checks, catalog search, project creation, scene/media commands, helpers, and local guide |
+| `skills/editonny/scripts/editonny.py` | Environment checks, catalog search, project creation, scene/media commands, helpers, and the guide's local development server |
 | `skills/editonny/SKILL.md` | One portable conversation workflow with standard cleanup and scoped-edit rules |
 | `skills/editonny/engine/` | Local transcription, waveform cuts, captions, audio, framing, preview, and render preparation |
 | `skills/editonny/engine/project-template/` | English project contract, composition runtime, build commands, and pinned HyperFrames integration |
 | `skills/editonny/visuals/` | Visual catalog, scene templates, recipes, resource materialization, and media verification |
 | `install.py` | One shared installation, agent links, ownership checks, staging, backups, and rollback |
+| `web/` | Public guide (Next.js app on Vercel): localized request builder, catalog, examples, installation, and design-system showcase route |
+| `DESIGN.md`, `design-system/` | Visual contract and token source; React component library, preview templates, showcase, adherence lint, and frozen reference HTML |
 
-The engine Python range and dependency resolution live in `engine/pyproject.toml` and `engine/uv.lock`. The template pins HyperFrames 0.8.171. Root developer dependencies are also pinned. Renaming the engine package does not authorize dependency upgrades.
+The engine Python range and dependency resolution live in `engine/pyproject.toml` and `engine/uv.lock`. The template pins HyperFrames 0.8.171. Root developer dependencies and the web app's dependencies (`web/package.json`) are pinned to exact versions; the workspace uses TypeScript 6.0.3 because typescript-eslint and `eslint-config-next` require the TypeScript JavaScript API, which TypeScript 7 does not ship. Renaming the engine package does not authorize dependency upgrades.
 
 ## Contracts and processing
 
@@ -26,11 +28,21 @@ Processing uses an `edit/` directory for transcripts, EDLs, cut media, timing, r
 
 ## Guide and data
 
-`web/prompts.mjs` composes 54 examples from `create.mjs`, `refine.mjs`, `audio-media.mjs`, and `deliver.mjs`. `web/model.mjs` owns search, personalization, and request generation, including one shared cleanup policy. Custom, scene, and example dialogs all use that builder. Text remains in the browser until copied.
+The guide is the `web/` workspace (`@editonny/web`): a Next.js 16 App Router app with React 19, the React Compiler, Cache Components, typed routes, and Turbopack, deployed on Vercel with Root Directory `web`. Every page is prerendered per locale; interactive parts are client islands.
 
-`web/build-data.mjs` extracts public fields from `visuals/catalog.json`, validates scene IDs, and builds `web/catalog.json` and `web/app.js`. `index.html` loads the classic bundle with `defer`, supporting both `file://` and HTTP. Generated artifacts are compared without writes by `npm run check:web`.
+Localization uses next-intl 4 with `next/root-params`. Locales are `en-US` (default), `pt-BR`, and `es`, with URL prefixes `/en`, `/pt-br`, and `/es` and localized pathnames (`/create` · `/criar` · `/crear`, `/catalog` · `/catalogo`, `/examples` · `/exemplos` · `/ejemplos`, `/install` · `/instalacao` · `/instalacion`). `src/proxy.ts` redirects the first visit by `Accept-Language` and afterwards by the `NEXT_LOCALE` cookie that the language menu sets; it skips API, internal, design-system, Open Graph image, and file requests. Each page publishes a canonical URL, `hreflang` alternates with `x-default`, a localized Open Graph image, and sitemap entries.
 
-The optional guide server binds only to `127.0.0.1`, refuses hidden paths and root escapes, and disables directory listing. Port 0 requests a free port. The standalone skill installation does not include the guide; it belongs to the full checkout, full plugin archive, or site ZIP.
+`src/features/request/` owns the brief options (stable keys such as `vertical` or `dynamic`), draft parsing, and the request builder. The English phrases reproduce the previous builder byte for byte, including the canonical cleanup policy; `pt-BR` and `es` phrases translate every clause. Scene, example, and custom requests all use this builder, and text stays in the browser until copied.
+
+`src/features/examples/records.ts` lists the 54 examples in workflow order with their categories and presets; `web/content/examples/<locale>.json` holds their text. Scenes are read at build time from `skills/editonny/visuals/catalog.json` (public fields only, server-only module) and translated by `web/content/scenes/<locale>.json`, falling back to English per field. Tests require complete translations and identical ids across locales.
+
+Preferences are browser-only: `editonny:draft` (the brief) and `editonny:theme` in `localStorage`, read through a guarded external store so blocked or corrupted storage falls back to defaults, and synchronized across tabs. An inline script applies the saved theme before the first paint. Catalog and example views keep search, category, and the open item in the URL so views can be shared; ids that are not in the catalog are ignored.
+
+`python3 editonny.py guide` starts the guide's development server on `localhost` (default port 4173) and opens the browser once it reports ready when the full checkout has its npm dependencies; the standalone skill installation and the plugin archive do not include the guide.
+
+## Design system
+
+`DESIGN.md` holds the normative tokens; `design-system/tokens/` implements them with a dark default and a light paper theme selected by `data-theme`. Components are React 19 function components with TypeScript prop types (`design-system/tsconfig.json`), styled by per-category CSS that may use only tokens; files that need hooks or browser APIs are client components and the rest render on the server. `design-system/scripts/icons.mjs` generates the icon registry (`npm run check:icons` verifies it). The web app imports `@editonny/design-system` and its `styles.css`, loads the engine's licensed fonts through `next/font`, and serves the showcase at `/design-system`. The folder is development material: the plugin archive carries only `DESIGN.md` with the canonical documentation.
 
 ## Media and visual composition
 
@@ -50,6 +62,6 @@ The 3D scene runtime keeps its facade over focused timing, camera, material, tex
 
 Installation fingerprints source and destination, refuses foreign paths, stages a complete copy, preserves package `.env` and `engine/.env`, backs up the previous copy, and rolls back failures. Other personal files must live outside the installed skill. Unregistering removes only the selected agent links.
 
-`scripts/package.py` builds separate site/plugin ZIPs, publishes the completed archive locally, and writes a SHA-256 file. The site includes only public web assets; the plugin uses an explicit content scope containing the skill, installer, launcher, manifests, README translations, public guide, licenses, and canonical documentation. Secrets, environments, caches, and unexpected symlinks are rejected or excluded.
+`scripts/package.py` builds the plugin ZIP, publishes the completed archive locally, and writes a SHA-256 file. The plugin uses an explicit content scope containing the skill, installer, launcher, manifests, README translations, licenses, and canonical documentation; the guide is deployed separately and is not packaged. Secrets, environments, caches, and unexpected symlinks are rejected or excluded.
 
 The local graph is a derived navigation tool outside distribution. Its coverage and provenance do not replace current source or test evidence. See [setup](setup.md) and [validation](validation.md).

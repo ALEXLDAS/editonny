@@ -1,14 +1,13 @@
+from contextlib import redirect_stdout
 from pathlib import Path
-import functools
 import importlib.util
+import io
 import json
 import subprocess
 import sys
 import tempfile
-import threading
 import unittest
-import urllib.error
-import urllib.request
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / 'editonny.py'
@@ -45,32 +44,48 @@ class CLITests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn('Traceback', result.stderr)
 
-    def test_guide_cannot_serve_outside_web_or_list_directories(self):
+    def test_guide_runs_the_web_app_only_from_a_full_checkout_with_dependencies(self):
         spec = importlib.util.spec_from_file_location('cli', ROOT / 'skills/editonny/scripts/editonny.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            web = root / 'web'
-            web.mkdir()
-            (web / 'index.html').write_text('editonny')
-            (web / 'empty').mkdir()
-            (root / 'secret').write_text('private')
-            (web / 'leak').symlink_to(root / 'secret')
-            server = module.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(module.GuideHandler, directory=str(web)))
-            worker = threading.Thread(target=server.serve_forever, daemon=True)
-            worker.start()
-            try:
-                url = f'http://127.0.0.1:{server.server_port}'
-                self.assertEqual(urllib.request.urlopen(url).read(), b'editonny')
-                for path in ['/../secret', '/%2e%2e/secret', '/leak', '/empty/', '/.env']:
-                    with self.subTest(path=path), self.assertRaises(urllib.error.HTTPError) as error:
-                        urllib.request.urlopen(url + path)
-                    self.assertEqual(error.exception.code, 404)
-            finally:
-                server.shutdown()
-                server.server_close()
-                worker.join()
+            module.SKILL = root / 'skills/editonny'
+            with self.assertRaisesRegex(ValueError, 'standalone skill'):
+                module.guide(4321, False)
+            (root / 'web').mkdir()
+            (root / 'web/package.json').write_text('{}')
+            with self.assertRaisesRegex(ValueError, 'npm ci'):
+                module.guide(4321, False)
+            (root / 'node_modules/next').mkdir(parents=True)
+            started, opened = [], []
+
+            class FakeServer:
+                def __init__(self, lines, code):
+                    self.stdout, self.code = iter(f'{line}\n' for line in lines), code
+                def wait(self):
+                    return self.code
+                def terminate(self):
+                    pass
+
+            def serve(lines, code):
+                return lambda command, **kwargs: started.append((command, kwargs)) or FakeServer(lines, code)
+
+            ready = ['▲ Next.js 16.4.2 (Turbopack)', '- Local:         http://localhost:55363', '✓ Ready in 127ms']
+            busy = ['⨯ Failed to start server', 'Error: listen EADDRINUSE: address already in use ::1:4321']
+            with mock.patch.object(module.shutil, 'which', lambda name: '/usr/bin/npm' if name == 'npm' else None), \
+                    mock.patch.object(module.webbrowser, 'open', opened.append), redirect_stdout(io.StringIO()):
+                # Port 0 lets Next pick a port; the browser opens at the reported address once the server is ready.
+                with mock.patch.object(module.subprocess, 'Popen', serve(ready, 0)):
+                    self.assertEqual(module.guide(0, True), 0)
+                self.assertEqual(opened, ['http://localhost:55363'])
+                # A server that fails to start opens nothing and passes its exit code on.
+                with mock.patch.object(module.subprocess, 'Popen', serve(busy, 1)):
+                    self.assertEqual(module.guide(4321, True), 1)
+                self.assertEqual(opened, ['http://localhost:55363'])
+            command, kwargs = started[0]
+            self.assertEqual(command, ['/usr/bin/npm', 'run', 'dev', '-w', '@editonny/web', '--', '--hostname', 'localhost', '--port', '0'])
+            self.assertEqual(kwargs['cwd'], root)
 
     def test_doctor_json_has_real_checks(self):
         result = self.run_cli('doctor', '--json')

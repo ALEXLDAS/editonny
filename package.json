@@ -1,14 +1,21 @@
 {
   "name": "editonny-dev",
   "private": true,
+  "workspaces": [
+    "design-system",
+    "web"
+  ],
   "scripts": {
-    "build": "node web/build-data.mjs",
-    "check:web": "node web/build-data.mjs --check",
-    "test": "python3 -m unittest discover -s tests -p 'test_*.py' && node --test tests/web-cleanup.test.mjs tests/web.test.mjs tests/web-build.test.mjs tests/eslint-config.test.mjs tests/three-engine.test.mjs tests/preview-api.test.mjs",
-    "test:browser": "node --test tests/web-browser.test.mjs",
+    "dev": "npm run dev -w @editonny/web",
+    "build": "npm run build -w @editonny/web",
+    "icons": "node design-system/scripts/icons.mjs",
+    "check:icons": "node design-system/scripts/icons.mjs --check",
+    "test": "python3 -m unittest discover -s tests -p 'test_*.py' && node --test tests/eslint-config.test.mjs tests/design-system.test.mjs tests/three-engine.test.mjs tests/preview-api.test.mjs && vitest run",
+    "test:browser": "npm run test:e2e -w @editonny/web",
     "lint": "eslint . --max-warnings 0",
     "lint:rules": "node eslint-rules/verify.mjs ./eslint-rules/index.cjs",
-    "check": "npm run lint:rules && npm run lint && npm test && npm run check:web",
+    "typecheck": "tsc -p design-system && npm run typecheck -w @editonny/web",
+    "check": "npm run lint:rules && npm run lint && npm run typecheck && npm test && npm run check:icons",
     "test:engine": "uv run --locked --directory skills/editonny/engine python -m unittest discover -s ../../../tests/integration -p 'test_*.py'",
     "test:preview": "node --test tests/preview-browser.test.mjs",
     "graph:check": "python3 scripts/project_graph.py check",
@@ -22,10 +29,20 @@
     "node": "^22.13.0 || >=24.0.0"
   },
   "devDependencies": {
+    "@eslint/css": "2.0.0",
     "@eslint/js": "10.0.1",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
     "esbuild": "0.28.2",
     "eslint": "10.13.0",
-    "globals": "17.13.0"
+    "eslint-config-next": "16.4.2",
+    "globals": "17.13.0",
+    "jsdom": "29.1.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
   },
   "license": "MIT",
   "author": {

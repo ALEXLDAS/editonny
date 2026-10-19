@@ -10,9 +10,11 @@ Open-source local video editing through conversation. One portable skill owns th
 - `skills/editonny/visuals/media.json`: original-video manifest. `media status` verifies the bundled paths, sizes, and hashes; projects receive only clips they use.
 - `install.py`: shared installation and agent registration through links.
 - `skills/editonny/scripts/editonny.py`: canonical CLI; root `editonny.py` is the launcher.
-- `web/`: standalone HTML/CSS/JS guide. Run `npm run build` after editing source to regenerate the bundle and catalog. Never edit `web/app.js` manually.
-- `web/prompts.mjs`: canonical example entry point, composed from `web/prompts/`; do not duplicate example records.
-- `web/model.mjs`: shared prompt builder and default editing-cleanup policy.
+- `web/`: the public guide, a Next.js 16 App Router app (workspace `@editonny/web`) deployed on Vercel with Root Directory `web`. `src/app/` holds routes, `src/features/` the domain code, `messages/` the interface text per locale, and `content/` the localized examples and scene translations.
+- `web/src/features/request/`: shared request builder, brief options, and the default editing-cleanup policy per locale (English is canonical).
+- `web/src/features/examples/records.ts`: canonical example list (ids, categories, presets); its text lives in `web/content/examples/<locale>.json`. Scene text comes from `skills/editonny/visuals/catalog.json`, translated in `web/content/scenes/<locale>.json`.
+- `DESIGN.md`: visual contract and source of truth for design tokens (Google Labs DESIGN.md format).
+- `design-system/`: React component library (workspace `@editonny/design-system`), tokens, preview templates, showcase (served at `/design-system` by the web app), lint plugin, and frozen reference HTML; map and component workflow in `design-system/README.md`.
 - `PRODUCT.md`, `docs/architecture.md`, `docs/design.md`: scope, structure, and interface.
 - `docs/installation.md`, `docs/validation.md`, `docs/setup.md`: onboarding, quality evidence, and development tooling. Do not create competing sources.
 - `graphify-out/graph.json`: local code/document index; workflow and coverage in `docs/setup.md`.
@@ -20,11 +22,15 @@ Open-source local video editing through conversation. One portable skill owns th
 
 ## Language and contracts
 
-First-party names, code, comments, commands, schema, paths, prompts, descriptions, defaults, and interface text use English. `README.md` is primary; `README.pt-BR.md` and `README.es.md` are the explicit translation exceptions. Preserve upstream names, licenses, speech lexicons, and user-supplied text as data. Do not force English transcription or translate recorded speech without a request.
+First-party names, code, comments, commands, schema, paths, prompts, descriptions, and defaults use English. The guide's interface text and generated requests are localized for `en-US`, `pt-BR`, and `es` through `web/messages/`, `web/content/`, and the request phrases; English is the source and every locale must stay complete (tests enforce it). `README.md` is primary; `README.pt-BR.md` and `README.es.md` are the explicit translation exceptions. Preserve upstream names, licenses, speech lexicons, and user-supplied text as data. Do not force English transcription or translate recorded speech without a request.
 
 New projects use `project.json` and English contracts. Do not add compatibility readers or aliases for previous experimental formats. Use descriptive identifiers without inherited product-edition labels.
 
 All full edits default to removing unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions. Preserve complete words, natural pacing, intentional pauses, meaning, originals, and the requested editing scope. Caption-only or interval revisions must not silently recut unrelated content.
+
+## Design system
+
+`DESIGN.md` is the versioned visual contract and the source of truth for tokens; `design-system/tokens/` implements it and `npm test` fails when they drift. Read it before UI work. New components and UI come from `@editonny/design-system` (`design-system/components/index.ts`), created as described in `design-system/README.md`. Never hard-code colors, font families or sizes, spacing, or radii; use `var(--…)` tokens. The `design/tokens` lint rule, the raw-literal rules, and `npm run typecheck` enforce this. The web app imports `@editonny/design-system/styles.css`, defaults to the dark studio theme, and offers light paper through a saved preference. `design-system/reference/` holds frozen export pages for comparison only.
 
 ## Verify
 
@@ -35,13 +41,13 @@ npm run check
 python3 editonny.py doctor
 ```
 
-`npm run test:browser` checks the guide through `file://` and requires agent-browser and its browser. Engine/preview changes also need `npm run test:engine`, `npm run test:preview`, and `python3 scripts/smoke_engine.py` with sample inspection. The smoke needs FFmpeg, Node/npx, and network on first use. Guide-only changes do not need another video render.
+`npm run check` includes lint, both typechecks, the Python, Node, and Vitest suites, and the icon registry check. `npm run test:browser` builds the web app and runs the Playwright suite (desktop and phone projects, locale detection, flows, preferences, axe accessibility, overflow, and the showcase); it needs Playwright's Chromium once (`npx playwright install chromium`). Run it after guide or design-system changes. Engine/preview changes also need `npm run test:engine`, `npm run test:preview`, and `python3 scripts/smoke_engine.py` with sample inspection. The smoke needs FFmpeg, Node/npx, and network on first use. Guide-only changes do not need another video render.
 
 Preserve dependency pins and third-party notices. New render evidence applies only to the tested scenes and environment; never infer universal validation from one sample. Keep `docs/validation.md` aligned with observed results and limits.
 
 ## Boundaries
 
-Preserve user footage, `.env`, projects, libraries, and unrelated local changes. Test installers with a temporary `--home`. Do not include virtual environments, caches, secrets, personal media, graph exports, or development artifacts in public site packages. The site contains only `web/` or the generated site ZIP. First-party MIT licensing does not replace third-party resource terms.
+Preserve user footage, `.env`, projects, libraries, and unrelated local changes. Test installers with a temporary `--home`. Do not include virtual environments, caches, secrets, personal media, graph exports, or development artifacts in the plugin archive or the deployed site. The site is the `web/` app built by Vercel; it reads only public catalog fields from the skill. First-party MIT licensing does not replace third-party resource terms.
 
 Do not publish, transmit media to external services, spend credits, send messages to others, or change personal installations without authorization. Existing tools do not imply authorization. Do not add Git hooks or impose a branch/worktree; respect the requested checkout.
 

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import argparse
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
@@ -13,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import unicodedata
-from urllib.parse import unquote, urlsplit
 import webbrowser
 
 SKILL = Path(__file__).resolve().parents[1]
@@ -69,50 +66,33 @@ def doctor(as_json=False):
     return 0 if report['ok'] else 1
 
 
-class GuideHandler(SimpleHTTPRequestHandler):
-    def do_GET(self):
-        path = self.translate_path(self.path)
-        if path is None:
-            self.send_error(404)
-            return
-        super().do_GET()
-
-    def do_HEAD(self):
-        if self.translate_path(self.path) is None:
-            self.send_error(404)
-            return
-        super().do_HEAD()
-
-    def translate_path(self, path):
-        relative = unquote(urlsplit(path).path)
-        if any(part.startswith('.') for part in relative.split('/') if part):
-            return None
-        translated = Path(super().translate_path(path)).resolve()
-        root = Path(self.directory).resolve()
-        if translated != root and root not in translated.parents:
-            return None
-        return str(translated)
-
-    def list_directory(self, path):
-        self.send_error(404)
-        return None
-
-
 def guide(port, open_browser):
-    # The guide belongs to the full checkout and the separate site archive.
-    web = SKILL.parent.parent / 'web'
-    if not (web / 'index.html').is_file():
+    # The guide is the Next.js app in web/ of the full checkout; the standalone skill does not include it.
+    root = SKILL.parent.parent
+    if not (root / 'web' / 'package.json').is_file():
         raise ValueError('The guide is not bundled with the standalone skill. Open the full project and run python3 editonny.py guide.')
-    with ThreadingHTTPServer(('127.0.0.1', port), partial(GuideHandler, directory=str(web))) as server:
-        url = f'http://127.0.0.1:{server.server_port}'
-        print(f'editonny · {url} · Ctrl+C to stop', flush=True)
-        if open_browser:
-            webbrowser.open(url)
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            pass
-    return 0
+    npm = shutil.which('npm')
+    if not npm or not (root / 'node_modules' / 'next').is_dir():
+        raise ValueError('Install the guide dependencies first: run npm ci in the project folder (Node.js 22.13+ or 24+).')
+    # Loopback only. Next.js 16.4 treats its locale rewrites as external when bound to 127.0.0.1 and redirects in a loop.
+    command = [npm, 'run', 'dev', '-w', '@editonny/web', '--', '--hostname', 'localhost', '--port', str(port)]
+    print('editonny · starting the guide · Ctrl+C to stop', flush=True)
+    process = subprocess.Popen(command, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    url = None
+    try:
+        for line in process.stdout:
+            print(line, end='', flush=True)
+            found = re.search(r'http://localhost:\d+', line)
+            url = url or (found.group(0) if found else None)
+            # Open only once the server is ready, at the port it reported (Next picks one for --port 0).
+            if open_browser and url and 'Ready' in line:
+                webbrowser.open(url)
+                open_browser = False
+        return process.wait()
+    except KeyboardInterrupt:
+        process.terminate()
+        process.wait()
+        return 0
 
 
 def run(command, cwd=None):

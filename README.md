@@ -60,15 +60,16 @@ See [installation and recovery](docs/installation.md) for prerequisites, isolate
 
 ## Open the guide
 
-Open [web/index.html](web/index.html) directly in a current browser. Keep the complete `web/` folder together; no server or dependency installation is needed to browse it.
+The guide is the editonny website: it builds editing requests, browses the 145 motion scenes and 54 example requests, and explains installation in English, Brazilian Portuguese, or Spanish (picked from your browser; your choice and your brief stay saved in that browser). It never receives or uploads footage.
 
-Alternatively, from this repository:
+To run it locally from this repository (Node.js 22.13+ or 24+):
 
 ```sh
+npm ci
 python3 editonny.py guide
 ```
 
-This opens `http://127.0.0.1:4173`. Stop it with `Ctrl+C`; use `--port 0 --no-open` for an available port without opening a browser.
+This starts the development server at `http://localhost:4173` and opens it. Stop it with `Ctrl+C`; use `--port` to choose another port and `--no-open` to skip the browser. `npm run dev` does the same on port 3000.
 
 <a id="motion"></a>
 
@@ -119,7 +120,7 @@ The browser guide includes **54 editing examples**, a prompt builder, and the sc
   </picture>
 </p>
 
-1. Choose a goal in the guide, specify the footage folder, and copy the English request to your agent.
+1. Choose a goal in the guide, specify the footage folder, and copy the request (in the guide's language) to your agent.
 2. The skill checks the environment, inspects speech, selects takes, and applies measured cleanup.
 3. Review an **8–15 second** representative sample with speech, captions, and visual movement. Request approval explicitly if you want the agent to wait.
 4. Complete the project, render using its pinned HyperFrames version, and inspect the final MP4.
@@ -133,7 +134,9 @@ Keep footage, editable projects, and personal libraries outside the installed sk
 | `skills/editonny/` | Single portable skill and CLI |
 | `skills/editonny/engine/` | Local processing, preview, and English project template |
 | `skills/editonny/visuals/` | Scenes, catalog, bundled media, and recipes |
-| `web/` | Standalone guide, prompt library, and generated catalog |
+| `web/` | Public guide: Next.js app with localized request builder, catalog, examples, and installation |
+| `DESIGN.md` | Visual contract and source of truth for design tokens |
+| `design-system/` | React component library, tokens, preview templates, showcase, and reference HTML |
 | `docs/` | Canonical architecture, installation, integration, and validation references |
 | `scripts/`, `tests/` | Packaging, render checks, and regression tests |
 
@@ -157,9 +160,13 @@ npm run test:scenes
 python3 scripts/smoke_engine.py
 ```
 
-Browser checks require `agent-browser` and its browser. Render checks require FFmpeg and network access on the first HyperFrames use. Inspect generated samples before deleting task outputs from `.work/`. Full commands, results, and known limits belong in [validation](docs/validation.md).
+`npm run test:browser` builds the guide and runs Playwright (install its Chromium once with `npx playwright install chromium`). The preview browser check (`npm run test:preview`) requires `agent-browser`. Render checks require FFmpeg and network access on the first HyperFrames use. Inspect generated samples before deleting task outputs from `.work/`. Full commands, results, and known limits belong in [validation](docs/validation.md).
 
-Edit `.mjs` source and regenerate `web/app.js` and `web/catalog.json` with `npm run build`. Never edit the bundle manually. `npm run check:web` detects stale generated files without modifying them.
+The repository is an npm workspace: `web/` (`@editonny/web`) and `design-system/` (`@editonny/design-system`). `npm run build` builds the guide; `npm run check` runs lint, typechecks, unit tests, and the icon registry check (`npm run icons` regenerates it from `design-system/assets/icons/`). Open `/design-system` on the running guide to browse every component and state in both themes; new UI follows [DESIGN.md](DESIGN.md) and [the library map](design-system/README.md).
+
+### Deploy the guide
+
+Import the repository in Vercel and set **Root Directory** to `web`; Vercel installs the workspace from the repository root and keeps the skill's catalog available to the build. Set `NEXT_PUBLIC_SITE_URL` to the public origin (for example, a custom domain) so canonical links, `hreflang`, the sitemap, and social images use it; otherwise the Vercel production domain is used.
 
 ## Package
 
@@ -167,7 +174,7 @@ Edit `.mjs` source and regenerate `web/app.js` and `web/catalog.json` with `npm 
 python3 scripts/package.py
 ```
 
-This creates separate site and plugin ZIPs with SHA-256 files in `dist/`. The plugin includes the guide, canonical documentation, complete skill, and **79 bundled videos**; projects receive only clips they use. The site includes only the public guide. Distribute or host only the appropriate archive contents. Building packages does not publish them or update your global installation.
+This creates the plugin ZIP with a SHA-256 file in `dist/`. It includes the canonical documentation, the complete skill, and **79 bundled videos**; projects receive only clips they use. The guide is deployed as a website instead of shipping in the archive. Building the package does not publish it or update your global installation.
 
 </details>
 

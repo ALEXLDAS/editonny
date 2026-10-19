@@ -37,8 +37,12 @@ __pycache__/
 playwright-report/
 test-results/
 uv.lock
-web/app.js
-web/catalog.json
+web/next-env.d.ts
+web/playwright-report/
+web/test-results/
+web/content/
+design-system/components/core/icon-data.ts
+design-system/reference/
 eslint-rules/
 skills/editonny/engine/project-template/assets/three/
 *.mp4

@@ -85,14 +85,15 @@ In that session the skill is `/editonny:editonny`; the standalone skill is `/edi
 
 ## Open the guide
 
-Open `web/index.html` directly with its complete `web/` folder. The distributed bundle includes examples and catalog data, so browsing needs neither a server nor Node.
+The guide is the editonny website (published from `web/` on Vercel). To run it from the complete checkout, install the npm workspace once with Node.js 22.13+ or 24+:
 
 ```sh
+npm ci
 python3 editonny.py guide
-python3 editonny.py guide --port 0 --no-open
+python3 editonny.py guide --port 4321 --no-open
 ```
 
-The server binds only to `127.0.0.1`. The default port is 4173; port 0 selects a free port. The standalone skill installation omits the guide; use the complete checkout or site archive.
+The development server binds only to `localhost` (loopback; Next.js 16.4 loops on its locale rewrites when bound to `127.0.0.1`); the default port is 4173. `npm run dev` starts it on port 3000. The standalone skill installation and the plugin archive omit the guide.
 
 ## Platform limits
 

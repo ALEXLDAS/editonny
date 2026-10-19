@@ -1,31 +1,38 @@
 # Guide interface
 
-Sources: `web/index.html`, `web/styles.css`, `web/app.mjs`, and `web/model.mjs`. Reviewed on 2026-10-18; CSS, markup, content, and interaction changes require verification of affected states.
+Sources: `web/src/app/`, `web/src/components/`, `web/src/features/`, `web/messages/`, `web/content/`, and the design-system components they use. Reviewed on 2026-10-19; CSS, markup, content, and interaction changes require verification of affected states.
 
 ## Visual language
 
-An editorial guide with light paper, dark ink, muted secondary text, and a lime accent. System typography, serif emphasis, and monospaced details support a calm studio feel. The studio illustration represents a workflow; it is neither a rendered video nor a player.
+The guide uses the design system's dark studio theme by default: ink surfaces, fog text, an orange accent, volt highlights, Figtree for text, and Anton for kinetic display type. A header toggle switches to the light paper theme and remembers the choice. The home page combines an aurora hero with a 9:16 phone mockup, crossed marquee tapes, live counters, a bento of editing demos, a how-it-works sequence, starting points, and an orange call to action. The phone, demos, and scene previews are illustrations of a workflow; they are neither rendered videos nor players.
 
-The product is English. The primary navigation covers Home, Create a prompt, Catalog, Examples and prompts, and Installation. The layout adapts to a 390 px viewport without horizontal overflow. Developer tooling stays outside user task flows.
+Every color, font family, size, spacing, and radius comes from [`DESIGN.md`](../DESIGN.md) tokens through `@editonny/design-system/styles.css`; page layouts use CSS Modules that the `design/tokens` lint rule checks, and TypeScript rejects raw hex, pixel, and font literals. Components come from the library; the page-level compositions were ported from the export's guide template, which the app replaced.
+
+The interface is available in English (`/en`), Brazilian Portuguese (`/pt-br`), and Spanish (`/es`), chosen from the browser on the first visit and changeable from the header. Primary navigation covers Home, Create a request, Catalog, Examples, and Install; below 1100 px the links move into a menu dialog. Layouts are verified at 1440 px and on a Pixel 7 viewport without horizontal overflow, including very long unbroken input.
 
 ## Interaction and accessibility
 
-- Hash navigation updates active links with `aria-current` and moves keyboard focus to main content after navigation.
-- Every field has a label; controls support keyboards, visible focus, a skip link, and readable empty-search feedback.
-- Scene and example dialogs have accessible names, Escape closing, and focus return. Applying a preset preserves the user's folder, agent, pace, and caption choices while replacing the example's goal, effects, and optional format.
-- Clipboard success is announced through a live status region. If clipboard access is unavailable, text is selected with manual copy guidance.
-- Reduced-motion preferences are respected. Contrast must be evaluated against the effective background, including small timeline text and layered decorative surfaces.
-- User content is assigned as text, never interpreted as HTML. The guide does not read or upload personal footage.
+- Each page has one `h1`, a skip link to `main`, landmarks, and visible focus. Active links use `aria-current`.
+- Fields have labels and descriptions; format and agent choices are radio groups with arrow-key movement; categories use native selects.
+- Scene and example dialogs use the native `<dialog>`: accessible names, Escape and backdrop closing, focus return, and a URL parameter so the view can be shared; Back closes a dialog opened in the page.
+- Copy success is announced in a polite live region; without clipboard access the request text is selected and an alert explains manual copying. On phones a sticky copy bar appears while the request card is out of view.
+- Reduced motion stops loops and shows revealed content immediately; without JavaScript, revealed sections stay visible.
+- The logo link and language button keep their visible text inside their accessible names (WCAG 2.5.3). Text on orange surfaces uses the 78% ink token for at least 4.5:1 contrast.
+- User content is rendered as text, never as HTML. The guide does not read or upload personal footage; the folder is a typed path stored only in the visitor's browser.
 
 ## Editing requests
 
-One builder supplies custom requests, scene requests, example previews, copying, and personalization. Every editing request includes standard removal of unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions, while preserving complete words, intentional pauses, natural pacing, and meaning.
+One builder supplies custom requests, scene requests, example previews, copying, and personalization, in the interface language. Every editing request includes standard removal of unnecessary pauses, audible breaths, mistakes, false starts, and redundant repetitions, while preserving complete words, intentional pauses, natural pacing, and meaning.
 
-The default is explained before copying. Scope remains explicit: a caption-only correction or a specified interval does not authorize recutting unrelated content. Originals, factuality, sample review, and permission for costs/media transmission remain part of the request.
+Scope remains explicit: a caption-only correction or a specified interval does not authorize recutting unrelated content. Originals, factuality, sample review, and permission for costs/media transmission remain part of the request. Turning visual scenes off removes a selected catalog scene from the brief.
 
 ## Verification
 
-Run the direct-file browser regression and inspect desktop/mobile navigation, empty search, dialogs, prompt content, keyboard focus, and copy fallback. Use web-design-guidelines and an accessibility scan for changed UI, then inspect inconclusive results manually. Automated scans and still screenshots do not establish complete accessibility or motion correctness. Current measured results and limitations belong in [validation](validation.md).
+`npm run test:browser` covers locale detection and switching, navigation, the request builder and its persistence, catalog and example dialogs, preferences under blocked or corrupted storage, and an axe WCAG 2.1 AA scan of every page in both themes on desktop and phone. Inspect screenshots of changed states as well; automated scans and still captures do not establish complete accessibility or motion correctness. Current measured results and limitations belong in [validation](validation.md).
+
+## Design system boundary
+
+New interface work comes from `@editonny/design-system`; its showcase runs at `/design-system` on the guide. The skill's edit preview keeps its own styles until a preview redesign is validated.
 
 ## README presentation
 
@@ -35,6 +42,6 @@ SVG decoration ends within 4.4 seconds. Mobile SVGs disable animation internally
 
 Gallery sources are `visuals/scenes/text-chromatic.html`, `building-panel.html`, and `solar-system.html` within the portable skill. Captions use synthetic words with the scene's height and size parameters adjusted for a square excerpt; the building uses its illustrative defaults; the solar system uses the bundled `library/spinning-3d-objects/38-sun.webm`. These are silent, cropped browser renders of real scene code, not recordings of a desktop editing application. Each GIF contains 36 frames at 480×480 and approximately 8 fps. Source footage and scene templates are unchanged. Font and resource notices remain in the engine's third-party notices and asset directories.
 
-The stars badge reads the actual public GitHub count; Star History supplies the theme-aware chart. These external images have text/link alternatives and depend on their providers. They do not represent a global popularity ranking. The plugin archive includes only the named README artwork directory in addition to its existing content; the site archive remains restricted to the public guide.
+The stars badge reads the actual public GitHub count; Star History supplies the theme-aware chart. These external images have text/link alternatives and depend on their providers. They do not represent a global popularity ranking. The plugin archive includes only the named README artwork directory in addition to its existing content.
 
 Artwork, Markdown, package-boundary, or media-query changes invalidate the corresponding README rendering evidence in `validation.md`. Edit SVG source and its matching static/mobile alternatives together; do not add scripts, external fonts, private footage, or secrets to the artwork.

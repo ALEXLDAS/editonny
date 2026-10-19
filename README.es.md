@@ -16,7 +16,7 @@
 
 Edición local de vídeo mediante conversación. Una skill reúne transcripción, cortes precisos, subtítulos, encuadre, audio y **145 escenas visuales** para **Codex** y **Claude Code**.
 
-El proyecto, los comandos, la interfaz, los archivos y los prompts utilizan inglés. Este README traduce la presentación principal. La voz de tus vídeos puede conservar su idioma original.
+El código, los comandos, los archivos y los contratos del proyecto utilizan inglés; la guía y las solicitudes que arma están en español, inglés o portugués. Este README traduce la presentación principal. La voz de tus vídeos puede conservar su idioma original.
 
 [Empezar a editar](#instalar) · [Ver las animaciones](#motion) · [Explorar la guía](#abrir-la-guía) · [Historial de estrellas](#community)
 
@@ -62,15 +62,16 @@ Consulta [instalación y recuperación en inglés](docs/installation.md) para de
 
 ## Abrir la guía
 
-Abre [web/index.html](web/index.html) en el navegador, conservando la carpeta `web/` completa. No necesitas instalar dependencias para explorarla.
+La guía es el sitio de editonny: arma pedidos de edición, muestra las 145 escenas de motion y los 54 pedidos de ejemplo y explica la instalación en español, inglés o portugués (según el idioma del navegador; tu elección y tu brief quedan guardados en ese navegador). Nunca recibe ni sube videos.
 
-Alternativamente, desde la raíz del repositorio:
+Para ejecutarla localmente desde este repositorio (Node.js 22.13+ o 24+):
 
 ```sh
+npm ci
 python3 editonny.py guide
 ```
 
-Abre `http://127.0.0.1:4173`; detén el servidor con `Ctrl+C`. Usa `--port 0 --no-open` para elegir un puerto disponible sin abrir el navegador.
+Inicia el servidor de desarrollo en `http://localhost:4173` y abre el navegador. Detenlo con `Ctrl+C`; usa `--port` para otro puerto y `--no-open` para no abrir el navegador. `npm run dev` hace lo mismo en el puerto 3000.
 
 <a id="motion"></a>
 
@@ -135,7 +136,9 @@ Mantén vídeos, proyectos y bibliotecas personales fuera de la skill. Sustituye
 | `skills/editonny/` | Skill única y CLI |
 | `skills/editonny/engine/` | Procesamiento local, preview y plantilla de proyecto |
 | `skills/editonny/visuals/` | Escenas, catálogo, medios incluidos y recetas |
-| `web/` | Guía independiente y biblioteca de prompts |
+| `web/` | Guía pública: app Next.js con armador de pedidos, catálogo, ejemplos e instalación en tres idiomas |
+| `DESIGN.md` | Contrato visual y fuente de verdad de los tokens de diseño |
+| `design-system/` | Biblioteca de componentes React, tokens, plantillas del preview, showcase y HTML de referencia |
 | `docs/` | Referencias técnicas canónicas en inglés |
 | `scripts/`, `tests/` | Paquetes, verificaciones de renderizado y pruebas |
 
@@ -159,9 +162,13 @@ npm run test:scenes
 python3 scripts/smoke_engine.py
 ```
 
-Las pruebas de navegador necesitan `agent-browser` y su navegador. El renderizado requiere FFmpeg y puede necesitar red en el primer uso. Inspecciona las muestras antes de eliminar temporales de `.work/`. [Resultados y limitaciones](docs/validation.md).
+`npm run test:browser` compila la guía y ejecuta Playwright (instala su Chromium una vez con `npx playwright install chromium`). La prueba de navegador del preview (`npm run test:preview`) necesita `agent-browser`. El renderizado requiere FFmpeg y puede necesitar red en el primer uso. Inspecciona las muestras antes de eliminar temporales de `.work/`. [Resultados y limitaciones](docs/validation.md).
 
-Edita los módulos `.mjs`; `npm run build` genera `web/app.js` y `web/catalog.json`. No edites el bundle manualmente. `npm run check:web` detecta artefactos desactualizados.
+El repositorio es un workspace npm: `web/` (`@editonny/web`) y `design-system/` (`@editonny/design-system`). `npm run build` compila la guía; `npm run check` ejecuta lint, verificación de tipos, pruebas unitarias y la verificación del registro de íconos (`npm run icons` lo regenera desde `design-system/assets/icons/`). Abre `/design-system` en la guía en ejecución para ver todos los componentes y estados en ambos temas; las nuevas interfaces siguen [DESIGN.md](DESIGN.md) y el [mapa de la biblioteca](design-system/README.md).
+
+### Publicar la guía
+
+Importa el repositorio en Vercel y define **Root Directory** como `web`; Vercel instala el workspace desde la raíz y mantiene el catálogo de la skill disponible para el build. Define `NEXT_PUBLIC_SITE_URL` con el origen público (por ejemplo, un dominio propio) para enlaces canónicos, `hreflang`, sitemap e imágenes sociales; sin ella, usa el dominio de producción de Vercel.
 
 ## Empaquetar
 
@@ -169,7 +176,7 @@ Edita los módulos `.mjs`; `npm run build` genera `web/app.js` y `web/catalog.js
 python3 scripts/package.py
 ```
 
-Genera ZIPs separados para sitio y plugin, con SHA-256, en `dist/`. El plugin contiene la guía, la documentación técnica, la skill completa y **79 vídeos incluidos**. Cada edición recibe solo los clips utilizados. El sitio contiene únicamente la guía pública. Crear paquetes no publica nada ni modifica la instalación global.
+Genera el ZIP del plugin, con SHA-256, en `dist/`. Contiene la documentación técnica, la skill completa y **79 vídeos incluidos**. Cada edición recibe solo los clips utilizados. La guía se publica como sitio, fuera del paquete. Crear el paquete no publica nada ni modifica la instalación global.
 
 </details>
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build separate local plugin and site archives without caches or private files."""
+"""Build the local plugin archive without caches, private files, or the web app (deployed separately)."""
 from __future__ import annotations
 
 import argparse
@@ -10,8 +10,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {'.git', '.venv', 'node_modules', '__pycache__', '.DS_Store', '.work',
-            '.editonny-install.json', 'archive', 'build-data.mjs'}
-VIDEO_EXTENSIONS = {'.mp4', '.webm', '.mov', '.mkv', '.avi', '.m4v'}
+            '.editonny-install.json', 'archive'}
 
 
 def allowed(path):
@@ -33,25 +32,21 @@ def build(root, output, kind):
     version = (root / 'skills/editonny/VERSION').read_text().strip()
     if not re.fullmatch(r'\d+\.\d+\.\d+', version):
         raise ValueError('VERSION must use major.minor.patch format')
-    if kind == 'site':
-        base = root / 'web'
-        reject_symlinks(base, root)
-        paths = list(base.rglob('*'))
-    elif kind == 'plugin':
+    if kind == 'plugin':
         base = root
         paths = [root / p for p in ('install.py', 'editonny.py', 'README.md', 'README.pt-BR.md', 'README.es.md', 'LICENSE.md')]
-        paths += [root / 'PRODUCT.md'] if (root / 'PRODUCT.md').exists() else []
-        for folder in ('skills', '.codex-plugin', '.claude-plugin', '.agents/plugins', 'web', 'docs/assets/readme'):
+        paths += [root / name for name in ('PRODUCT.md', 'DESIGN.md') if (root / name).exists()]
+        for folder in ('skills', '.codex-plugin', '.claude-plugin', '.agents/plugins', 'docs/assets/readme'):
             reject_symlinks(root / folder, root)
             paths.extend((root / folder).rglob('*'))
         paths += [root / 'docs' / p for p in ('architecture.md', 'design.md', 'installation.md', 'integrations.md', 'setup.md', 'validation.md')
                   if (root / 'docs' / p).exists()]
     else:
-        raise ValueError('Package kind must be site or plugin')
+        raise ValueError('Package kind must be plugin')
     files = []
     for p in sorted(paths):
         relative = p.relative_to(base)
-        if not allowed(relative) or (kind == 'site' or relative.parts[0] == 'web') and p.suffix.lower() in VIDEO_EXTENSIONS:
+        if not allowed(relative):
             continue
         reject_symlinks(p, root)
         if p.is_file():
@@ -77,11 +72,10 @@ def build(root, output, kind):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--kind', choices=['site', 'plugin', 'all'], default='all')
+    parser.add_argument('--kind', choices=['plugin'], default='plugin')
     parser.add_argument('--output', type=Path, default=ROOT / 'dist')
     args = parser.parse_args()
-    for kind in ('site', 'plugin') if args.kind == 'all' else (args.kind,):
-        build(ROOT, args.output, kind)
+    build(ROOT, args.output, args.kind)
 
 
 if __name__ == '__main__':
