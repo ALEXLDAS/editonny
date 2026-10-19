@@ -116,7 +116,8 @@ class InstallationTests(unittest.TestCase):
     def test_failed_sync_restores_old_install(self):
         dest = self.install()
         (self.source / 'VERSION').write_text('2.0.0\n')
-        with patch.object(installer, 'sync_engine', side_effect=RuntimeError('sync failed')):
+        with patch.object(installer.shutil, 'which', return_value='/test/uv'), \
+                patch.object(installer, 'sync_engine', side_effect=RuntimeError('sync failed')):
             with self.assertRaisesRegex(RuntimeError, 'sync failed'):
                 installer.install(self.source, self.home, sync=True)
         self.assertEqual((dest / 'VERSION').read_text(), '1.0.0\n')

@@ -38,6 +38,12 @@ This publication review does not claim the five functional review cycles previou
 
 Reusable security review is based on the prompt in [Vibe Coding Toolkit revision de66fe3](https://github.com/soumatheusgomes/vibe-coding-toolkit/blob/de66fe371a49f5a4d3b521759e5c401f390b6424/docs/prompts/13-security-review.md). Review actual callers and trust boundaries without secrets, production probing, code upload, or automatic external actions. A native independent reviewer is the fallback when a compatible specialized reviewer is unavailable. This document remains the canonical quality source.
 
+## Remote CI portability
+
+The first GitHub Actions run of the sanitized snapshot failed on Ubuntu because the rollback unit test mocked dependency synchronization but still relied on a real `uv` executable for preflight. Reproducing that test locally with `shutil.which` returning `None` produced the same failure. The test now supplies its external-tool prerequisite explicitly while continuing to exercise the real installation, failed synchronization, version restoration, and agent registration checks. Production installer validation is unchanged. The focused reproduction passes with `uv` unavailable, and the canonical local suite is rerun before pushing the fix.
+
+GitHub Actions checks Node.js 22.13.0 and 24 using Python 3.11. Two FFmpeg-dependent voice tests are skipped when those system tools are absent; that limitation is distinct from the local engine/browser/render evidence above. Confirm the latest run on the repository's Actions page rather than interpreting an earlier failed run as the current result.
+
 ## Reproduce and invalidate
 
 ```sh
