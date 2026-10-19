@@ -204,7 +204,9 @@ def main(argv=None):
                 settings = read_json(args.settings)
                 settings = settings.get('proposal', settings)
                 settings = settings.get('config', settings)
-                project = create_workspace(args.directory or Path.home() / 'Downloads/editonny', settings.get('title', 'My video'),
+                if settings['workflow']['delivery']['executionContext'] != args.execution_context:
+                    raise ValueError('Execution context differs from the confirmed settings summary')
+                project = create_workspace(args.directory or Path(settings['workflow']['delivery']['workspaceRoot']), settings.get('title', 'My video'),
                                            read_json(args.inspection), settings, read_json(args.confirmation))
                 result = {'project': str(project), 'confirmation': 'confirmed'}
             else:

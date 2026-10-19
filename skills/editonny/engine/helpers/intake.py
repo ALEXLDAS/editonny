@@ -100,7 +100,8 @@ def propose_settings(inspection: dict, requested: dict) -> dict:
                           'processingPeak': -1.5, 'truePeakLimit': -1.0, 'denoise': 'off', 'music': False, 'effects': False, 'tracks': 'source'},
                 'visuals': {'scenes': 'off', 'allowedSceneIds': [], 'cameraMotion': False, 'transitions': 'off', 'backgroundTreatment': 'none'},
                 'review': {'sample': 'agent'},
-                'delivery': {'directory': '../exports', 'basename': basename, 'subtitleFormats': [], 'variants': []}}
+                'delivery': {'directory': '../exports', 'workspaceRoot': str(Path.home() / 'Downloads/editonny'),
+                             'executionContext': 'local', 'basename': basename, 'subtitleFormats': [], 'variants': []}}
     for section in ('language', 'editing', 'encoding', 'audio', 'visuals', 'review', 'delivery'):
         workflow[section].update(copy.deepcopy(requested.get(section, {})))
     config = validate_contract({'title': title, 'edit': '../edit', 'format': layout_for(video['width'], video['height']),
@@ -117,7 +118,8 @@ def propose_settings(inspection: dict, requested: dict) -> dict:
         'cleanup': workflow['editing'],
         'audio': workflow['audio'],
         'graphics': workflow['visuals'],
-        'reviewAndDelivery': {'review': workflow['review'], 'delivery': workflow['delivery'], 'location': 'Downloads/editonny; confirm actual local access'},
+        'reviewAndDelivery': {'review': workflow['review'], 'delivery': workflow['delivery'],
+                              'location': config['workflow']['delivery']['workspaceRoot']},
     }
     return {'config': config, 'summary': summary, 'settingsHash': settings_hash(config),
             'sourceIdentityHash': source_identity_hash(inspection), 'confirmationRequired': True,

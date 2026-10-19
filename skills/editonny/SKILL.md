@@ -28,7 +28,7 @@ Present one readable summary, using the actual request and observed facts, cover
 
 Mark requested, observed, proposed and unknown choices. Defaults are **proposals**, not permission: source appearance/geometry/FPS, standard editorial cleanup, faithful captions on (up to three words), voice normalization at -14 LUFS, processing headroom -1.5 dBTP, encoded ceiling -1 dBTP, denoise/music/effects/scenes/camera motion off, agent sample review. Respect narrower scopes: captions-only does not normalize audio or recut speech. Explain unsupported combinations before acceptance; offer concrete choices without silently changing them.
 
-End with “Approve these settings, or tell me what to change.” Wait. After changes, show the revised summary and wait for its acceptance.
+End with the equivalent of “Approve these settings, or tell me what to change” in the user's language. Wait. After changes, show the revised summary and wait for its acceptance.
 
 ## Resolve the package
 
@@ -56,8 +56,8 @@ This is the default for every full edit even when the user did not enumerate cle
 
 1. Resolve the physical package and run `doctor`; its fingerprint distinguishes this checkout from an older personal installation. Never update personal installations automatically.
 2. Read [the engine workflow](engine/WORKFLOW.md), inspect only selected footage, prepare the complete summary above, and wait for explicit confirmation.
-3. After acceptance, use `workspace init` with the real summary/reply record. Default local root: `~/Downloads/editonny/YYYY-MM-DD-title/revisions/v001/{edit,project,exports}`. Only finals, requested subtitles and delivery manifests enter `exports/`; working files stay in the revision. Never scatter intermediates in Downloads, deliver a cache path or overwrite a previous final.
-4. Verify the execution host. A remote host's Downloads is not the person's Mac. Explain actual access and obtain a concrete destination/transfer choice; no upload or cache-download fallback by assumption. A denied/full Downloads folder is an actionable error, not permission to choose another folder.
+3. Before creating anything permanent, verify the execution host and include its actual destination in the summary. A remote host's Downloads is not the person's Mac. Explain access and obtain a concrete destination/transfer choice; no upload or cache-download fallback by assumption. A denied/full Downloads folder is an actionable error, not permission to choose another folder.
+4. After acceptance, use `workspace init` with the real summary/reply record and execution context. Default local root: `~/Downloads/editonny/YYYY-MM-DD-title/revisions/v001/{edit,project,exports}`. Only finals, requested subtitles and delivery manifests enter `exports/`; working files stay in the revision. Never scatter intermediates in Downloads, deliver a cache path or overwrite a previous final.
 5. Resume with `workspace status --project <PROJECT> --json`. Read canonical `project/project.json`, observed `edit/source_manifest.json` and evidence `edit/state.json`. New decisions use `workspace revise` and a delta summary/confirmation; accepted decisions remain valid for in-scope work. Revisions own independent files. Do not manually forge state or mutate a parent revision.
 
 ## Edit and compose
@@ -66,7 +66,7 @@ Read the engine workflow and only the references needed for the current step. Lo
 
 - Time every cut and visual entrance against measured speech, not estimates from a script.
 - Verify names, numbers, negations, and corrections before building scenes. A sample template is not evidence of a result, price, testimonial, or offer.
-- Prepare a representative **8–15 second** sample containing speech, captions, and a visual change. Review it yourself when autonomous execution was authorized; wait when the user requested sample approval.
+- Prepare a representative **8–15 second** sample containing the actual approved treatments (or the complete shorter clip). Do not add captions, movement, sound or a visual change merely to make a sample. Review it yourself when agent review was accepted; wait when user sample approval was selected.
 - Keep faces and important content unobstructed. Captions need contrast, readable size, safe placement, and enough reading time.
 - Keep previous exports and record the format, duration, decisions, and output paths.
 

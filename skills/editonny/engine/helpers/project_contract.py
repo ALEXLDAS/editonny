@@ -99,6 +99,8 @@ def validate_contract(config: dict) -> dict:
     for key in ('conversation', 'transcription', 'captions'):
         if not isinstance(language.get(key), str) or not language[key].strip():
             raise ValueError(f'language.{key} is required')
+    if language.get('translation') not in (None, False):
+        raise ValueError('Automatic caption translation is not implemented; preserve source language or provide a separately verified supported translation workflow')
     audio = workflow['audio']
     _choice(audio, 'mode', ('preserve', 'normalize'))
     _choice(audio, 'denoise', ('off', 'light', 'strong'))
@@ -128,6 +130,11 @@ def validate_contract(config: dict) -> dict:
     if not isinstance(captions.get('maxWords'), int) or isinstance(captions['maxWords'], bool) or not 1 <= captions['maxWords'] <= 10:
         raise ValueError('Caption maxWords must be between 1 and 10')
     delivery = workflow['delivery']
+    root = delivery.get('workspaceRoot')
+    if not isinstance(root, str) or not root.strip() or not Path(root).expanduser().is_absolute():
+        raise ValueError('delivery.workspaceRoot must identify the confirmed absolute workspace destination')
+    delivery['workspaceRoot'] = str(Path(root).expanduser().resolve())
+    _choice(delivery, 'executionContext', ('local', 'remote'))
     if delivery.get('directory') != '../exports':
         raise ValueError('Managed delivery directory must be ../exports inside this revision')
     basename = delivery.get('basename')
@@ -161,6 +168,16 @@ def validate_contract(config: dict) -> dict:
 
 def load_contract(project: Path) -> dict:
     return validate_contract(read_json(Path(project) / 'project.json'))
+
+
+def validate_caption_language(config: dict, transcript: dict) -> None:
+    language = config['workflow']['language']
+    target = language['captions']
+    if target == 'source':
+        return
+    speech = transcript.get('language') or language['transcription']
+    if speech == 'auto' or not speech or speech.split('-')[0].lower() != target.split('-')[0].lower():
+        raise ValueError('Caption target differs from measured speech; original words cannot be labeled as translated captions')
 
 
 def settings_hash(contract: dict) -> str:
@@ -261,7 +278,7 @@ def managed_config(edit: Path, operation: str | None = None) -> dict | None:
     return config
 
 
-def validate_edl_scope(config: dict, manifest: dict, edl: dict) -> None:
+def validate_edl_scope(config: dict, manifest: dict, edl: dict, parent_edl: dict | None = None) -> None:
     sources = {s['id']: str(Path(s['path']).resolve()) for s in manifest['sources']}
     paths = {key: str(Path(path).resolve()) for key, path in edl['sources'].items()}
     if any(path not in sources.values() for path in paths.values()):
@@ -269,11 +286,30 @@ def validate_edl_scope(config: dict, manifest: dict, edl: dict) -> None:
     editing = config['workflow']['editing']
     if editing['scope'] not in ('full', 'intervals'):
         raise ValueError('This editing scope does not authorize recutting')
-    for interval in edl['ranges']:
-        path = paths[interval['source']]
-        if editing['scope'] == 'intervals' and not any(path == sources[i['sourceId']] and
-                i['start'] <= interval['start'] < interval['end'] <= i['end'] for i in editing['intervals']):
-            raise ValueError('EDL interval expands the confirmed revision scope')
+    if editing['scope'] == 'intervals':
+        if parent_edl is None:
+            raise ValueError('Interval scope needs its parent EDL to preserve all unrelated content')
+        def outside_ranges(document):
+            result = []
+            source_paths = {k: str(Path(p).resolve()) for k, p in document['sources'].items()}
+            for interval in document['ranges']:
+                path = source_paths[interval['source']]
+                spans = [(interval['start'], interval['end'])]
+                for window in editing['intervals']:
+                    if path != sources[window['sourceId']]:
+                        continue
+                    spans = [(x, y) for a, b in spans for x, y in ((a, min(b, window['start'])), (max(a, window['end']), b)) if y > x]
+                treatment = digest({'crop': interval.get('crop') or None, 'gain_db': interval.get('gain_db') or 0,
+                                    'picture_source': source_paths.get(interval.get('picture_source'))})
+                for a, b in spans:
+                    item = (path, round(a, 6), round(b, 6), treatment)
+                    if result and result[-1][0] == path and result[-1][2] == item[1] and result[-1][3] == treatment:
+                        result[-1] = (path, result[-1][1], item[2], treatment)
+                    else:
+                        result.append(item)
+            return result
+        if outside_ranges(edl) != outside_ranges(parent_edl):
+            raise ValueError('EDL changes content outside the confirmed interval scope; preserve its parent spans and order')
     for protected in editing.get('protectedIntervals', []):
         spans = sorted((r['start'], r['end']) for r in edl['ranges'] if paths[r['source']] == sources[protected['sourceId']])
         cursor = protected['start']

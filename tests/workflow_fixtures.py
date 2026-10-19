@@ -1,8 +1,9 @@
 """Small explicit contracts for filesystem and decision-boundary tests."""
 import copy
+from pathlib import Path
 
 
-def config():
+def config(root=Path('/approved/workspace')):
     return {'title': 'Interview', 'style': 'paper', 'format': '9:16', 'edit': '../edit',
             'captions': {'enabled': True, 'style': 'standard', 'maxWords': 3, 'inFrame': False},
             'blocks': [{'scene': 'fullscreen', 'start': 0, 'zoom': 1.0}],
@@ -17,7 +18,8 @@ def config():
                 'visuals': {'scenes': 'off', 'allowedSceneIds': [], 'cameraMotion': False,
                             'transitions': 'off', 'backgroundTreatment': 'none'},
                 'review': {'sample': 'agent'},
-                'delivery': {'directory': '../exports', 'basename': 'interview', 'subtitleFormats': [], 'variants': []}}}
+                'delivery': {'directory': '../exports', 'workspaceRoot': str(root), 'executionContext': 'local',
+                             'basename': 'interview', 'subtitleFormats': [], 'variants': []}}}
 
 
 def confirmation(contract, manifest):

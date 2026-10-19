@@ -28,14 +28,14 @@ class WorkspaceTests(unittest.TestCase):
             parent = Path(temp) / 'downloads'
             inspection = self.prepare(Path(temp))
             with self.assertRaises(ValueError):
-                self.w.create_workspace(parent, 'Interview', inspection, config(), {})
+                self.w.create_workspace(parent, 'Interview', inspection, config(parent), {})
             self.assertFalse(parent.exists())
 
     def test_collision_and_revision_preserve_parent_data(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             inspection = self.prepare(root)
-            c = config()
+            c = config(root / 'downloads')
             approval = confirmation(c, inspection)
             project = self.w.create_workspace(root / 'downloads', 'Interview', inspection, c, approval)
             self.assertEqual(project.parts[-3:], ('revisions', 'v001', 'project'))
@@ -57,7 +57,7 @@ class WorkspaceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             inspection = self.prepare(root)
-            project = self.w.create_workspace(root / 'downloads', 'Interview', inspection, config(), confirmation(config(), inspection))
+            project = self.w.create_workspace(root / 'downloads', 'Interview', inspection, config(root / 'downloads'), confirmation(config(root / 'downloads'), inspection))
             candidate = project.parent / 'edit/final.mp4'
             candidate.write_bytes(b'candidate')
             with self.assertRaises(ValueError):
@@ -68,7 +68,7 @@ class WorkspaceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             inspection = self.prepare(root)
-            old = config()
+            old = config(root / 'downloads')
             project = self.w.create_workspace(root / 'downloads', 'Interview', inspection, old, confirmation(old, inspection))
             revised = self.w.revise_workspace(project, {'captions': {'enabled': False}}, 'captions')
             with self.assertRaises(ValueError):
@@ -77,7 +77,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_unchanged_decisions_and_preapproved_variant_inherit_acceptance(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); inspection = self.prepare(root)
-            c = config()
+            c = config(root / 'downloads')
             c['workflow']['delivery']['variants'] = [{'name': 'archive', 'encoding': {'videoCodec': 'hevc'}}]
             project = self.w.create_workspace(root / 'downloads', 'Variants', inspection, c, confirmation(c, inspection))
             unchanged = self.w.revise_workspace(project, {}, 'full')
@@ -93,13 +93,30 @@ class WorkspaceTests(unittest.TestCase):
     def test_recovery_does_not_remove_a_live_lock(self):
         import os
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp); inspection = self.prepare(root); c = config()
+            root = Path(temp); inspection = self.prepare(root); c = config(root / 'downloads')
             project = self.w.create_workspace(root / 'downloads', 'Lock', inspection, c, confirmation(c, inspection))
             lock = project.parent / 'edit/.workflow.lock'
             lock.write_text(json.dumps({'pid': os.getpid(), 'token': 'owned'}))
             with self.assertRaises(ValueError):
                 self.w.recover_revision(project)
             self.assertTrue(lock.exists())
+
+    def test_destination_cannot_change_after_summary_acceptance(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); inspection = self.prepare(root); c = config(root / 'downloads')
+            c['workflow']['delivery'].update(workspaceRoot=str(root / 'approved'), executionContext='local')
+            with self.assertRaisesRegex(ValueError, 'destination|root'):
+                self.w.create_workspace(root / 'different', 'Wrong root', inspection, c, confirmation(c, inspection))
+            self.assertFalse((root / 'different').exists())
+
+    def test_composition_asset_or_instructions_change_invalidates_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); inspection = self.prepare(root); c = config(root / 'downloads')
+            project = self.w.create_workspace(root / 'downloads', 'Assets', inspection, c, confirmation(c, inspection))
+            before = self.w.render_dependencies(project)
+            (project / 'assets/logo.txt').write_text('changed scene asset')
+            (project.parent / 'edit/edit_data.json').write_text('{"hook": {"text": "new hook"}}')
+            self.assertNotEqual(before, self.w.render_dependencies(project))
 
 
 if __name__ == '__main__':

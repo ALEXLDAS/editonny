@@ -12,12 +12,16 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import uuid
 
 from common import content_hash, ensure_edit_dirs, now_iso, save_json
 from project_contract import (artifact_dependencies, digest, load_contract, read_json,
                               require_confirmation, settings_hash, source_identity_hash,
                               validate_confirmation, validate_contract)
+
+_owned_locks = {}
+_lock_guard = threading.Lock()
 
 
 def edit_directory(project: Path, config: dict | None = None) -> Path:
@@ -43,22 +47,58 @@ def verify_sources(manifest: dict) -> None:
 def revision_lock(project: Path):
     edit = edit_directory(project)
     lock = edit / '.workflow.lock'
-    token = {'pid': os.getpid(), 'token': uuid.uuid4().hex}
-    try:
-        with lock.open('x', encoding='utf-8') as stream:
-            json.dump(token, stream)
-    except FileExistsError as error:
-        raise ValueError('Another workflow operation owns this revision; inspect status before retrying') from error
+    owner = (os.getpid(), threading.get_ident(), lock)
+    with _lock_guard:
+        nested = owner in _owned_locks
+        token = _owned_locks.get(owner) or {'pid': os.getpid(), 'token': uuid.uuid4().hex}
+        if not nested:
+            try:
+                with lock.open('x', encoding='utf-8') as stream:
+                    json.dump(token, stream)
+            except FileExistsError as error:
+                raise ValueError('Another workflow operation owns this revision; inspect status before retrying') from error
+            _owned_locks[owner] = token
+        elif read_json(lock) != token:
+            raise ValueError('Revision ownership changed during this operation')
     try:
         yield
     finally:
-        if lock.exists() and read_json(lock) == token:
-            lock.unlink()
+        if not nested:
+            with _lock_guard:
+                if lock.exists() and read_json(lock) == token:
+                    lock.unlink()
+                _owned_locks.pop(owner, None)
 
 
 def _manifest(project: Path, config: dict | None = None) -> dict:
     config = config or load_contract(project)
     return selected_sources(read_json(edit_directory(project, config) / 'source_manifest.json'), config)
+
+
+@contextmanager
+def managed_operation(edit: Path):
+    edit = Path(edit).resolve()
+    project = edit.parent / 'project'
+    raw = read_json(project / 'project.json') if (project / 'project.json').is_file() else {}
+    if raw.get('workflow') or (edit / 'source_manifest.json').is_file():
+        with revision_lock(project):
+            yield
+    else:
+        yield
+
+
+def baseline_edl(edit: Path, manifest: dict) -> dict:
+    path = Path(edit) / 'edl.json'
+    if path.is_file():
+        return read_json(path)
+    timeline = Path(edit) / 'cut_timeline.json'
+    if timeline.is_file():
+        segments = read_json(timeline).get('segments', [])
+        return {'sources': {str(i): s['source_path'] for i, s in enumerate(segments)}, 'ranges': [
+            {'source': str(i), 'start': s.get('edl_start', s['src_start']), 'end': s.get('edl_end', s['src_end']),
+             'crop': s.get('crop'), 'gain_db': s.get('gain_db', 0)} for i, s in enumerate(segments)]}
+    return {'sources': {s['id']: s['path'] for s in manifest['sources']}, 'ranges': [
+        {'source': s['id'], 'start': 0, 'end': s['facts']['duration']} for s in manifest['sources']]}
 
 
 def record_confirmation(project: Path, confirmation: dict) -> dict:
@@ -87,6 +127,8 @@ def create_workspace(parent: Path, title: str, inspection: dict, config: dict, c
     validate_confirmation(config, source_identity_hash(manifest), confirmation)
     verify_sources(manifest)
     parent = Path(parent).expanduser().resolve()
+    if str(parent) != config['workflow']['delivery']['workspaceRoot']:
+        raise ValueError('Workspace destination differs from the root accepted in the settings summary')
     # The caller must resolve local-vs-remote ownership before supplying this parent.
     probe = parent
     while not probe.exists():
@@ -151,6 +193,8 @@ def revise_workspace(project: Path, changes: dict, scope: str, variant: str | No
         config = _merge(original, changes)
         config['workflow']['editing']['scope'] = scope
     config = validate_contract(config)
+    if config['workflow']['delivery']['workspaceRoot'] != original['workflow']['delivery']['workspaceRoot']:
+        raise ValueError('Moving the workspace root requires a new confirmed initialization at that destination')
     revision = project.parent
     if revision.parent.name != 'revisions' or not re.fullmatch(r'v\d{3,}', revision.name):
         raise ValueError('Only a managed revision can be revised without shared mutable data')
@@ -173,6 +217,12 @@ def revise_workspace(project: Path, changes: dict, scope: str, variant: str | No
             save_json(destination / 'project/project.json', config)
             save_json(destination / 'edit/state.json', {'revision': destination.name, 'parentRevision': revision.name,
                       'parentSettingsHash': settings_hash(original), 'phase': 'awaiting_confirmation', 'project': '../project', 'artifacts': {}})
+            if scope == 'intervals':
+                parent_edl = baseline_edl(revision / 'edit', manifest)
+                state_path = destination / 'edit/state.json'
+                state = read_json(state_path)
+                state.update(parentEdl=parent_edl, parentEdlHash=digest(parent_edl))
+                save_json(state_path, state)
             if variant:
                 state_path = destination / 'edit/state.json'
                 state = read_json(state_path)
@@ -223,7 +273,7 @@ def render_dependencies(project: Path) -> dict:
     config = load_contract(project)
     edit = edit_directory(project, config)
     dependencies = {'configurationHash': digest(config)}
-    for name in ('cut.mp4', 'cut_timeline.json', 'edl.json', 'captions.json', 'transcripts/cut.json'):
+    for name in ('cut.mp4', 'cut_timeline.json', 'edl.json', 'edit_data.json', 'source_manifest.json', 'captions.json', 'transcripts/cut.json'):
         path = edit / name
         dependencies[name] = content_hash(path) if path.is_file() else None
     engine = Path(config.get('skill', Path(__file__).resolve().parents[1]))
@@ -233,6 +283,29 @@ def render_dependencies(project: Path) -> dict:
     from media_policy import probe_capabilities
     dependencies['ffmpeg'] = probe_capabilities().get('version')
     dependencies['renderer'] = content_hash(Path(project) / 'package.json')
+    paths = [Path(project) / 'build.py', Path(project) / 'hyperframes.json']
+    for directory in ('assets', 'compositions', 'tools'):
+        paths += [p for p in (Path(project) / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts]
+    # External media explicitly named in the composition is an input too, not merely its path string.
+    def referenced_files(value):
+        if isinstance(value, dict):
+            for v in value.values():
+                referenced_files(v)
+        elif isinstance(value, list):
+            for v in value:
+                referenced_files(v)
+        elif isinstance(value, str) and '\x00' not in value and len(value) < 4096:
+            for root in (Path(project), edit):
+                path = root / value
+                try:
+                    if path.is_file():
+                        paths.append(path.resolve())
+                except OSError:
+                    pass
+    referenced_files(config)
+    if (edit / 'edit_data.json').is_file():
+        referenced_files(read_json(edit / 'edit_data.json'))
+    dependencies['projectInputs'] = digest({str(p.resolve()): content_hash(p) for p in sorted(set(paths)) if p.is_file()})
     return dependencies
 
 

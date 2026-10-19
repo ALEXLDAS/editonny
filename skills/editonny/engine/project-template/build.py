@@ -300,6 +300,9 @@ class Project:
         if not fl:
             warn('Missing face_layout.json: framing uses the frame center. Run helpers/face_layout.py.')
         tr = self._json(os.path.join('transcripts', 'cut.json'))
+        if managed and c.get('captions', {}).get('enabled'):
+            from project_contract import validate_caption_language
+            validate_caption_language(managed, tr)
         raw = [dict(text=w['text'].strip(), start=float(w['start']), end=float(w['end'])) for w in tr['words'] if w['text'].strip()]
         self.time_speech = self._waveform_times(raw)
         raw = correct(raw, c.get('corrections', {}))
@@ -3950,6 +3953,24 @@ def update(destination):
     print(f"  next: cd '{dst}' && python3 build.py compose (or sample), hf lint and hf check")
 
 def main(argv):
+    cfg = read_optional_json(os.path.join(HERE, 'project.json')) or {}
+    if cfg.get('workflow') or os.path.isfile(os.path.join(HERE, cfg.get('edit', '../edit'), 'source_manifest.json')):
+        engine = project_engine(cfg)
+        if not engine:
+            print('Error: Managed project engine is unavailable', file=sys.stderr)
+            return 2
+        sys.path.insert(0, os.path.join(engine, 'helpers'))
+        from workspace import managed_operation
+        try:
+            with managed_operation(Path(HERE) / cfg.get('edit', '../edit')):
+                return _main(argv)
+        except (ValueError, OSError) as error:
+            print(f'Error: {error}', file=sys.stderr)
+            return 2
+    return _main(argv)
+
+
+def _main(argv):
     cmds = ('words', 'cut', 'sample', 'compose', 'studio', 'prepare', 'hf', 'new', 'update')
     if not argv or argv[0] not in cmds:
         print(__doc__)

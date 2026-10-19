@@ -159,6 +159,25 @@ def verify_media(candidate: Path, project: Path, reference: dict | None = None) 
     check('sampleReview', bool(review.get('findings') == [] and review.get('dependencies') == dependencies and
           review_path.is_file() and content_hash(review_path) == review.get('sha256')), 'A reviewed sample must match the current composition and bytes')
     facts = probe_video(candidate)
+    audio_policy = config['workflow']['audio']
+    expected_audio = any(s['facts'].get('has_audio') for s in manifest['sources']) or audio_policy['music'] or audio_policy['effects']
+    check('audioPresence', bool(facts.get('has_audio')) == expected_audio,
+          {'expected': expected_audio, 'actual': facts.get('has_audio')})
+    if expected_audio and facts.get('has_audio') and audio_policy['mode'] == 'preserve' and not audio_policy['music'] and not audio_policy['effects'] and audio_policy['denoise'] == 'off':
+        base = edit / 'cut.mp4'
+        base = base if base.is_file() else Path(manifest['sources'][0]['path'])
+        base_facts = probe_video(base)
+        def audio_hash(path):
+            process = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(path), '-map', '0:a', '-c:a', 'copy',
+                                      '-f', 'hash', '-hash', 'sha256', '-'], capture_output=True, text=True, timeout=600)
+            if process.returncode:
+                raise ValueError('Could not verify preserved audio stream bytes: ' + process.stderr[-300:])
+            return process.stdout.strip()
+        check('preservedAudio', audio_hash(base) == audio_hash(candidate) and
+              facts['audio_tracks'] == base_facts['audio_tracks'] and facts['audio_channels'] == base_facts['audio_channels'] and
+              facts['sample_rate'] == base_facts['sample_rate'] and
+              abs(facts['audio_start_time'] - base_facts['audio_start_time']) <= 1 / max(1, base_facts['sample_rate']),
+              'Unchanged audio stream payloads, tracks, rate, channels and start time must match the approved cut')
     video = config['workflow']['video']
     check('geometry', (facts.get('display_width'), facts.get('display_height')) == (video['width'], video['height']),
           {'actual': [facts.get('display_width'), facts.get('display_height')], 'expected': [video['width'], video['height']]})
@@ -228,6 +247,8 @@ def verify_media(candidate: Path, project: Path, reference: dict | None = None) 
         checks.append({'name': 'appearance', 'status': 'blocked', 'required': True, 'detail': str(error)})
     if config.get('captions', {}).get('enabled'):
         try:
+            from project_contract import validate_caption_language
+            validate_caption_language(config, read_json(edit / 'transcripts/cut.json'))
             from quality_gate import text_outside
             text = text_outside(candidate, video['width'], video['height'], 3)
             if text['reader'] is None:

@@ -136,6 +136,8 @@ def probe_video(path: Path | str) -> dict:
         "audio_tracks": len(audios),
         "audio_channels": int(audios[0].get("channels", 0)) if audios else 0,
         "sample_rate": int(audios[0].get("sample_rate", 0) or 0) if audios else 0,
+        'audio_start_time': float(audios[0].get('start_time') or 0) if audios else None,
+        'audio_duration': float(audios[0].get('duration') or duration) if audios else 0,
     }
     if v is not None:
         width, height = int(v.get("width", 0)), int(v.get("height", 0))

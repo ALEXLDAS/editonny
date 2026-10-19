@@ -26,6 +26,9 @@ def export_subtitles(project: Path, format_name: str, output: Path) -> Path:
     managed = managed_config(edit)
     if managed and format_name not in managed['workflow']['delivery']['subtitleFormats']:
         raise ValueError('This subtitle deliverable was not confirmed')
+    if managed and managed['workflow']['language']['captions'] != 'source':
+        from project_contract import validate_caption_language
+        validate_caption_language(managed, read_json(edit / 'transcripts/cut.json'))
     words = read_json(edit / 'transcripts/cut.json').get('words', [])
     if not words:
         raise ValueError('Measured cut words are required; subtitles cannot be invented')

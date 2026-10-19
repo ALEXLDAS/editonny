@@ -18,7 +18,7 @@ class NativeContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); source = root / 'source.mp4'; make_patches(source)
             inspection = inspect_sources([source], False)
-            config = propose_settings(inspection, {'captions': False})['config']
+            config = propose_settings(inspection, {'captions': False, 'delivery': {'workspaceRoot': str(root / 'downloads')}})['config']
             project = create_workspace(root / 'downloads', 'Native', inspection, config, confirmation(config, inspection))
             edit = project.parent / 'edit'
             (edit / 'cut.mp4').write_bytes(source.read_bytes())

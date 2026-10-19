@@ -908,7 +908,7 @@ class Handler(BaseHTTPRequestHandler):
             except BadRequest as exc:
                 return self._error(400, str(exc))
             if validate is validate_approval and record.get("file"):
-                state = self.session.read_json_file('state.json', []) or {}
+                state = self.session.read_json_file('state.json', {}) or {}
                 expected_file = state.get('cut_video', 'cut.mp4') if record['phase'] == 'cut' else state.get('final_video')
                 if expected_file and record['file'] != expected_file:
                     return self._error(409, 'Displayed media was superseded; wait for the current candidate before approving')

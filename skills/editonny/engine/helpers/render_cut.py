@@ -963,6 +963,12 @@ def acquire_lock(clips_dir: Path):
 
 
 def render(args: argparse.Namespace) -> int:
+    from workspace import managed_operation
+    with managed_operation(Path(args.edl).expanduser().resolve().parent):
+        return _render(args)
+
+
+def _render(args: argparse.Namespace) -> int:
     t_all = time.time()
     require_binary("ffmpeg")
     require_binary("ffprobe")
@@ -976,8 +982,18 @@ def render(args: argparse.Namespace) -> int:
     if contract and edl.get('contractHash') != settings_hash(contract):
         raise CutError('EDL does not match the confirmed project contract; regenerate its settings snapshot', 2)
     if contract:
-        from project_contract import validate_edl_scope
-        validate_edl_scope(contract, load_json(edit_dir / 'source_manifest.json'), edl)
+        from project_contract import validate_edl_scope, digest
+        manifest = load_json(edit_dir / 'source_manifest.json')
+        state = load_json(edit_dir / 'state.json') or {}
+        parent = state.get('parentEdl')
+        if parent is not None and digest(parent) != state.get('parentEdlHash'):
+            raise CutError('Parent editing baseline changed; restore its original evidence', 2)
+        if contract['workflow']['editing']['scope'] == 'intervals' and parent is None:
+            if state.get('parentRevision'):
+                raise CutError('Interval revision is missing its parent editing baseline', 2)
+            parent = {'sources': {s['id']: s['path'] for s in manifest['sources']}, 'ranges': [
+                {'source': s['id'], 'start': 0, 'end': s['facts']['duration']} for s in manifest['sources']]}
+        validate_edl_scope(contract, manifest, edl, parent_edl=parent)
     jcut = jcut_settings(edl, args.in_jcut)
 
     probes: dict[str, dict] = {}
@@ -1266,10 +1282,14 @@ def main() -> int:
     except CutError as exc:
         print(f'error: {exc}', file=sys.stderr)
         return exc.code
+    except (ValueError, OSError, subprocess.SubprocessError) as exc:
+        print(f'error: {exc}', file=sys.stderr)
+        return 2
     except KeyboardInterrupt:
         print("interrompido", file=sys.stderr)
         return 130
 
 
 if __name__ == "__main__":
+    sys.modules.setdefault('render_cut', sys.modules[__name__])
     sys.exit(main())

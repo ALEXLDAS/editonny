@@ -35,7 +35,7 @@ class ManagedNativeTests(unittest.TestCase):
                 '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-c:a', 'aac', source)
             original = content_hash(source)
             inspection = inspect_sources([source], False)
-            config = propose_settings(inspection, {'delivery': {'subtitleFormats': ['srt', 'vtt']}})['config']
+            config = propose_settings(inspection, {'delivery': {'subtitleFormats': ['srt', 'vtt'], 'workspaceRoot': str(root / 'Downloads/editonny')}})['config']
             project = create_workspace(root / 'Downloads/editonny', 'Conformance', inspection, config, confirmation(config, inspection))
             cut = seed_source(project)
             edit = cut.parent

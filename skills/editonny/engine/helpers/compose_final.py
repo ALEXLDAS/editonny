@@ -275,6 +275,9 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
         if _section(data, 'captions').get('enabled', contract.get('captions', {}).get('enabled')) != contract.get('captions', {}).get('enabled'):
             raise ComposeError('Caption visibility conflicts with the confirmed settings', 2)
         data['captions'] = {**contract.get('captions', {}), **_section(data, 'captions')}
+        if data['captions'].get('enabled'):
+            from project_contract import validate_caption_language
+            validate_caption_language(contract, load_json(edit_dir / 'transcripts/cut.json') or {})
         data['loudness'] = {'i': workflow['audio']['targetLufs'], 'tp': workflow['audio']['truePeakLimit'], 'lra': 11}
         data['_audio_policy'] = workflow['audio']
     base = _resolve(edit_dir, data.get("base") or "cut.mp4", "base")
@@ -3225,6 +3228,12 @@ def update_state(plan: Plan) -> None:
 
 
 def compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: bool = False) -> int:
+    from workspace import managed_operation
+    with managed_operation(Path(edit_data_path).resolve().parent):
+        return _compose(edit_data_path, out, preview, keep_temp)
+
+
+def _compose(edit_data_path: Path, out: str | None, preview: bool, keep_temp: bool = False) -> int:
     t_start = time.time()
     require_binary("ffmpeg")
     require_binary("ffprobe")

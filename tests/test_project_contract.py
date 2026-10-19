@@ -39,6 +39,16 @@ class ProjectContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.c.validate_contract(value)
 
+    def test_translated_language_cannot_label_original_words(self):
+        value = config()
+        value['workflow']['language']['captions'] = 'en-US'
+        with self.assertRaisesRegex(ValueError, 'translated'):
+            self.c.validate_caption_language(value, {'language': 'pt'})
+        self.c.validate_caption_language(value, {'language': 'en'})
+        value['workflow']['language']['translation'] = 'en'
+        with self.assertRaisesRegex(ValueError, 'not implemented'):
+            self.c.validate_contract(value)
+
     def test_output_cannot_replace_source_via_symlink_or_hardlink(self):
         from common import ensure_distinct_output
         with tempfile.TemporaryDirectory() as tmp:
