@@ -2836,8 +2836,8 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
         ffmpeg_cmd(['-v', 'error', '-y', '-i', plan.base, '-map', '0:v:0', '-c:v', 'copy', '-an',
                     '-frames:v', nf, '-movflags', '+faststart', str(tmp_video)], 'preserve unchanged video essence')
         return
-    if plan.media_plan.get('bit_depth', 8) > 8 or plan.media_plan.get('is_hdr'):
-        raise ComposeError('This FFmpeg effects path is not validated at source precision; use the native HDR route or confirm a conversion', 2)
+    if plan.media_plan.get('bit_depth', 8) > 8 or plan.media_plan.get('is_hdr') or '420' not in plan.media_plan.get('pix_fmt', ''):
+        raise ComposeError('This FFmpeg effects path is validated only for 8-bit SDR 4:2:0; preserve the cut-only master or confirm a supported conversion', 2)
     if inserts and (plan.media_plan.get('color_space') != 'bt709' or plan.media_plan.get('color_range') != 'tv'):
         raise ComposeError('Video inserts require a validated common composition space; do not reinterpret source color', 2)
     time_base = f'{Fraction(plan.fps_str).denominator}/{Fraction(plan.fps_str).numerator}'

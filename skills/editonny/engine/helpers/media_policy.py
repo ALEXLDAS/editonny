@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 from functools import lru_cache
+import re
 import shutil
 import subprocess
 
@@ -49,7 +50,9 @@ def probe_capabilities() -> dict:
         process = subprocess.run([result['ffmpeg'], '-hide_banner', '-' + key], capture_output=True, text=True, timeout=15)
         if process.returncode:
             raise ValueError(f'Could not inspect FFmpeg {key}: {process.stderr[-300:]}')
-        result[key] = [parts[1] for line in process.stdout.splitlines() if len(parts := line.split()) >= 2 and len(parts[0]) == (3 if key == 'filters' else 6) and parts[1] != '=']
+        rows = [line.split() for line in process.stdout.splitlines()]
+        result[key] = [p[1] for p in rows if len(p) >= 3 and p[1] != '=' and
+                       (bool(re.fullmatch(r'[AVN|]+->[AVN|]+', p[2])) if key == 'filters' else bool(re.fullmatch(r'[VAS][A-Z.]{5}', p[0])))]
     return result
 
 
@@ -123,7 +126,7 @@ def plan_media(source_facts: list[dict], contract: dict | None, capabilities: di
         chroma = '422' if '422' in output.get('pix_fmt', '') else '444' if '444' in output.get('pix_fmt', '') else '420'
     output['pix_fmt'] = f'yuv{chroma}p' + (f'{depth}le' if depth > 8 else '')
     output['bit_depth'] = depth
-    if purpose == 'composition' and any(f.get('is_vfr') for f in source_facts):
+    if purpose == 'composition' and (any(f.get('is_vfr') for f in source_facts) or (contract or {}).get('workflow', {}).get('video', {}).get('timing') == 'vfr'):
         raise ValueError('Native composition is CFR; confirm a frame-rate conversion before rendering VFR effects')
     result = {k: output.get(k) for k in (*COLOR_FIELDS, 'pix_fmt', 'bit_depth', 'is_hdr', 'encoder')}
     result.update(filters=filters, inputOverride=interpretation, encoderArgs=encoder_args(output, capabilities), purpose=purpose, policyVersion=1)

@@ -20,6 +20,7 @@ def _frame(path: Path, at: float, width: int = 192, interpretation: dict | None 
     rate = float(Fraction(facts['fps_str']))
     if not facts.get('is_vfr'):
         at = math.floor(max(0, at) * rate + 1e-7) / rate
+    at = max(0, at - min(1e-6, float(Fraction(facts['time_base'])) / 4))
     height = max(2, round(width * facts['display_height'] / facts['display_width']))
     from media_policy import frame_tags
     filters = ([frame_tags(interpretation)] if interpretation else []) + [f'scale={width}:{height}:flags=area,format=rgb48le']
@@ -190,6 +191,10 @@ def verify_media(candidate: Path, project: Path, reference: dict | None = None) 
     check('colorMetadata', all(expected.get(k) in UNKNOWN or facts.get(k) == expected[k] for k in COLOR_FIELDS),
           {k: {'expected': expected.get(k), 'actual': facts.get(k)} for k in COLOR_FIELDS})
     check('precision', facts.get('bit_depth', 0) >= expected.get('bit_depth', 8), facts.get('pix_fmt'))
+    def chroma(info):
+        return next((c for c in ('420', '422', '444') if c in info.get('pix_fmt', '')), None)
+    check('chromaPrecision', chroma(facts) is not None and chroma(facts) == chroma(expected),
+          {'expected': expected.get('pix_fmt'), 'actual': facts.get('pix_fmt')})
     codec = config['workflow']['encoding']['videoCodec']
     wanted_codec = manifest['sources'][0]['facts'].get('codec') if codec == 'source' else codec
     if wanted_codec == 'auto':
@@ -198,6 +203,26 @@ def verify_media(candidate: Path, project: Path, reference: dict | None = None) 
           {'expected': 'automatic H.264/HEVC' if codec == 'auto' else wanted_codec, 'actual': facts.get('codec')})
     timeline_path = edit / 'cut_timeline.json'
     timeline = read_json(timeline_path) if timeline_path.is_file() else {}
+    try:
+        from render_vfr import frame_times
+        actual_times = frame_times(candidate)
+        hold = float(config.get('endHold', 0)) + (float(config.get('endCard', {}).get('seconds', 0)) if config.get('endCard', {}).get('enabled') else 0)
+        if not timeline.get('duration'):
+            raise ValueError('A current timeline is required to verify presentation timestamps')
+        if video['timing'] == 'vfr':
+            if hold:
+                raise ValueError('VFR end holds need an explicitly validated timing route')
+            if not timeline.get('segments') or any(not s.get('outputFrameTimes') for s in timeline['segments']):
+                raise ValueError('VFR verification requires observed source-to-output frame timestamps')
+            expected_times = [float(t) for s in timeline['segments'] for t in s['outputFrameTimes']]
+        else:
+            rate = Fraction(video['frameRate'])
+            expected_times = [float(i / rate) for i in range(round((float(timeline['duration']) + hold) * rate))]
+        tolerance = float(Fraction(facts['time_base'])) + 1e-9
+        passed = len(actual_times) == len(expected_times) and all(abs(a - b) <= tolerance for a, b in zip(actual_times, expected_times))
+        check('presentationTiming', passed, {'actualFrames': len(actual_times), 'expectedFrames': len(expected_times), 'toleranceSeconds': tolerance})
+    except (ValueError, KeyError, subprocess.SubprocessError) as error:
+        checks.append({'name': 'presentationTiming', 'status': 'blocked', 'required': True, 'detail': str(error)})
     if timeline.get('duration'):
         hold = float(config.get('endHold', 0)) + (float(config.get('endCard', {}).get('seconds', 0)) if config.get('endCard', {}).get('enabled') else 0)
         check('duration', abs(facts['duration'] - float(timeline['duration']) - hold) <= max(0.05, 1 / float(Fraction(facts['fps_str']))), facts['duration'])

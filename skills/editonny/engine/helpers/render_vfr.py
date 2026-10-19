@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from fractions import Fraction
 import os
 from pathlib import Path
 import subprocess
@@ -13,9 +14,11 @@ from media_policy import encoder_args, frame_tags
 
 def frame_times(path: Path) -> list[float]:
     result = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_frames',
-        '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', str(path)],
+        '-show_entries', 'frame=best_effort_timestamp:stream=time_base', '-of', 'json', str(path)],
         capture_output=True, text=True, check=True, timeout=600)
-    times = [float(f['best_effort_timestamp_time']) for f in json.loads(result.stdout)['frames']]
+    data = json.loads(result.stdout)
+    time_base = Fraction(data['streams'][0]['time_base'])
+    times = [float(int(f['best_effort_timestamp']) * time_base) for f in data['frames']]
     if not times or any(b <= a for a, b in zip(times, times[1:])):
         raise ValueError('VFR preservation requires strictly increasing observed picture timestamps')
     return times
@@ -53,7 +56,9 @@ def render_vfr(edl: dict, edit: Path, probes: dict, contract: dict | None, media
             end = min(end, float(interval['end']))
             duration = end - start
             args += ['-i', str(source['path'])]
-            chain = f'trim=start={start:.6f}:end={end:.6f},setpts=PTS-{start:.6f}/TB,settb=1/1000000'
+            time_base = Fraction(source['info']['time_base'])
+            start_pts, end_pts = round(start / float(time_base)), round(end / float(time_base))
+            chain = f'trim=start_pts={start_pts}:end_pts={end_pts},setpts=PTS-{start_pts},settb=1/1000000'
             if media.get('inputOverride'):
                 chain += ',' + frame_tags(media['inputOverride'])
             if media['filters']:

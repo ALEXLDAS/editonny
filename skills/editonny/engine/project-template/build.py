@@ -3779,14 +3779,15 @@ def cmd_hf(args):
             raise BuildError('Render size overrides require a confirmed output variant')
         if facts.get('is_hdr'):
             raise BuildError('Native HDR overlays have no passing fidelity conformance evidence in this release; preserve the cut-only master or confirm a supported conversion')
-            if '--sdr' in args or ('--format' in args and args[args.index('--format') + 1] != 'mp4'):
-                raise BuildError('An SDR/alpha output would change the confirmed image; confirm a conversion first')
-            if '--hdr' not in args:
-                args.append('--hdr')
         elif '--hdr' in args:
             raise BuildError('SDR-to-HDR is not an automatic image improvement')
-        elif facts.get('bit_depth', 8) > 8 or facts.get('color_space') not in ('bt709', '') or facts.get('color_range') == 'pc':
+        elif facts.get('bit_depth', 8) != 8 or facts.get('pix_fmt') != 'yuv420p' or facts.get('color_space') != 'bt709' or facts.get('color_range') != 'tv':
             raise BuildError('Native SDR output changes this source profile; use a validated preservation composition route or confirm its conversion')
+        encoding = managed['workflow']['encoding']
+        if encoding['videoCodec'] not in ('auto', 'h264') and not (encoding['videoCodec'] == 'source' and facts.get('codec') == 'h264'):
+            raise BuildError('Native SDR output is H.264; use the cut-only route or confirm a supported encoding')
+        if encoding['bitDepth'] not in ('source', 8) or encoding['chroma'] not in ('source', '420'):
+            raise BuildError('Native SDR output is 8-bit 4:2:0; use the cut-only route or confirm a supported encoding')
         if '--video-frame-format' not in args:
             args += ['--video-frame-format', 'png']
     if args[0] == 'snapshot' or (args[0] == 'check' and '--snapshots' in args):

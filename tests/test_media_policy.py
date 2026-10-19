@@ -9,6 +9,22 @@ from workflow_fixtures import config
 
 
 class MediaPolicyTests(unittest.TestCase):
+    def test_filter_capabilities_accept_actual_two_and_three_flag_rows(self):
+        from unittest.mock import patch
+        import subprocess
+        import media_policy
+        media_policy.probe_capabilities.cache_clear()
+        results = [subprocess.CompletedProcess([], 0, 'ffmpeg version fixture\n', ''),
+                   subprocess.CompletedProcess([], 0, ' TS tonemap V->V Convert\n TSC zscale V->V Scale\n', ''),
+                   subprocess.CompletedProcess([], 0, ' V....D libx264 H264\n V....D libx265 HEVC\n', '')]
+        try:
+            with patch.object(media_policy.shutil, 'which', return_value='/tools/ffmpeg'), \
+                 patch.object(media_policy.subprocess, 'run', side_effect=results):
+                capabilities = media_policy.probe_capabilities()
+            self.assertEqual(capabilities['filters'], ['tonemap', 'zscale'])
+        finally:
+            media_policy.probe_capabilities.cache_clear()
+
     @classmethod
     def setUpClass(cls):
         assert (HELPERS / 'media_policy.py').exists(), 'Shared media preservation policy is missing'

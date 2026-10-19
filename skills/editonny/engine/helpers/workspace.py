@@ -421,6 +421,8 @@ def publish_export(project: Path, candidate: Path, verification: dict, variant: 
     if fresh['status'] != 'passed':
         raise ValueError('Candidate failed final delivery verification')
     destination = project.parent / 'exports'
+    if destination.is_symlink() or destination.resolve() != destination:
+        raise ValueError('Export destination layout changed through a symlink; restore the confirmed revision directory')
     destination.mkdir(exist_ok=True)
     revision = project.parent.name
     stem = f"{config['workflow']['delivery']['basename']}-{revision}-{variant}"
@@ -432,11 +434,11 @@ def publish_export(project: Path, candidate: Path, verification: dict, variant: 
             subtitle_outputs = {fmt: destination / f'{name}.{fmt}' for fmt in config['workflow']['delivery']['subtitleFormats']}
             if any(p.exists() for p in (output, sidecar, *subtitle_outputs.values())):
                 continue
-            fd, tmp = tempfile.mkstemp(prefix='.export-', suffix=candidate.suffix, dir=destination)
-            staged = Path(tmp)
-            temporary, owned = [staged], []
+            staging = Path(tempfile.mkdtemp(prefix='.export-', dir=destination))
+            staged = staging / ('candidate' + candidate.suffix)
+            owned = []
             try:
-                with os.fdopen(fd, 'wb') as stream, candidate.open('rb') as source:
+                with staged.open('xb') as stream, candidate.open('rb') as source:
                     shutil.copyfileobj(source, stream)
                     stream.flush()
                     os.fsync(stream.fileno())
@@ -447,7 +449,6 @@ def publish_export(project: Path, candidate: Path, verification: dict, variant: 
                 from export_subtitles import export_subtitles
                 for fmt, final in subtitle_outputs.items():
                     path = staged.with_suffix('.' + fmt)
-                    temporary.append(path)
                     export_subtitles(project, fmt, path)
                     bundle.append((path, final))
                     subtitles.append({'path': str(final), 'sha256': content_hash(path)})
@@ -458,7 +459,6 @@ def publish_export(project: Path, candidate: Path, verification: dict, variant: 
                           'size': staged.stat().st_size, 'settingsHash': settings_hash(config), 'sourceIdentityHash': identity,
                           'variant': variant, 'subtitles': subtitles, 'verification': fresh, 'deliveredAt': now_iso()}
                 staged_report = staged.with_suffix('.json')
-                temporary.append(staged_report)
                 with staged_report.open('x', encoding='utf-8') as stream:
                     json.dump(report, stream, ensure_ascii=False, indent=2, allow_nan=False)
                     stream.flush()
@@ -481,6 +481,5 @@ def publish_export(project: Path, candidate: Path, verification: dict, variant: 
                         final.unlink()
                 raise
             finally:
-                for path in temporary:
-                    path.unlink(missing_ok=True)
+                shutil.rmtree(staging)
     raise ValueError('Could not reserve a unique final export')
