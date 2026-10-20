@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -315,11 +316,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.transcript and args.transcript.exists():
         data_value = load_json(args.transcript)
         words_value = data_value.get("words") if isinstance(data_value, dict) else data_value
+    # The cache also belongs to the requested backend and transcript: caption detection reads the words.
+    request = {"backend": args.backend, "words": None if words_value is None else
+               hashlib.sha256(json.dumps(words_value, sort_keys=True).encode()).hexdigest()}
     if destination.exists() and not args.force:
         old_value = load_json(destination)
         if (old_value.get("video_sig") == file_signature(video) and old_value.get("version") == VERSION
-                and abs(float(old_value.get("fps", 0)) - args.fps) < 1e-6
-                and (words_value is None or old_value.get("backend") == "vision")):
+                and abs(float(old_value.get("fps", 0)) - args.fps) < 1e-6 and old_value.get("request") == request):
             print(old_value.get("summary", 'already ready'))
             if args.json:
                 print(json.dumps(old_value, ensure_ascii=False, indent=2))
@@ -329,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(f'error: {exc}', file=sys.stderr)
         return 2
+    doc["request"] = request
     try:
         save_json(destination, doc)
     except OSError:

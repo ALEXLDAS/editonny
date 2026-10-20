@@ -56,9 +56,10 @@ def main():
     if missing.any():
         out = cv2.inpaint(out, cv2.dilate(missing, np.ones((5, 5), np.uint8)), 7, cv2.INPAINT_TELEA)
     base = os.path.splitext(a.output)[0]
-    cv2.imwrite(a.output, out)
-    cv2.imwrite(base + '_cobertura.png', np.clip(cnt2[..., 0] * 4, 0, 255).astype(np.uint8))
-    cv2.imwrite(base + '_missing.png', missing * 255)
+    os.makedirs(os.path.dirname(os.path.abspath(a.output)), exist_ok=True)
+    for (path, image) in ((a.output, out), (base + '_coverage.png', np.clip(cnt2[..., 0] * 4, 0, 255).astype(np.uint8)), (base + '_missing.png', missing * 255)):
+        if not cv2.imwrite(path, image):
+            sys.exit(f'error: could not write {path}')
     print(f'ok {a.output} ({W}x{H})')
 if __name__ == '__main__':
     main()

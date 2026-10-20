@@ -6,7 +6,7 @@ The standard path is native agent conversation plus local Python, FFmpeg, Whispe
 
 ## Render and scene tools
 
-**HyperFrames** is the composition runtime. Use the version pinned by the project, currently 0.8.171. An upgrade requires isolated dependency changes, lint/check, snapshots, a real render, audio inspection, arbitrary seeking, and review of affected scene families. Documentation alone does not prove compatibility.
+**HyperFrames** is the composition runtime. Use the version pinned by the project, currently 0.8.179. An upgrade requires isolated dependency changes, lint/check, snapshots, a real render, audio inspection, arbitrary seeking, and review of affected scene families. Documentation alone does not prove compatibility.
 
 **Anatomy** may help author an explanatory isometric SVG/HTML scene when available. Its mechanism must clarify the speech, respect licenses, and use frame/time-driven animation. No built-in adapter is claimed.
 

@@ -200,7 +200,16 @@ def library_file(lib: Path, rel) -> Path | None:
     parts = rel.replace("\\", "/").split("/")
     if rel.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", rel) or any(p in ("", ".", "..") for p in parts):
         return None
-    return lib.joinpath(*parts)
+    path = lib.joinpath(*parts)
+    return path if inside(lib, path) else None
+
+
+def inside(lib: Path, path: Path) -> bool:
+    """A symlinked folder inside the library must not lead outside it."""
+    try:
+        return path.resolve().is_relative_to(lib.resolve())
+    except (OSError, RuntimeError):
+        return False
 
 
 def _has_file(lib: Path, t: dict) -> bool:
@@ -583,7 +592,11 @@ def remove_track(track_id: str, lib: Path | None = None) -> tuple[dict, Path]:
     if entry is None:
         raise MusicError(_in_track(index, track_id))
     src = library_file(lib, entry["file"])
+    if src is None:
+        raise MusicError(f"Track {track_id} points outside the library ({entry['file']}); fix its entry by hand.")
     folder = lib / TRASH_DIR / (entry["mood"] if MOOD_ID.match(entry["mood"]) else "other")
+    if not inside(lib, folder):
+        raise MusicError(f"The library trash ({folder}) leads outside the library; fix that folder by hand.")
     folder.mkdir(parents=True, exist_ok=True)
     dest = _free_path(folder, Path(entry["file"].replace("\\", "/")).name)
     if src is not None and src.is_file():
@@ -609,6 +622,8 @@ def restore_track(track_id: str, lib: Path | None = None) -> dict:
     if not MOOD_ID.match(entry["mood"]):
         raise MusicError(f"Track {track_id} has an invalid mood in the index ('{entry['mood']}').")
     folder = lib / entry["mood"]
+    if not inside(lib, folder):
+        raise MusicError(f"Mood folder {folder} leads outside the library; fix that folder by hand.")
     folder.mkdir(parents=True, exist_ok=True)
     dest = _free_path(folder, src.name)
     shutil.move(str(src), str(dest))

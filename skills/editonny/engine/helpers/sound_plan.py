@@ -667,19 +667,19 @@ def license_of_sound(src: Path) -> tuple[str, Path | None]:
 
 def apply_in_project(plan_value: dict, directory: Path, proj: dict, window_value: list | None) -> list:
     'Copy sounds to project assets/sfx and update project.json sounds. Replace only plan-generated cues within the current sample window; preserve manually authored cues.'
+    from common import content_hash
     dest = directory / "assets" / "sfx"
     dest.mkdir(parents=True, exist_ok=True)
-    used_value: dict = {}
     licenses: dict = {}
     new_value = []
     for s in plan_value["sounds"]:
         src = Path(s["file"])
-        name_value = src.name
-        if name_value in used_value and used_value[name_value] != src.resolve():    # Distinct sounds can share a filename.
-            name_value = f"{id_of_file(src).split(':')[0]}_{src.name}"
-        used_value[name_value] = src.resolve()
+        # Distinct sounds can share a filename; never overwrite or reuse a different sound another cue may use.
+        digest = content_hash(src)
+        names = [src.name] + [f'{src.stem}_{digest[:10]}{f"_{k}" if k else ""}{src.suffix}' for k in range(100)]
+        name_value = next(n for n in names if not (dest / n).exists() or content_hash(dest / n) == digest)
         target_value = dest / name_value
-        if not target_value.exists() or target_value.stat().st_size != src.stat().st_size:
+        if not target_value.exists():
             shutil.copy2(src, target_value)
         lic, file_lic = license_of_sound(src)
         licenses[name_value] = f'{name_value}: {id_of_file(src)} · {lic}'
@@ -717,7 +717,7 @@ def apply_in_project(plan_value: dict, directory: Path, proj: dict, window_value
     return retained
 
 
-# ------------------------------------------------------------------ comandos
+# ------------------------------------------------------------------ commands
 def cmd_types():
     print('Event types: purpose, sounds, and peak level')
     for type_value, d in TYPES_VALUE.items():

@@ -30,6 +30,7 @@ from common import (  # noqa: E402
     load_json,
     load_style_catalog,
     now_iso,
+    probe_video,
     require_binary,
     save_json,
 )
@@ -289,7 +290,9 @@ def build_plan(edit_data_path: Path, out: str | None, preview: bool) -> Plan:
     base = _resolve(edit_dir, data.get("base") or "cut.mp4", "base")
     facts = _base_facts(base)
     source_facts = probe_video(base)
-    media_plan = plan_media([source_facts], None, None, 'composition')
+    # The cut already carries the confirmed color treatment; only the confirmed encoding still applies.
+    media_plan = plan_media([source_facts], {'workflow': {'encoding': contract['workflow']['encoding']}} if contract else None,
+                            None, 'composition')
 
     timeline_path = edit_dir / (data.get("timeline") or "cut_timeline.json")
     timeline = load_json(timeline_path) if timeline_path.exists() else None
@@ -2849,7 +2852,10 @@ def run_video(plan: Plan, inserts: list[Insert], tracks: dict, cam: str | None, 
     from media_policy import encoder_args, frame_tags, preserve_scale
     active_tracks = bool(tracks.get('motion')) or any(
         track and track[0] and track[1] for name, track in tracks.items() if name in ('mid', 'captions', 'top'))
-    if not inserts and not active_tracks and not cam and base_clip is None and (W, H) == (plan.base_w, plan.base_h) and abs(fps - plan.base_fps) < 1e-6:
+    # Copying keeps the base codec, so it is valid only when that is the confirmed codec (or none was confirmed).
+    wanted = {'libx264': 'h264', 'libx265': 'hevc'}.get(plan.media_plan.get('encoder'))
+    if not inserts and not active_tracks and not cam and base_clip is None and (W, H) == (plan.base_w, plan.base_h) and abs(fps - plan.base_fps) < 1e-6 \
+            and (wanted is None or probe_video(plan.base).get('codec') == wanted):
         ffmpeg_cmd(['-v', 'error', '-y', '-i', plan.base, '-map', '0:v:0', '-c:v', 'copy', '-an',
                     '-frames:v', nf, '-movflags', '+faststart', str(tmp_video)], 'preserve unchanged video essence')
         return
@@ -3502,7 +3508,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f'error: {e}', file=sys.stderr)
         return 2
     except KeyboardInterrupt:
-        print("interrompido", file=sys.stderr)
+        print("interrupted", file=sys.stderr)
         return 130
 
 

@@ -1192,10 +1192,11 @@ def main() -> int:
 
     httpd.daemon_threads = True
     httpd.verbose = args.verbose  # type: ignore[attr-defined]
+    port = httpd.server_port   # --port 0 asks the system for a free port.
     session.port = port
     shown_host = "127.0.0.1" if args.host in ("0.0.0.0", "::") else args.host
     url = f'http://{shown_host}:{port}'
-    note = f' (port {args.port} was occupied)' if port != args.port else ""
+    note = f' (port {args.port} was occupied)' if args.port and port != args.port else ""
     info = {"status": "running", "url": url, "port": port, "host": args.host, "pid": os.getpid(),
             "edit_dir": str(session.edit_dir), "started_at": now_iso_ms()}
     if not session.loopback:

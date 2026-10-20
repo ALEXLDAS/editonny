@@ -59,7 +59,7 @@
 
 
 
-  var W = (C.words && C.words.length) ? C.words : [
+  var W = Array.isArray(C.words) ? C.words : [
     { text: "You", t: 0.10, end: 0.34 }, { text: "do not", t: 0.36, end: 0.58 }, { text: "need", t: 0.60, end: 0.98 },
     { text: "an", t: 1.00, end: 1.10 }, { text: "editor", t: 1.12, end: 1.56 }, { text: "to", t: 1.92, end: 2.06 },
     { text: "post", t: 2.08, end: 2.44 }, { text: "every", t: 2.46, end: 2.68 }, { text: "day.", t: 2.70, end: 3.05 }

@@ -25,6 +25,13 @@ class TranscribeCacheTests(unittest.TestCase):
                                          'language': 'en', 'requested_language': 'en', 'prompt': None}))
             self.assertFalse(transcribe.is_cached(cached, video, 'mlx', 'model', None, None))
 
+    def test_apple_silicon_without_mlx_uses_faster_whisper(self):
+        from unittest import mock
+        with mock.patch.object(transcribe.sys, 'platform', 'darwin'), \
+             mock.patch.object(transcribe.platform, 'machine', return_value='arm64'), \
+             mock.patch.object(transcribe.importlib.util, 'find_spec', return_value=None):
+            self.assertEqual(transcribe.default_engine(), 'faster-whisper')
+
     def test_no_prompt_reaches_whisper_as_none(self):
         # Whisper encodes "" as a one-space prompt and decodes every window with NaN log-probabilities.
         self.assertIsNone(transcribe.build_prompt(None, True))

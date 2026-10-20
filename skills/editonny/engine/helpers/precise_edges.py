@@ -167,13 +167,13 @@ def refine_edl(edl: dict, envs: dict | None = None, log=print) -> list[str]:
     removed_value, alerts, moved = 0.0, [], 0
     frozen_start, frozen_end = set(), set()
     for a, b in zip(rs, rs[1:]):
-        if a["source"] == b["source"] and 0 <= float(b["start"]) - float(a["end"]) < CONTIGUOUS_S:
+        if b.get("dry", True) and a["source"] == b["source"] and 0 <= float(b["start"]) - float(a["end"]) < CONTIGUOUS_S:
             frozen_end.add(a["id"])
             frozen_start.add(b["id"])
             b["start"] = a["end"]
     for n, r in enumerate(rs):
         env = envs.get(r["source"])
-        if env is None:
+        if env is None or not r.get("dry", True):   # "dry": false keeps its boundaries as specified.
             continue
         db, floor = env
         s, e = float(r["start"]), float(r["end"])

@@ -1,6 +1,6 @@
 # Validation evidence
 
-Reviewed on 2026-10-19 on macOS Apple Silicon with Node.js 24.21.0, launcher Python 3.9.6, engine Python 3.13.16, FFmpeg 9.0.2 and HyperFrames 0.8.171. Results below apply only to the named tests, profiles and environment. Historical sections remain dated and do not certify the current engine universally.
+Reviewed on 2026-10-19 on macOS Apple Silicon with Node.js 24.21.0, launcher Python 3.9.6, engine Python 3.13.16, FFmpeg 9.0.2 and HyperFrames 0.8.179 (0.8.171 in the sections before the HyperFrames 0.8.179 refresh). Results below apply only to the named tests, profiles and environment. Historical sections remain dated and do not certify the current engine universally.
 
 ## Installation instructions and recurring preflight
 
@@ -207,6 +207,58 @@ A read-only native Codex review (`gpt-6-astra`, ChatGPT authentication) of the w
 Checks: `npm run check` (96 Python, 20 Node, 142 Vitest tests), `npm run test:engine` (85 tests, with the usual native skip), `npm run test:scenes`, `npm run test:preview`, and `python3 scripts/smoke_engine.py` (frames at 1, 1.5, and 2 s inspected). `test:scenes` now mounts a renamed copy of each fixed-layout scene and a held variant of each. The held variant must stay visible when the scene ends with the cut and must play its exit when the scene ends earlier. `location-map-panel` must also show a label timed to a late word. The test failed on `three-steps-01` with the previous `replace_id()`, and on `revenue-counter-01` without the hold. It also failed when the hold ignored the scene position, and when it dropped late entrances. A HyperFrames 0.8.171 render of a synthetic 8.733-second cut used `three-steps` from 3.50 s. `hf check` reported zero warnings. Frames at 4.5, 6.0, 7.5, 8.4, 8.6, and 8.7 s showed all three cards, icons, connectors, and check marks, fully visible until the last frame.
 
 Limits: only `three-steps` was rendered; the browser test covers the other fixed scenes, without renders. Two copies of `legal-deadline` or `sugar-cubes-panel` in one composition still share the IDs that their scripts create at runtime (not tested).
+
+## HyperFrames 0.8.179, dependency refresh, and project-wide review
+
+On 2026-10-19, HyperFrames moved from 0.8.171 to 0.8.179, the newest version published on npm that day (0.8.180 had a GitHub release but no npm package yet). The pin changed in `project-template/build.py`, the template `package.json`, and the docs; projects keep the version written in their own `package.json`. The 0.8.172–0.8.179 release notes contain fixes and performance work and no breaking change to the CLI flags or `hyperframes.json` keys the template uses. The template's `$schema` and `registry` URLs match the 0.8.179 package.
+
+`uv lock --upgrade` refreshed the engine lockfile, including huggingface-hub 1.31 → 2.2, Pillow 12.3 → 13.0, mlx 0.32.2 → 0.32.4, numba 0.67 → 0.68, and torch 2.14.0 → 2.14.1. onnxruntime stays at 1.23.2 under the existing platform constraints. npm packages were already at their latest versions. `npm audit` reports five high-severity advisories, all from `braces` (GHSA-vfj7-8cjw-p6xm). It reaches the project only through the development dependency `eslint-config-next` → `@next/eslint-plugin-next` → `fast-glob`. No patched `braces` exists, and `npm audit fix --force` would downgrade `eslint-config-next`, so the advisory remains open. It does not ship in the guide or the skill.
+
+Four read-only native Codex reviews (`gpt-6-astra`) covered the engine, visuals, the guide and design system, and tooling and documentation. Two Codex fixers with write access handled the guide/design-system and tooling findings, and the coordinator reviewed both diffs. In that review, the coordinator kept the preview template's I/O/M/Space/? shortcut badges, because the real preview implements them (`preview/review/view.mjs`). The coordinator also kept `.env.example` allowed in the plugin archive, matching `install.py`. Fixed, each with a regression test that failed before the fix unless noted:
+
+- **Data safety.** `voice.py` wrote to a temporary name derived from the destination. When the source was `clip.processing.mp4`, cleanup deleted the source. `sound_plan.py` overwrote a same-named effect that a manual cue used. Its old collision name embedded an absolute path, so the copy could land outside the project. `music_library.py` followed a symlinked folder out of the library when removing a track; removal and restoration now refuse paths that lead outside the library, without changing the index. The plugin archive now also excludes `*.pem`, `*.key`, `*.p12`, logs, `venv/`, and tool caches.
+- **Editing correctness.** The `waveform_cut.py` cache now carries the source identity, so a remapped source key never reuses another take's pauses. `precise_edges.py` keeps `"dry": false` boundaries. The preserved-audio remux in `build.py` keeps the `endHold`/`endCard` duration (tested on a 12-second render of a 10-second cut). Resized images from different folders no longer share one generated file. `compose_final.py` keeps the confirmed codec, and `verify_cut.py` uses the confirmed output size instead of assuming 1080×1920. `quality_gate.py` no longer fails protected pauses, or pauses outside an interval revision. OCR failures stop the audit instead of passing as frames without text. The Tesseract language list was a corrupted `basis` and now uses the installed `eng`/`por`/`spa` data.
+- **Scenes.** Nine caption scenes showed the standalone demo phrase over intervals without speech. They now show it only when no `words` are supplied, and `test:scenes` checks both cases. The ten title scenes carry the same unused code. Copied transition and pointer rows now include `sceneId`, so sounds and layer order find them. `--cut` rejects a placement that would start before 0 s; a smoke render with `receipt` at `--cut 0.5` had started it at −1.5 s.
+- **Smaller fixes.** `ai_in_cut.py` now rejects camera-name reuse, custom synchronization files, and non-identity secondary transforms before writing; segment IDs past ten no longer crash. `clean_plate.py` creates its output folder and checks each write (untested: it needs MediaPipe). The `screen_text.py` cache follows the transcript and backend. `preview_server.py --port 0` advertises the bound port. `transcribe.py` selects MLX only when it is installed. `render_cut.py` writes one-second GOPs, after HyperFrames warned that sparse keyframes freeze seeks. Output labels, interruption messages, and filenames are now English.
+- **Guide and design system.** Forty-one examples that ask for visuals no longer generate "no visual scenes". `--text-label` held both a font shorthand and a color. The font is now `--text-label-font`, and `reference/styles.css` maps the frozen export's font use back. Disabled and loading link buttons are now inert. Uncontrolled text counters update, including after a form reset. Preview marks stay inside the clip. Token lint now rejects raw `rem`/`em` sizes. Graph promotion re-checks memory at the swap. Browser-test cleanup always stops its server.
+
+An independent read-only Codex review of the complete working tree then found seven issues, all fixed:
+
+- `ai_in_cut.py` created its camera copy before validating, so it now validates everything first. It also compares the EDL's synchronization path as the renderer resolves it, and rejects a name already mapped in the EDL. Review cycles later added a check against the primary source's name and the default synchronization path. They also stopped the script from overwriting an unregistered `_cam.mp4`: it now writes `_cam_2.mp4`, which keeps the documented rebuild from backups working.
+- `quality_gate.py` now subtracts protected parts and intersects authorized parts, instead of keeping or dropping whole pauses.
+- Graph promotion briefly left `graphify-out` absent while it hashed memories. Hashing now happens outside the two renames, which leave only a short gap again. A memory saved between the pre-swap comparison and the swap stays in `graphify-previous` for recovery. Writes to the promoted index after the swap are kept.
+- `sound_plan.py` now checks every candidate filename's content.
+- The negative-start message in `apply.py` no longer formats a missing `--cut`.
+
+Five further read-only Codex review cycles (`gpt-6-astra`) followed, each on the full working tree, each with a different focus. Every finding was verified and fixed with a test that fails without the fix, except where noted.
+
+| Cycle | Focus | Findings and fixes |
+|---|---|---|
+| 1 | Engine and visuals behavior | `remove_track` recorded a trash file it never moved; it now refuses. Authorized windows that meet across a cut are merged, so a pause across that cut counts whole. `ai_in_cut.py` rejects the primary source's name and also checks the default synchronization path. |
+| 2 | Guide, design system, tooling | Graph promotion compares the backup with the staged memories, so writes after the swap stay live. Uncontrolled text counters follow a form reset. `reference/styles.css` maps the frozen pages' `font: var(--text-label)`. The validation wording on the promotion gap is corrected (no test). |
+| 3 | Test quality | `compose_final.py` copied an H.264 base under an HEVC contract; the copy now requires the confirmed codec, and the test checks the output file. The preserved-audio remux is now a function, tested with a 12-second render of a 10-second cut. `split_ranges()` has an ID-overflow test. |
+| 4 | Docs and contracts | `_cam.mp4` was refused during the documented rebuild from backups; an unregistered copy now gets `_cam_2.mp4`. `setup.md`, `RECIPES.md`, and this section are corrected. Three `interrompido` messages are now English. `clean_plate.py` is marked as untested. |
+| 5 | Holistic and earlier-cycle fixes | Critical: the `_cam` naming could reuse any registered file, including original footage named `<clip>_cam.mp4`. It now reuses only the copy registered for its own camera names. `remove_track` and `restore_track` now refuse trash or mood folders that lead outside the library. |
+
+The cycle 5 fixes had no further review.
+
+Not changed, with reasons:
+
+- Native captions drop a repeated word within 0.6 s (`build.py`). This drops real repetitions such as "very very", but it also suppresses Whisper duplicates. Changing it needs transcripts measured with the default engine.
+- `render_cut.py` counts camera-clock-compensated frames on the picture clock. A 0.1% scale adds about two frames per minute of range. The fix requires retiming the alternate picture and was not attempted without multicamera footage.
+- Caption scenes skip words that start in the last 0.2 s of their interval, to avoid one-frame flashes.
+
+Checks on the final tree, after the five cycles:
+
+- `npm run check`: 103 Python, 21 Node, and 280 Vitest tests, lint, both typechecks, and 49 icons.
+- `npm run test:engine`: 100 tests, 1 native skip. The native conformance test (`EDITONNY_NATIVE_CONFORMANCE=1`) also passed.
+- `npm run test:preview` (4), `npm run test:scenes`, `npm run test:three`, and `npm run test:browser` (183 passed, 27 conditional skips).
+- `npm run build`, `python3 editonny.py doctor`, `media status` (79/79), `python3 scripts/package.py` (2,159 files; no environments, caches, keys, or logs), and an installation into a temporary `--home`.
+- `python3 scripts/smoke_engine.py` rendered with `hyperframes@0.8.179`. Frames at 1, 1.5, and 2 s matched source frames 24, 36, and 48. Audio matched the source at −21.1 dB mean, and lint and check returned zero warnings.
+- A separate 24-second render placed `receipt`, `pointer-down-arrow`, `ai-chat-interface`, `brazil-map`, and `three-steps`. `hf check` passed, and sampled frames showed each scene; `three-steps` played its exit before the cut ended.
+- A real `transcribe.py` run on synthetic speech used the upgraded huggingface-hub/mlx stack and produced 11 timed words.
+
+Limits: only the named scenes were rendered, on macOS Apple Silicon. The upgraded Python stack was not exercised on Linux or Intel macOS, and Faster Whisper was not run.
 
 ## Reproduce and invalidate
 

@@ -134,6 +134,43 @@ class QualityGateTests(unittest.TestCase):
             self.assertEqual(video.with_name('final_before_volume.mp4').read_bytes(), b'Current original')
             self.assertEqual(len(list(video.parent.iterdir())), 2)
 
+    def test_quiet_intervals_respect_protected_and_revision_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            edit, project = root / 'edit', root / 'project'
+            edit.mkdir()
+            project.mkdir()
+            source = root / 'source.mp4'
+            source.write_bytes(b'source')
+            (edit / 'source_manifest.json').write_text(json.dumps({'sources': [{'id': 'take', 'path': str(source)}]}))
+            # Source 10-20 s plays at output 0-10 s.
+            (edit / 'cut_timeline.json').write_text(json.dumps({'segments': [
+                {'source_path': str(source), 'src_start': 10, 'src_end': 20, 'out_start': 0, 'out_end': 10}]}))
+            quiet = [(1.2, 1.8), (4.2, 4.8), (7.0, 7.6), (2.5, 4.1)]
+            editing = {'scope': 'full', 'protectedIntervals': [{'sourceId': 'take', 'start': 14, 'end': 15}]}
+            cfg = {'edit': '../edit', 'workflow': {'sourceIds': ['take'], 'editing': editing}}
+            # Output 4-5 s is protected: its pause passes, the unprotected part of 2.5-4.1 s still fails.
+            self.assertEqual(self.module.scoped_quiet(cfg, project, quiet), [(1.2, 1.8), (7.0, 7.6), (2.5, 4.0)])
+            editing.update(scope='intervals', intervals=[{'sourceId': 'take', 'start': 11, 'end': 12.6}])
+            # Only the in-scope part counts, and a sliver under the minimum duration does not.
+            self.assertEqual(self.module.scoped_quiet(cfg, project, quiet + [(2.55, 2.9)]), [(1.2, 1.8)])
+            self.assertEqual(self.module.scoped_quiet({}, project, quiet), quiet)
+            # A pause across a cut inside one authorized source interval counts whole.
+            (edit / 'cut_timeline.json').write_text(json.dumps({'segments': [
+                {'source_path': str(source), 'src_start': 0, 'src_end': 1, 'out_start': 0, 'out_end': 1},
+                {'source_path': str(source), 'src_start': 3, 'src_end': 4, 'out_start': 1, 'out_end': 2}]}))
+            editing.update(protectedIntervals=[], intervals=[{'sourceId': 'take', 'start': 0, 'end': 4}])
+            self.assertEqual(self.module.scoped_quiet(cfg, project, [(0.8, 1.2)]), [(0.8, 1.2)])
+
+    def test_failed_ocr_is_not_a_frame_without_text(self):
+        sys.path.insert(0, str(HELPERS))
+        from audit_data import read_directory
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            Image.new('RGB', (16, 16)).save(Path(tmp) / 'f_00001.jpg')
+            with self.assertRaises(subprocess.CalledProcessError):
+                read_directory(('tesseract', shutil.which('false') or '/usr/bin/false'), Path(tmp))
+
 
 if __name__ == '__main__':
     unittest.main()

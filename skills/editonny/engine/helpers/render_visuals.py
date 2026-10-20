@@ -106,7 +106,7 @@ def _limits(spec: dict) -> list[str]:
         hi = E.format_number(spec["max"], E.auto_decimals(spec["max"])) if "max" in spec else "-"
         extra.append(f'from {lo} to {hi}')
     if "max_len" in spec:
-        extra.append(f"up to {spec['max_len']} letras")
+        extra.append(f"up to {spec['max_len']} letters")
     if "min_items" in spec or "max_items" in spec:
         extra.append(f"{spec.get('min_items', 0)} to {spec.get('max_items', '?')} items")
     if spec.get("nullable"):
@@ -212,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
         if "mp4" in formats:
             result["files"]["mp4"] = str(R.write_mp4(item, out / f'{base}.mp4', args.background_value))
         if "sheet" in formats:
-            result["files"]["sheet"] = str(R.contact_sheet(item, out / f'{base}_folha.png', args.frames_value, args.background_value))
+            result["files"]["sheet"] = str(R.contact_sheet(item, out / f'{base}_sheet.png', args.frames_value, args.background_value))
         result["seconds"] = round(time.time() - t0, 2)
         for kind, path in result["files"].items():
             print(f'ok    {kind}: {path}')
@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f'error: {e}', file=sys.stderr)
         return e.code
     except KeyboardInterrupt:
-        print("interrompido", file=sys.stderr)
+        print("interrupted", file=sys.stderr)
         return 130
     except OSError as e:
         print(f'error: {e}', file=sys.stderr)

@@ -61,6 +61,30 @@ class PreviewServerTests(unittest.TestCase):
     def auth(self):
         return {'Content-Type': 'application/json', 'X-Preview-Token': self.session.token}
 
+    def test_port_zero_advertises_the_bound_port(self):
+        import json, subprocess, sys, tempfile, time, urllib.request
+        from pathlib import Path
+        helper = Path(__file__).resolve().parents[2] / 'skills/editonny/engine/helpers/preview_server.py'
+        with tempfile.TemporaryDirectory(prefix='editonny preview port ') as temp:
+            edit = Path(temp) / 'edit'
+            edit.mkdir()
+            info_path = edit / 'preview_cache/server.json'
+            process = subprocess.Popen([sys.executable, str(helper), '--edit-dir', str(edit), '--port', '0'],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            try:
+                for _ in range(100):
+                    if info_path.is_file() and json.loads(info_path.read_text()).get('status') == 'running':
+                        break
+                    time.sleep(0.1)
+                info = json.loads(info_path.read_text())
+                self.assertNotEqual(info['port'], 0)
+                self.assertTrue(info['url'].endswith(f":{info['port']}"))
+                with urllib.request.urlopen(info['url'], timeout=5) as response:
+                    self.assertEqual(response.status, 200)
+            finally:
+                process.terminate()
+                process.wait(timeout=10)
+
     def test_static_modules_and_csp(self):
         code, headers, body = self.request('/api.mjs')
         self.assertEqual(code, 200)

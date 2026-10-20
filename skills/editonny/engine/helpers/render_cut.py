@@ -183,7 +183,7 @@ def picture_key(r: dict) -> str:
 def load_sync(edl: dict, edit_dir: Path, probes: dict) -> tuple[dict[str, tuple[float, float]], Path | None]:
     """{source: (offset, scale)} from synchronization.json for every source a range with picture_source touches.
 
-    Rule of the file: time in the source = deslocamento + ajuste_s + escala x time in the main one."""
+    Rule of the file: time in the source = offset + adjustment_s + scale x time in the main one."""
     needed = sorted({k for r in edl["ranges"] if r.get("picture_source") for k in (r["source"], r["picture_source"])})
     if not needed:
         return {}, None
@@ -804,7 +804,8 @@ def extract(p: Plan, cfg: dict) -> Plan:
         vf += ',' + ','.join(media['filters'])
         if frame_tags(media):
             vf += ',' + frame_tags(media)
-    enc = [*encoder_args(media, quality=cfg['crf']), '-preset', cfg['x264_preset'],
+    # One-second GOP: the preview and HyperFrames seek the cut, and sparse keyframes freeze or fail those seeks.
+    enc = [*encoder_args(media, quality=cfg['crf']), '-preset', cfg['x264_preset'], '-g', str(max(1, round(fps))),
            '-video_track_timescale', str(Fraction(cfg.get('fps_str', str(fps))).numerator), '-movflags', '+faststart']
     key_src = {"v": CACHE_VERSION, "src": str(p.src), "sig": cfg['source_hashes'][str(p.src)], "pic": round(p.pic_start, 6),
                "snap": p.pic_snapped, "frames": p.frames, "astart": round(audio_start, 6), "samples": samples, "vf": vf, "af": af,
@@ -1288,7 +1289,7 @@ def _render(args: argparse.Namespace) -> int:
         log(f'File true peak: {out_tp:.2f} dBTP{guard}')
     log(f'Done: {out_path} · {fmt_time(duration)} ({total_frames} frames){state_note}')
     log(f'Timeline: {timeline_path}')
-    log(f'Time: total {time.time() - t_all:.1f}s (plano {t_plan:.1f}s, extraction {t_ext:.1f}s, audio {t_mix:.1f}s, composition {t_mux:.1f}s)')
+    log(f'Time: total {time.time() - t_all:.1f}s (plan {t_plan:.1f}s, extraction {t_ext:.1f}s, audio {t_mix:.1f}s, composition {t_mux:.1f}s)')
     mix_wav.unlink(missing_ok=True)
     concat_list.unlink(missing_ok=True)
     lock.close()
@@ -1313,7 +1314,7 @@ def main() -> int:
         print(f'error: {exc}', file=sys.stderr)
         return 2
     except KeyboardInterrupt:
-        print("interrompido", file=sys.stderr)
+        print("interrupted", file=sys.stderr)
         return 130
 
 

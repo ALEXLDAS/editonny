@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -35,7 +36,11 @@ VALLEY_DB = 6.0      # the valley between two glued words is at least this far u
 
 def envelope(path: Path, cache: Path | None) -> np.ndarray:
     """dB of the mono mix in 10 ms windows, index 0 = time 0 of the file."""
-    if cache and cache.is_file() and cache.stat().st_mtime >= path.stat().st_mtime:
+    if cache:  # The name carries the source identity, so a remapped source key never reuses another take.
+        st = path.stat()
+        key = hashlib.sha1(f'{path.resolve()}|{st.st_size}|{st.st_mtime_ns}'.encode()).hexdigest()[:12]
+        cache = cache.with_name(f'{cache.stem}_{key}{cache.suffix}')
+    if cache and cache.is_file():
         return np.load(cache)
     ffmpeg = require_binary("ffmpeg")
     raw = subprocess.run([ffmpeg, "-v", "error", "-nostdin", "-i", str(path), "-vn", "-ac", "1", "-ar", "48000",
@@ -317,7 +322,7 @@ def main(argv: list[str] | None = None) -> int:
         if not path.is_file():
             print(f'ERROR: source {name} does not exist: {path}', file=sys.stderr)
             return 2
-        db = envelope(path, edit / "regions" / f'onda_{name}.npy')
+        db = envelope(path, edit / "regions" / f'waveform_{name}.npy')
         th = args.threshold_value if args.threshold_value is not None else threshold(db)
         sources[name] = Source(db, th)
         print(f'{name}: floor {sources[name].floor:.0f} dB, loud speech {np.percentile(db, 90):.0f} dB, pause below {th:.0f} dB')

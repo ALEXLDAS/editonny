@@ -516,7 +516,10 @@ def check_output(info, destination):
 def encode(origin, info, raw, destination, t0):
     """Copy video without re-encoding and encode new audio with its original start offset."""
     ext = os.path.splitext(destination)[1].lower()
-    tmp = destination[:-len(ext)] + '.processing' + ext if ext else destination + '.processing'
+    # A unique name never collides with the origin, so cleanup cannot delete source footage.
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(destination) + '.', suffix='.processing' + ext,
+                               dir=os.path.dirname(destination) or '.')
+    os.close(fd)
     if info['video'] and ext in CONTAINER:
         codec_args = ['-c:a', 'libopus', '-b:a', '192k'] if CONTAINER[ext] == 'opus' else ['-c:a', 'aac', '-b:a', '256k']
         cmd = FF + ['-i', origin] + RAW + ['-i', raw, '-map', f'0:{info["video"]["index"]}', '-map', '1:a:0',
@@ -922,6 +925,8 @@ def rebuild(proj, pj, cfg, content, segments, presets, ramp_ms, force=False):
     if not segments:
         return clear(proj, pj, cfg, content)
     reason = status(edit, origin, output, segments, presets, proj)
+    if not reason and (read_marker(edit, output) or {}).get('rampMs') != ramp_ms:
+        reason = 'ramp duration changed'
     if not reason and not force and cfg.get('video') == output:
         print(f'ok: {output} is already current with {len(segments)} interval(s)')
         show(segments)

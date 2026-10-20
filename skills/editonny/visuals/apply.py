@@ -35,7 +35,7 @@ def transition(p, name, cuts):
         rows.append({'file': f'compositions/scenes/{new}.html',
                      'start': round(cut - c['duration'] / 2, 3),
                      'end': round(cut + c['duration'] / 2, 3),
-                     'name': f'Transition · {name} {i}'})
+                     'name': f'Transition · {name} {i}', 'sceneId': scene_id})
     print(f'Copied {len(rows)} transitions to {folder}. Add these entries to project.json scenes:')
     print(json.dumps(rows, ensure_ascii=False, indent=2))
 
@@ -60,7 +60,7 @@ def pointer(p, name, count, kind='pointer', pre=None):
         with (folder / (new + '.html')).open('x') as stream:
             stream.write(replace_id(content, scene_id, new))
         row = {'file': f'compositions/scenes/{new}.html', 'start': 0.0,
-               'end': c['duration'], 'name': f'{kind.capitalize()} · {name} {i}'}
+               'end': c['duration'], 'name': f'{kind.capitalize()} · {name} {i}', 'sceneId': scene_id}
         if c.get('hidesCaptions'):
             row['hidesCaptions'] = True
         rows.append(row)
@@ -316,6 +316,7 @@ def use_scene(p, id_, start, end=None, cut=None):
     if id_ not in cat: sys.exit(f'Error: scene {id_} is not in catalog.json')
     c = cat[id_]; d = float(c['duration'])
     if cut is not None: start = round(cut - c.get('cutAt', d / 2), 3); end = round(start + d, 3)
+    if start < 0: sys.exit(f'Error: {id_} would start at {start:g} s, before the video; use --start or a later --cut')
     if end is None: end = round(start + d, 3)
     dur = round(end - start, 3)
     if dur <= 0: sys.exit('Error: end must be greater than start')

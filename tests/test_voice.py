@@ -59,6 +59,8 @@ class VoiceTests(unittest.TestCase):
             self.assertIn('speech', marker)
             self.assertIn('report', marker)
             self.assertIn(': current', run())
+            self.assertIn('Rebuilding', run('--effect', 'old-phone', '--start', '0.2', '--end', '0.8', '--ramp', '60'))
+            self.assertEqual(json.loads(processed.with_suffix('.json').read_text())['rampMs'], 60)
             self.assertIn('Rebuilding', run('--rebuild'))
             run('--clear')
             self.assertEqual(json.loads(config.read_text()), {'title': 'Voice lifecycle', 'edit': '../edit'})
@@ -71,6 +73,23 @@ class VoiceTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('old-phone', result.stdout)
         self.assertIn('robot', result.stdout)
+
+    @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'FFmpeg is required')
+    def test_temporary_output_never_replaces_the_source(self):
+        with tempfile.TemporaryDirectory(prefix='editonny voice temp ') as temporary:
+            root = Path(temporary)
+            source, output = root / 'clip.processing.mp4', root / 'clip.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
+                            'color=c=green:s=160x240:r=24:d=1', '-f', 'lavfi', '-i',
+                            'sine=frequency=440:duration=1', '-c:v', 'libx264', '-pix_fmt',
+                            'yuv420p', '-c:a', 'aac', '-shortest', str(source)], check=True)
+            before = source.read_bytes()
+            result = subprocess.run([sys.executable, str(VOICE), '--file', str(source),
+                                     '--output', str(output), '--effect', 'old-phone',
+                                     '--start', '0.2', '--end', '0.8'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertEqual(source.read_bytes(), before)
+            self.assertEqual(sorted(p.name for p in root.iterdir()), ['clip.mp4', 'clip.processing.mp4'])
 
     @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'FFmpeg is required')
     def test_effect_preserves_original_frames_and_audio_timing(self):

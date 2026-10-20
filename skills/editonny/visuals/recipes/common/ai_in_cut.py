@@ -134,10 +134,10 @@ def split_ranges(edl, primary_key, windows, gap_ok=0.02):
                 merged[-1][1] = s[1]
             else:
                 merged.append(list(s))
-        letters = 'abcdefghij'
+        letters = 'abcdefghijklmnopqrstuvwxyz'
         for (k, (a, b, name)) in enumerate(merged):
             q = dict(r)
-            q['id'] = f"{r['id']}{letters[k]}"
+            q['id'] = f"{r['id']}{letters[k]}" if k < len(letters) else f"{r['id']}_{k + 1}"
             q['start'] = round(a, 4)
             q['end'] = round(b, 4)
             if name:
@@ -199,27 +199,53 @@ def main():
         return
     if not a.edit:
         sys.exit('error: supply --edit <EDIT> to write synchronization.json, or use --measure-only')
-    cam = os.path.splitext(os.path.abspath(a.ai))[0] + '_cam.mp4'
-    r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', a.ai, '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '64k', '-t', f"{ii['dur']:.4f}", '-movflags', '+faststart', cam])
-    if r.returncode != 0:
-        sys.exit('error: could not write the camera copy with silent audio')
-    for f in ai_sources.values():
-        f['file'] = cam
-    print(f'ok {os.path.basename(cam)} (generated picture + silent audio: this file enters the EDL)')
+    # Validate everything before the first write: a rejected run leaves files and project untouched.
+    sync_path = os.path.join(a.edit, 'synchronization.json')
     primary_key = a.source_name
     edl = None
     if a.edl:
         edl = json.load(open(a.edl))
+        # Resolve the file the renderer will read (render_cut.resolve_source rules).
+        ref = os.path.expanduser(edl.get('synchronization') or 'synchronization.json')
+        base = os.path.dirname(os.path.abspath(a.edl))
+        ref = ref if os.path.isabs(ref) else next((c for c in (os.path.join(base, ref), os.path.join(os.path.dirname(base), ref)) if os.path.exists(c)), os.path.join(base, ref))
+        if os.path.realpath(ref) != os.path.realpath(sync_path):
+            sys.exit(f"error: the EDL renders with {ref}, but this script writes {sync_path}; use the EDL's edit folder or point the EDL at that file")
         primary_key = primary_key or source_key(edl, request_data['source'])
         if not primary_key:
             sys.exit(f"error: source {request_data['source']} is missing from sources in {a.edl}; supply --source-name")
     primary_key = primary_key or os.path.splitext(os.path.basename(request_data['source']))[0]
-    sync_path = os.path.join(a.edit, 'synchronization.json')
-    doc = {}
-    if os.path.exists(sync_path):
-        doc = json.load(open(sync_path))
-        if not os.path.exists(sync_path[:-5] + '.before-ai.json'):
-            shutil.copy2(sync_path, sync_path[:-5] + '.before-ai.json')
+    doc = json.load(open(sync_path)) if os.path.exists(sync_path) else {}
+    sources = doc.get('sources', {})
+    # Reuse only the copy registered for these camera names; never overwrite any other file, such as the
+    # original footage or another camera (a rebuild from backups gets a new name).
+    real = lambda path: os.path.realpath(str(path))
+    files = [(n, v.get('file')) for (n, v) in sources.items() if isinstance(v, dict) and v.get('file')]
+    files += list((edl or {}).get('sources', {}).items())
+    owned = {real(f) for (n, f) in files if n in names}
+    others = {real(f) for (n, f) in files if n not in names} | {real(request_data['source']), real(a.ai)}
+    stem = os.path.splitext(os.path.abspath(a.ai))[0] + '_cam'
+    (cam, k) = (stem + '.mp4', 2)
+    while real(cam) in others or (os.path.exists(cam) and real(cam) not in owned):
+        (cam, k) = (f'{stem}_{k}.mp4', k + 1)
+    for f in ai_sources.values():
+        f['file'] = cam
+    if primary_key in sources and doc.get('primary') != primary_key and any(abs(float(sources[primary_key].get(k) or d) - d) > 1e-09 for (k, d) in (('offset', 0.0), ('adjustment_s', 0.0), ('scale', 1.0))):
+        sys.exit(f"error: synchronization.json already has a different primary camera ({doc.get('primary')}); compose the offsets manually")
+    for name in names:
+        if name == primary_key:
+            sys.exit(f'error: camera name {name} is the primary source; choose another --name')
+        old = sources.get(name)
+        if isinstance(old, dict) and old.get('file') != cam:
+            sys.exit(f"error: camera {name} already uses {old.get('file')}; choose another --name for this clip")
+        if edl is not None and edl.get('sources', {}).get(name) not in (None, cam):
+            sys.exit(f"error: the EDL already maps {name} to {edl['sources'][name]}; choose another --name for this clip")
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', a.ai, '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '64k', '-t', f"{ii['dur']:.4f}", '-movflags', '+faststart', cam])
+    if r.returncode != 0:
+        sys.exit('error: could not write the camera copy with silent audio')
+    print(f'ok {os.path.basename(cam)} (generated picture + silent audio: this file enters the EDL)')
+    if os.path.exists(sync_path) and not os.path.exists(sync_path[:-5] + '.before-ai.json'):
+        shutil.copy2(sync_path, sync_path[:-5] + '.before-ai.json')
     doc.setdefault('version', 1)
     doc.setdefault('primary', primary_key)
     doc['rule'] = 'source time = offset + adjustment_s + scale * primary time'
@@ -227,20 +253,15 @@ def main():
     sources = doc.setdefault('sources', {})
     if primary_key not in sources:
         sources[primary_key] = {'file': request_data['source'], 'offset': 0.0, 'scale': 1.0, 'adjustment_s': 0.0, 'confidence': 'primary', 'has_video': True}
-    elif doc.get('primary') != primary_key and abs(float(sources[primary_key].get('offset') or 0)) > 1e-09:
-        sys.exit(f"error: synchronization.json already has a different primary camera ({doc.get('primary')}); compose the offsets manually")
     for (name, f) in ai_sources.items():
-        old = sources.get(name)
-        if isinstance(old, dict) and old.get('file') == f['file']:
-            f['adjustment_s'] = float(old.get('adjustment_s') or 0.0)
+        if isinstance(sources.get(name), dict):
+            f['adjustment_s'] = float(sources[name].get('adjustment_s') or 0.0)
         sources[name] = f
     with open(sync_path, 'w') as fh:
         json.dump(doc, fh, ensure_ascii=False, indent=1)
     print(f"ok {sync_path}: {', '.join(names)} (primary {primary_key})")
     if edl is not None:
-        if edl.get('synchronization') and os.path.basename(edl['synchronization']) != 'synchronization.json':
-            print(f"warning: EDL references {edl['synchronization']}; generated footage was registered in synchronization.json")
-        backup = os.path.splitext(a.edl)[0] + '.before-ai.json'
+        backup =os.path.splitext(a.edl)[0] + '.before-ai.json'
         if not os.path.exists(backup):
             shutil.copy2(a.edl, backup)
         for name in names:

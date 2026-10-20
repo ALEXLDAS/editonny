@@ -83,6 +83,31 @@ class CompositionFidelityTests(unittest.TestCase):
             self.assertEqual(facts['color_range'], 'pc')
             self.assertEqual(facts['color_space'], 'smpte170m')
 
+    def test_composition_keeps_the_confirmed_codec(self):
+        from unittest import mock
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from workflow_fixtures import config
+        contract = config()
+        contract['captions']['enabled'] = False
+        contract['workflow']['encoding']['videoCodec'] = 'hevc'
+        contract['workflow']['video'].update(width=128, height=64, frameRate='24')
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / 'cut.mp4'; make_patches(source)
+            (root / 'source_manifest.json').write_text(json.dumps({'sources': [
+                {'id': 'source', 'path': str(source), 'facts': probe_video(source)}]}))
+            data = root / 'edit_data.json'
+            data.write_text(json.dumps({'base': str(source), 'contractHash': 'confirmed'}))
+            with mock.patch('project_contract.managed_config', return_value=contract), \
+                 mock.patch('project_contract.settings_hash', return_value='confirmed'):
+                plan = build_plan(data, str(root / 'composed.mp4'), False)
+            self.assertEqual(plan.media_plan['encoder'], 'libx265')
+            # No effects: the unchanged-essence copy must not keep an H.264 base against an HEVC contract.
+            plan.renders.mkdir(parents=True)
+            output = root / 'composed.mp4'
+            run_video(plan, [], {}, None, output)
+            self.assertEqual(probe_video(output)['codec'], 'hevc')
+
     def test_empty_built_tracks_preserve_hdr_packets_with_audio_only_effects(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

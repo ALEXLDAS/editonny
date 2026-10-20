@@ -184,15 +184,13 @@ def read_directory(engine_value: tuple[str, object], directory: Path) -> dict[st
         return json.loads(output_value.read_text())
     out: dict[str, list[dict]] = {}
     from PIL import Image  # noqa: PLC0415
+    installed = subprocess.run([str(engine_value[1]), "--list-langs"], capture_output=True, text=True).stdout.split()
+    lang = "+".join(x for x in ("eng", "por", "spa") if x in installed) or "eng"   # The guide's spoken languages.
     for img in sorted(directory.glob("f_*.jpg")):
         w, h = Image.open(img).size
-        tsv = ""
-        for lang in ("basis", "eng"):
-            r = subprocess.run([str(engine_value[1]), str(img), "-", "-l", lang, "tsv"], capture_output=True, text=True)
-            if r.returncode == 0:
-                tsv = r.stdout
-                break
-        out[img.name] = parse_tesseract_tsv(tsv, w, h)
+        # A failed read must stop the audit instead of passing as a frame without text.
+        r = subprocess.run([str(engine_value[1]), str(img), "-", "-l", lang, "tsv"], capture_output=True, text=True, check=True)
+        out[img.name] = parse_tesseract_tsv(r.stdout, w, h)
     return out
 
 

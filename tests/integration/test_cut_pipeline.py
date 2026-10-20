@@ -28,7 +28,8 @@ class CutPipelineTests(unittest.TestCase):
                 {'text': word, 'start': start, 'end': start + 0.5}
                 for word, start in [('Opening', 0.4), ('Excluded', 1.4), ('Closing', 2.4)]]}))
             edl = edit / 'edl.json'
-            data = {'sources': {'source': str(source)}, 'output': {'width': 160, 'height': 240, 'fps': 24},
+            # No output size: the cut keeps the source size and must not be mistaken for a vertical preview.
+            data = {'sources': {'source': str(source)}, 'output': {'fps': 24},
                     'ranges': [{'id': 'first', 'source': 'source', 'start': 0.25, 'end': 1.125},
                                {'id': 'last', 'source': 'source', 'start': 2.25, 'end': 3.0}]}
             edl.write_text(json.dumps(data))
@@ -49,6 +50,7 @@ class CutPipelineTests(unittest.TestCase):
             run('verify_cut.py', edl, edit / 'cut.mp4', '--without-approval', '--report-only')
             report = json.loads((edit / 'verify/cut_report.json').read_text())
             self.assertNotIn('STALE-TIMELINE', [f['code'] for f in report['flags']])
+            self.assertNotIn('PREVIEW', [f['code'] for f in report['flags']])
             self.assertEqual((edit / 'state.json').read_bytes(), state)
             data['ranges'][0]['end'] = 1.0
             edl.write_text(json.dumps(data))

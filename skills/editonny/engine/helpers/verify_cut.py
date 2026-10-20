@@ -386,8 +386,10 @@ def verify(edl_path: Path, video: Path, min_silence: float) -> tuple[dict, list[
         flag("DURATION", v_dur, f'audio ({a_dur:.3f}s) and video ({v_dur:.3f}s) have different durations')
 
     # ---- preview render (half resolution) passing as the approval file
-    out_cfg = edl.get("output") or {}
-    fmt_wh = OUTPUT_FORMATS.get(out_cfg.get("format") or "vertical", (0, 0))
+    out_cfg = dict(edl.get("output") or {})
+    if contract:   # Same size rules as render_cut: the confirmed snapshot, then the format, then the source (unknown here).
+        out_cfg.update(width=contract['workflow']['video']['width'], height=contract['workflow']['video']['height'])
+    fmt_wh = OUTPUT_FORMATS.get(out_cfg.get("format"), (0, 0))
     want_w, want_h = int(out_cfg.get("width") or fmt_wh[0]), int(out_cfg.get("height") or fmt_wh[1])
     got_w, got_h = int(info.get("display_width") or 0), int(info.get("display_height") or 0)
     if (timeline or {}).get("preview") or (want_w and got_w and (got_w < want_w - 2 or got_h < want_h - 2)):

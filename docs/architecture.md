@@ -16,7 +16,7 @@ Source reviewed on 2026-10-19. Changes to entry points, contracts, distribution,
 | `web/` | Public guide (Next.js app on Vercel): localized request builder, catalog, examples, installation, and design-system showcase route |
 | `DESIGN.md`, `design-system/` | Visual contract and token source; React component library, preview templates, showcase, adherence lint, and frozen reference HTML |
 
-The engine Python range and dependency resolution live in `engine/pyproject.toml` and `engine/uv.lock`. The template pins HyperFrames 0.8.171. Root developer dependencies and the web app's dependencies (`web/package.json`) are pinned to exact versions; the workspace uses TypeScript 6.0.3 because typescript-eslint and `eslint-config-next` require the TypeScript JavaScript API, which TypeScript 7 does not ship. Renaming the engine package does not authorize dependency upgrades.
+The engine Python range and dependency resolution live in `engine/pyproject.toml` and `engine/uv.lock`. The template pins HyperFrames 0.8.179. Root developer dependencies and the web app's dependencies (`web/package.json`) are pinned to exact versions; the workspace uses TypeScript 6.0.3 because typescript-eslint and `eslint-config-next` require the TypeScript JavaScript API, which TypeScript 7 does not ship. Renaming the engine package does not authorize dependency upgrades.
 
 ## Contracts and processing
 

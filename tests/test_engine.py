@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -72,6 +73,9 @@ class EngineTests(unittest.TestCase):
                     [sys.executable, str(VISUALS / 'apply.py'), '--project',
                      str(project), option, name, *extra], capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
+                # Pasted rows need sceneId for sounds and layer order.
+                rows = json.loads(result.stdout[result.stdout.index('['):])
+                self.assertEqual({row['sceneId'] for row in rows}, {f'{prefix}-{suffix}'})
                 for number in (1, 3):
                     self.assertEqual((scenes / f'{prefix}-{number:02d}-{suffix}.html').read_text(),
                                      'PERSONAL EDIT')
@@ -106,6 +110,12 @@ class EngineTests(unittest.TestCase):
                  str(project), '--use', 'transition-glow', '--cut', '1'],
                 env=dict(os.environ, HOME=str(home)), capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [sys.executable, str(VISUALS / 'apply.py'), '--project',
+                 str(project), '--use', 'object-card', '--cut', '1'],
+                env=dict(os.environ, HOME=str(home)), capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)   # Centered on 1 s, a 4.5 s scene would start before the video.
+            self.assertIn('before the video', result.stderr)
             cfg = json.loads((project / 'project.json').read_text())
             self.assertEqual(len(cfg['scenes']), 1)
 
@@ -131,6 +141,43 @@ class EngineTests(unittest.TestCase):
             build.copy_video(str(src), str(dst))
             self.assertFalse(dst.is_symlink())
             self.assertEqual(dst.read_bytes(), b'cut')
+
+    @unittest.skipUnless(shutil.which('ffmpeg'), 'FFmpeg is required')
+    def test_resized_images_keep_their_folder_identity(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('resize_build', ENGINE / 'project-template/build.py')
+        build = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build)
+        with tempfile.TemporaryDirectory(prefix='editonny resize ') as tmp, mock.patch.object(build, 'HERE', tmp):
+            for folder, color in (('before', 'red'), ('after', 'blue')):
+                Path(tmp, 'assets', folder).mkdir(parents=True)
+                subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', f'color=c={color}:s=400x400',
+                                '-frames:v', '1', str(Path(tmp, 'assets', folder, 'photo.png'))], check=True)
+            first = build.resize_image('assets/before/photo.png', 100, 100)
+            second = build.resize_image('assets/after/photo.png', 100, 100)
+            self.assertNotEqual(first, second)
+            self.assertNotEqual(Path(tmp, first).read_bytes(), Path(tmp, second).read_bytes())
+
+    @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'FFmpeg is required')
+    def test_preserved_audio_keeps_the_rendered_ending(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('audio_build', ENGINE / 'project-template/build.py')
+        build = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build)
+        with tempfile.TemporaryDirectory(prefix='editonny preserve ') as tmp:
+            render, cut = Path(tmp, 'render.mp4'), Path(tmp, 'cut.mp4')
+            # A 10 s cut rendered with a 2 s endHold: the render is 12 s long.
+            for path, seconds in ((render, 12), (cut, 10)):
+                subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', f'color=c=gray:s=64x64:r=24:d={seconds}',
+                                '-f', 'lavfi', '-i', f'sine=frequency=440:duration={seconds}', '-c:v', 'libx264',
+                                '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', str(path)], check=True)
+            build.preserve_audio(render, cut)
+            probe = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-show_streams', '-show_format',
+                                                        '-of', 'json', str(render)]))
+            video = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+            audio = next(s for s in probe['streams'] if s['codec_type'] == 'audio')
+            self.assertGreater(float(video['duration']), 11.9)
+            self.assertLess(float(audio['duration']), 10.1)
 
     def test_project_config_points_at_hyperframes_hosts(self):
         config = json.loads((ENGINE / 'project-template/hyperframes.json').read_text())

@@ -186,6 +186,38 @@ def footage_intervals(cfg: dict, project: Path | None, dur: float) -> list[tuple
     return out
 
 
+def scoped_quiet(cfg: dict, project: Path | None, quiet: list) -> list:
+    """Quiet intervals this revision may cut: never inside a protected source interval and, for an interval
+    revision, only inside its confirmed source intervals (mapped to output time through the cut timeline)."""
+    editing = cfg.get('workflow', {}).get('editing', {})
+    if not project or not (editing.get('protectedIntervals') or editing.get('scope') == 'intervals'):
+        return quiet
+    from workspace import selected_sources  # noqa: PLC0415
+    edit = project / cfg.get('edit', '../edit')
+    manifest = json.loads((edit / 'source_manifest.json').read_text(encoding='utf-8'))
+    paths = {s['id']: str(Path(s['path']).resolve()) for s in selected_sources(manifest, cfg)['sources']}
+    segments = json.loads((edit / 'cut_timeline.json').read_text(encoding='utf-8'))['segments']
+
+    def output(intervals):
+        return [(s['out_start'] + max(i['start'], s['src_start']) - s['src_start'],
+                 s['out_start'] + min(i['end'], s['src_end']) - s['src_start'])
+                for i in intervals for s in segments
+                if str(Path(s['source_path']).resolve()) == paths.get(i['sourceId'])
+                and min(i['end'], s['src_end']) > max(i['start'], s['src_start'])]
+
+    for a, b in output(editing.get('protectedIntervals', [])):     # Keep only the unprotected parts.
+        quiet = [p for x, y in quiet for p in ((x, min(y, a)), (max(x, b), y)) if p[1] > p[0]]
+    if editing.get('scope') == 'intervals':                       # And only the parts this revision may cut.
+        windows = []
+        for a, b in sorted(output(editing['intervals'])):          # Segments that meet across a cut form one window.
+            if windows and a <= windows[-1][1] + 1e-6:
+                windows[-1] = (windows[-1][0], max(windows[-1][1], b))
+            else:
+                windows.append((a, b))
+        quiet = [(max(x, a), min(y, b)) for x, y in quiet for a, b in windows if min(y, b) > max(x, a)]
+    return [r for r in quiet if r[1] - r[0] >= breaths.MIN_S]
+
+
 def end_of_speech(cfg: dict, dur: float) -> float | None:
     """Where the voice ends in the final video: the duration minus the still end and the closing card. None when
     the project has neither (then the last silence counts like any other)."""
@@ -243,7 +275,7 @@ def main(argv: list[str] | None = None) -> int:
         cleanup = cfg.get('workflow', {}).get('editing', {}).get('scope', 'full') in ('full', 'intervals')
         db = waveform.envelope(a.video, None) if info.get('has_audio', True) and cleanup else None
         th = waveform.threshold(db) if db is not None else None
-        quiet_intervals = breaths.find(db, th, breaths.MIN_S) if db is not None else []
+        quiet_intervals = scoped_quiet(cfg, a.project, breaths.find(db, th, breaths.MIN_S) if db is not None else [])
         end_voice = end_of_speech(cfg, dur)
         ending_silence = []
         if end_voice is not None:                 # silence after the last word is the still end / the card, not a breath

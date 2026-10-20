@@ -168,5 +168,20 @@ print(json.dumps(out))`],{cwd:fileURLToPath(new URL('../skills/editonny/visuals/
       const successful=await evaluate(`[...document.querySelectorAll('.attemptcounter-it')].flatMap((e,i)=>e.querySelectorAll('svg path').length===1?[i+1]:[])`);
       assert.deepEqual(successful,correct?[correct]:[],`attempt counter honors correct=${correct}`);
     }
-  } finally { await browser('close');await new Promise(resolve=>server.close(resolve)); }
+    // Caption scenes show their demo phrase only standalone; an interval without speech gets no invented caption.
+    const sceneDir=new URL('../skills/editonny/visuals/scenes/',import.meta.url);
+    const textScenes=(await Promise.all((await readdir(sceneDir)).filter(f=>f.startsWith('text-')).map(async f=>readFile(new URL(f,sceneDir),'utf8')))).filter(html=>html.includes('C.words')&&html.split('screens(').length>2);   // Caption scenes call screens().
+    assert.ok(textScenes.length>=9,'caption scenes with a standalone demo');
+    for(const html of textScenes){
+      const demo=async context=>{await evaluate(`window.mount(${JSON.stringify(html)},${JSON.stringify(context)})`);
+        await browser('wait','--fn','Object.keys(window.__timelines).length>0');
+        return evaluate(`(()=>{let demo=false;for(let t=0;t<=3.4;t+=.1)for(const tl of Object.values(window.__timelines)){tl.seek(t,false);demo||=/editor/i.test(document.querySelector('[data-composition-id]').textContent);}return {failures,demo};})()`);};
+      const id=html.match(/data-composition-id="([^"]+)"/)[1];
+      assert.deepEqual(await demo({}),{failures:[],demo:true},`${id}: standalone demo`);
+      assert.deepEqual(await demo({words:[]}),{failures:[],demo:false},`${id}: silent interval`);
+    }
+  } finally {
+    try { await browser('close'); }
+    finally { await new Promise(resolve=>server.close(resolve)); }
+  }
 });

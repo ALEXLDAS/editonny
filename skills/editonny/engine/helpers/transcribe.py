@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import bisect
+import importlib.util
 import os
 import platform
 import re
@@ -107,7 +108,9 @@ def check_name_clash(out_path: Path, video: Path) -> None:
 # ---------------------------------------------------------------- engines
 
 def default_engine() -> str:
-    return "mlx" if sys.platform == "darwin" and platform.machine() == "arm64" else "faster-whisper"
+    # The pyproject installs mlx-whisper only on Apple Silicon with Darwin 23+; follow what is actually installed.
+    apple = sys.platform == "darwin" and platform.machine() == "arm64"
+    return "mlx" if apple and importlib.util.find_spec("mlx_whisper") else "faster-whisper"
 
 
 def engine_label(engine: str, model: str) -> str:
