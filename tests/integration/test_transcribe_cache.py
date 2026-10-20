@@ -25,6 +25,13 @@ class TranscribeCacheTests(unittest.TestCase):
                                          'language': 'en', 'requested_language': 'en', 'prompt': None}))
             self.assertFalse(transcribe.is_cached(cached, video, 'mlx', 'model', None, None))
 
+    def test_no_prompt_reaches_whisper_as_none(self):
+        # Whisper encodes "" as a one-space prompt and decodes every window with NaN log-probabilities.
+        self.assertIsNone(transcribe.build_prompt(None, True))
+        self.assertIsNone(transcribe.build_prompt('  ', True))
+        self.assertIsNone(transcribe.build_prompt(None, False))
+        self.assertEqual(transcribe.build_prompt(' Kiwify ', True), 'Kiwify')
+
 
 if __name__ == '__main__':
     unittest.main()
