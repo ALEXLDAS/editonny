@@ -111,6 +111,7 @@ def promote(stage, output):
     if backup.exists():
         raise ValueError('A previous promotion backup requires inspection')
     had_output = output.exists()
+    staged = memories(stage)
     if had_output:
         output.replace(backup)
     try:
@@ -120,7 +121,15 @@ def promote(stage, output):
             backup.replace(output)
         raise
     if had_output:
+        # A memory saved after run_update compared them exists only in the backup: keep it for recovery.
+        # Writes to the promoted index after the swap are already live and need nothing.
+        if memories(backup) != staged:
+            raise ValueError(f'Memories changed during promotion; recover them from {backup}')
         shutil.rmtree(backup)
+
+
+def memories(directory):
+    return {str(p.relative_to(directory)): digest(p) for p in (Path(directory) / 'memory').rglob('*') if p.is_file()}
 
 
 def subscription_env(root, env):
@@ -314,10 +323,7 @@ def run_update(root, semantic=True):
     latest = detect(root, follow_symlinks=False, google_workspace=False, cache_root=stage)
     if snapshot([f for values in latest['files'].values() for f in values], root) != current:
         raise ValueError('Corpus changed during build; previous index preserved')
-    memory_versions = [{str(p.relative_to(directory)): digest(p)
-                        for p in directory.rglob('*') if p.is_file()}
-                       for directory in [output / 'memory', stage / 'memory']]
-    if memory_versions[0] != memory_versions[1]:
+    if memories(output) != memories(stage):
         raise ValueError('Memories changed during copy; previous index preserved')
     save_manifest(detection['files'], str(stage / 'manifest.json'), kind='both' if semantic else 'ast',
                   root=root, scan_corpus=files)

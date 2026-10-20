@@ -84,6 +84,73 @@ class GraphWorkflowTests(unittest.TestCase):
         self.assertEqual(args[0], ['python with spaces', str(self.source)])
         self.assertFalse(kwargs.get('shell', False))
 
+    def test_promotion_preserves_memories_changed_at_the_swap(self):
+        original = Path.replace
+        for change in ['added', 'modified', 'deleted']:
+            with self.subTest(change=change):
+                output = self.root / change / 'graphify-out'
+                stage = self.root / change / '.work/graphify'
+                for directory, content in [(output, 'old graph'), (stage, 'new graph')]:
+                    (directory / 'memory').mkdir(parents=True)
+                    (directory / 'graph.json').write_text(content)
+                    (directory / 'memory/answer.md').write_text('original answer')
+                memory = output / 'memory/answer.md'
+                added = output / 'memory/new.md'
+
+                def save_during_swap(path, target):
+                    if path == output:
+                        if change == 'added':
+                            added.write_text('new answer')
+                        elif change == 'modified':
+                            memory.write_text('updated answer')
+                        else:
+                            memory.unlink()
+                    return original(path, target)
+
+                with patch.object(Path, 'replace', save_during_swap), self.assertRaisesRegex(ValueError, 'Memories changed'):
+                    graph.promote(stage, output)
+                # The new graph is live and the late memory change survives in the backup.
+                backup = stage.parent / 'graphify-previous'
+                self.assertEqual((output / 'graph.json').read_text(), 'new graph')
+                if change == 'added':
+                    self.assertEqual((backup / 'memory/new.md').read_text(), 'new answer')
+                elif change == 'modified':
+                    self.assertEqual((backup / 'memory/answer.md').read_text(), 'updated answer')
+                else:
+                    self.assertFalse((backup / 'memory/answer.md').exists())
+
+    def test_memory_saved_after_the_swap_stays_live(self):
+        output = self.root / 'graphify-out'
+        stage = self.root / '.work/graphify'
+        for directory in (output, stage):
+            (directory / 'memory').mkdir(parents=True)
+            (directory / 'memory/answer.md').write_text('verified answer')
+        original = Path.replace
+
+        def save_after_swap(path, target):
+            result = original(path, target)
+            if path == stage:
+                (output / 'memory/new.md').write_text('saved after promotion')
+            return result
+
+        with patch.object(Path, 'replace', save_after_swap):
+            graph.promote(stage, output)
+        self.assertEqual((output / 'memory/new.md').read_text(), 'saved after promotion')
+        self.assertFalse((stage.parent / 'graphify-previous').exists())
+
+    def test_promotion_keeps_unchanged_memory(self):
+        output = self.root / 'graphify-out'
+        stage = self.root / '.work/graphify'
+        for directory, content in [(output, 'old graph'), (stage, 'new graph')]:
+            (directory / 'memory').mkdir(parents=True)
+            (directory / 'graph.json').write_text(content)
+            (directory / 'memory/answer.md').write_text('verified answer')
+        graph.promote(stage, output)
+        self.assertEqual((output / 'graph.json').read_text(), 'new graph')
+        self.assertEqual((output / 'memory/answer.md').read_text(), 'verified answer')
+        self.assertFalse(stage.exists())
+        self.assertFalse((stage.parent / 'graphify-previous').exists())
+
     def test_unmodified_snapshot_has_no_pending_files(self):
         self.assertTrue(graph.unchanged(self.files, self.files))
         self.assertFalse(graph.unchanged(self.files, {}))

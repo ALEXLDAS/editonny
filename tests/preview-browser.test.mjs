@@ -3,9 +3,35 @@ import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createInterface } from 'node:readline';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
+
+for (const [file, expected] of [
+  ['tests/preview-browser.test.mjs', ['fixture', 'lines']],
+  ['tests/template-scenes.test.mjs', ['server']],
+  ['scripts/smoke_three.mjs', ['server', 'project']],
+]) {
+  test(`${file} cleans up when browser close fails`, async () => {
+    const source = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+    // Run the actual outer finalizer without starting the browser or rendering scenes.
+    const finalizer = source.slice(source.search(/^ {0,2}} finally \{/m)).replace(/\n\}\);\s*$/, '');
+    const cleaned = [];
+    const failure = new Error('Browser close failed');
+    const fixture = new EventEmitter();
+    fixture.exitCode = null;
+    fixture.stdin = { end() { cleaned.push('fixture');fixture.exitCode = 0;fixture.emit('exit', 0); } };
+    await assert.rejects(runInNewContext(`(async () => { try { ${finalizer} })()`, {
+      browser: async () => { throw failure; },
+      clearTimeout, deadline: undefined, once, fixture,
+      lines: { close() { cleaned.push('lines'); } },
+      server: { close(done) { cleaned.push('server');done(); } },
+      rm: async () => { cleaned.push('project'); }, project: 'temporary project',
+    }), error => error === failure);
+    assert.deepEqual(cleaned, expected);
+  });
+}
 
 test('preview preserves marks, trims, drafts, and approval confirmation', async () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
@@ -101,10 +127,13 @@ test('preview preserves marks, trims, drafts, and approval confirmation', async 
     assert.equal(await evaluate('window.untrustedScriptRan === undefined && window.readPreviewState === undefined'), true);
   } finally {
     clearTimeout(deadline);
-    await browser('close');
-    const exited = once(fixture, 'exit');
-    fixture.stdin.end();
-    if (fixture.exitCode === null) await exited;
-    lines.close();
+    try {
+      await browser('close');
+    } finally {
+      const exited = once(fixture, 'exit');
+      fixture.stdin.end();
+      if (fixture.exitCode === null) await exited;
+      lines.close();
+    }
   }
 });

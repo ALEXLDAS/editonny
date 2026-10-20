@@ -9,13 +9,13 @@ import re
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED = {'.git', '.venv', 'node_modules', '__pycache__', '.DS_Store', '.work',
+EXCLUDED = {'.git', '.venv', 'venv', '.pytest_cache', '.ruff_cache', 'node_modules', '__pycache__', '.DS_Store', '.work',
             '.editonny-install.json', 'archive'}
 
 
 def allowed(path):
     return path.suffix.lower() != '.pdf' and not any(p in EXCLUDED or p.startswith('.env') and p != '.env.example'
-                   or p.endswith(('.pyc', '.pyo')) for p in path.parts)
+                   or p.lower().endswith(('.pyc', '.pyo', '.pem', '.key', '.p12', '.log')) for p in path.parts)
 
 
 def reject_symlinks(path, root):

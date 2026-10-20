@@ -56,6 +56,29 @@ class PackageTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'plugin'):
                 package.build(root, root / 'dist', 'site')
 
+    def test_plugin_excludes_nested_secrets_and_development_artifacts(self):
+        excluded = ['private.pem', 'private.key', 'private.p12', '.env', '.env.local',
+                    'debug.log', 'venv/private.txt', '.venv/private.txt', '.pytest_cache/state',
+                    '.ruff_cache/state', '__pycache__/module.pyc', 'module.pyo', '.DS_Store',
+                    'node_modules/package/index.js', '.work/private.txt']
+        with tempfile.TemporaryDirectory(prefix='editonny package exclusions ') as temp:
+            root = Path(temp)
+            source = root / 'skills/editonny'
+            source.mkdir(parents=True)
+            (source / 'VERSION').write_text('1.0.0')
+            included = ['skills/editonny/SKILL.md', 'skills/editonny/engine/main.py', 'skills/editonny/.env.example',
+                        '.codex-plugin/plugin.json', '.claude-plugin/plugin.json',
+                        '.agents/plugins/marketplace.json', 'docs/assets/readme/hero.svg']
+            rejected = [f'{folder}/nested/{name}' for folder in
+                        ['skills/editonny', '.codex-plugin', '.claude-plugin', '.agents/plugins', 'docs/assets/readme']
+                        for name in excluded]
+            for name in included + rejected:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('fixture')
+            with zipfile.ZipFile(package.build(root, root / 'dist', 'plugin')) as archive:
+                self.assertEqual(set(archive.namelist()), {*included, 'skills/editonny/VERSION'})
+
     def test_plugin_package_contents_exclude_the_web_app_and_local_secrets(self):
         with tempfile.TemporaryDirectory(prefix='editonny package ') as temp:
             root = Path(temp)

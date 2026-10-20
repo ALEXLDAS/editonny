@@ -75,7 +75,10 @@ window.draw=await initialize({id:'smoke',C,canvas:document.querySelector('canvas
   await browser('screenshot', resolve(output, 'three-smoke.png'));
   console.log(`3D passed: solid, text, texture, label; image at ${resolve(output, 'three-smoke.png')}`);
 } finally {
-  await browser('close');
-  await new Promise(resolve => server.close(resolve));
-  await rm(project, { recursive: true, force: true });
+  try {
+    await browser('close');
+  } finally {
+    try { await new Promise(resolve => server.close(resolve)); }
+    finally { await rm(project, { recursive: true, force: true }); }
+  }
 }
