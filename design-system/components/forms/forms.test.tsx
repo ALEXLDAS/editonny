@@ -26,6 +26,38 @@ describe('TextField', () => {
     expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('3/10')).toBeInTheDocument();
   });
+
+  it.each([false, true])('updates an uncontrolled counter and forwards changes (multiline=%s)', async multiline => {
+    const onChange = vi.fn();
+    const { container } = render(<TextField label="Title" multiline={multiline} counter={5} defaultValue="abc" onChange={onChange} />);
+    const input = screen.getByLabelText('Title');
+    await userEvent.type(input, 'de');
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(input).toHaveValue('abcde');
+    expect(screen.getByText('5/5')).toHaveAttribute('data-near', 'true');
+    expect(container.querySelector('.ds-field__meter')).toHaveStyle({ '--progress': '1' });
+    await userEvent.clear(input);
+    expect(screen.getByText('0/5')).toHaveAttribute('data-near', 'false');
+    expect(container.querySelector('.ds-field__meter')).toHaveStyle({ '--progress': '0' });
+  });
+
+  it.each([false, true])('resets an uncontrolled counter with its form (multiline=%s)', async multiline => {
+    const { container } = render(<form><TextField label="Title" multiline={multiline} counter={10} defaultValue="abc" /></form>);
+    await userEvent.type(screen.getByLabelText('Title'), 'x');
+    expect(screen.getByText('4/10')).toBeInTheDocument();
+    container.querySelector('form')!.reset();
+    expect(await screen.findByText('3/10')).toBeInTheDocument();
+  });
+
+  it('keeps a controlled counter tied to the value prop', async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<TextField label="Title" counter={10} value="abc" onChange={onChange} />);
+    await userEvent.type(screen.getByLabelText('Title'), 'd');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('3/10')).toBeInTheDocument();
+    rerender(<TextField label="Title" counter={10} value="abcde" onChange={onChange} />);
+    expect(screen.getByText('5/10')).toBeInTheDocument();
+  });
 });
 
 describe('Select', () => {

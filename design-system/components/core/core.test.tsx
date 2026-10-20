@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { Badge, Button, Eyebrow, Icon, IconButton, Kbd, Wordmark, iconNames } from '../index';
 
 describe('Icon', () => {
@@ -45,6 +47,38 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Save' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it.each(['disabled', 'loading'] as const)('prevents %s links from navigating or invoking click handlers', async state => {
+    const onClick = vi.fn();
+    render(<><Button href="#destination" {...{ [state]: true }} onClick={onClick}>Save</Button><Button>Next</Button></>);
+    const link = screen.getByRole('link', { name: 'Save' });
+    await userEvent.click(link);
+    link.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(onClick).not.toHaveBeenCalled();
+    expect(link).not.toHaveAttribute('href');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    if (state === 'loading') expect(link).toHaveAttribute('aria-busy', 'true');
+    link.blur();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus();
+  });
+
+  it.each(['disabled', 'loading'] as const)('bypasses router links while %s and restores them when enabled', async state => {
+    const onClick = vi.fn(event => event.preventDefault());
+    const RouterLink = vi.fn((props: ComponentProps<'a'>) => <a {...props} data-router="true" />);
+    const { rerender } = render(<Button as={RouterLink} href="#destination" {...{ [state]: true }} onClick={onClick}>Save</Button>);
+    await userEvent.click(screen.getByRole('link', { name: 'Save' }));
+    expect(onClick).not.toHaveBeenCalled();
+    expect(RouterLink).not.toHaveBeenCalled();
+    rerender(<Button as={RouterLink} href="#destination" onClick={onClick}>Save</Button>);
+    const link = screen.getByRole('link', { name: 'Save' });
+    expect(link).toHaveAttribute('href', '#destination');
+    expect(link).toHaveAttribute('data-router', 'true');
+    expect(link).not.toHaveAttribute('aria-disabled');
+    await userEvent.click(link);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -5,7 +5,7 @@
 .sectionHead h2 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-heavy); font-size: var(--size-2xl); letter-spacing: -0.04em; }
 .number { font-family: var(--font-kinetic); font-size: var(--size-4xl); line-height: 1; color: var(--text-accent); }
 .fields { display: grid; gap: var(--space-5); }
-.label { margin-bottom: var(--space-2); font: var(--text-label); color: var(--text-label); }
+.label { margin-bottom: var(--space-2); font: var(--text-label-font); color: var(--text-label); }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
 .aside { position: sticky; top: var(--space-24); }

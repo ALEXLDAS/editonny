@@ -54,5 +54,5 @@ dialog.ds-dialog::backdrop { background: var(--scrim); -webkit-backdrop-filter: 
 .ds-ring[data-complete="true"] .ds-ring__pulse { animation: none; }
 .ds-ring__center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
 .ds-ring__value { font-family: var(--font-kinetic); font-size: calc(var(--ring-size) * 0.3); line-height: 1; color: var(--text-1); }
-.ds-ring__value span { font-size: 0.5em; color: var(--text-2); }
+.ds-ring__value span { font-size: calc(var(--ring-size) * 0.15); color: var(--text-2); }
 .ds-ring__label { margin-top: var(--space-1); font-family: var(--font-mono); font-weight: var(--weight-bold); font-size: var(--size-2xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); }

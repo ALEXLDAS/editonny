@@ -1,7 +1,7 @@
 /* Forms: TextField, Select, ChoiceCard, Switch, SegmentedControl. */
 .ds-field { display: block; }
 .ds-field__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); }
-.ds-field__label, .ds-select__label { display: block; font: var(--text-label); color: var(--text-label); transition: color var(--dur-fast); }
+.ds-field__label, .ds-select__label { display: block; font: var(--text-label-font); color: var(--text-label); transition: color var(--dur-fast); }
 .ds-field:is(:focus-within, [data-force~="focus"]) .ds-field__label { color: var(--text-1); }
 .ds-field__count { font-family: var(--font-mono); font-weight: var(--weight-semibold); font-size: var(--size-eyebrow); color: var(--text-3); }
 .ds-field__count[data-near="true"] { color: var(--warning); }

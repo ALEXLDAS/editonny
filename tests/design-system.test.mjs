@@ -57,6 +57,21 @@ test('both themes define every semantic role and the web app loads the design-sy
   assert.match(await read('web/src/app/design-system/layout.tsx'), /import '@editonny\/design-system\/styles\.css';/);
 });
 
+test('font shorthands and theme colors have distinct token names', async () => {
+  const typography = customProperties(await read('design-system/tokens/typography.css'));
+  const colors = customProperties(await read('design-system/tokens/colors.css'));
+  assert.deepEqual(Object.keys(typography).filter(name => name in colors), []);
+  assert.ok(typography['--text-label-font']);
+  assert.ok(colors['--text-label']);
+  const design = await read('DESIGN.md');
+  assert.ok(design.includes('`--text-label-font`'));
+  assert.ok(design.includes('`--text-label`'));
+  for (const path of ['design-system/components/forms/forms.css', 'web/src/features/create/create.module.css', 'web/src/features/library/library.module.css']) {
+    const source = await read(path);
+    assert.match(source, /font: var\(--text-label-font\); color: var\(--text-label\)/, path);
+  }
+});
+
 test('the public API exposes all 38 components and the showcase renders each of them', async () => {
   const api = await read('design-system/components/index.ts');
   const components = [...api.matchAll(/export \{ ([^}]+) \}/g)].flatMap(([, names]) => names.split(',').map(name => name.trim()))
@@ -77,9 +92,12 @@ test('the adherence rule rejects raw values and accepts tokens', () => {
   const error = messageId => ({ messageId });
   tester.run('design/tokens', design.rules.tokens, {
     valid: [
-      'a { color: var(--text-1); padding: var(--space-2) 0; border-radius: var(--radius-md); font: var(--text-label); }',
+      'a { color: var(--text-1); padding: var(--space-2) 0; border-radius: var(--radius-md); font: var(--text-label-font); }',
       'a { border: 1px solid var(--line-1); width: 44px; inset: -6px; background: color-mix(in srgb, var(--paper-900) 4%, transparent); }',
       'a { font-family: var(--font-sans); border-radius: 50%; margin: 0 auto; gap: 0.12em; font-size: calc(var(--ring-size) * 0.3); }',
+      'a { padding: 0.14em; margin-top: 0.06em; border-radius: 0.16em; letter-spacing: 0.1em; }',
+      'a { width: 4rem; height: 2em; border: 0.1rem solid var(--line-1); }',
+      { code: 'a { padding: 1rem; font-size: 1em; border-radius: 1rem; }', options: [{ spacing: false, fontSize: false, radius: false }] },
       'a { --button-height: 50px; --card-pad: var(--space-6); }',
       { code: 'a { padding: 13px; font-size: 7px; }', options: [{ spacing: false, fontSize: false }] },
       'a { font: italic bold var(--size-body)/1 var(--font-sans); --tone: var(--accent); --label: none; }',
@@ -97,6 +115,12 @@ test('the adherence rule rejects raw values and accepts tokens', () => {
       { code: 'a { --accent: red; color: var(--accent); }', errors: [error('color')] },
       { code: 'a { --accent: color(srgb 1 0 0); }', errors: [error('color')] },
       { code: 'a { font: 700 var(--size-body)/1 Inter; }', errors: [error('font')] },
+      { code: 'a { font-size: 1rem; }', errors: [error('fontSize')] },
+      { code: 'a { font-size: 0.5em; }', errors: [error('fontSize')] },
+      { code: 'a { font: 700 1em/1 var(--font-sans); }', errors: [error('fontSize')] },
+      { code: 'a { padding: 0 1rem; margin-inline: 2rem; gap: 0.5rem; }', errors: [error('spacing'), error('spacing'), error('spacing')] },
+      { code: 'a { border-radius: 0.5rem; border-start-start-radius: 1rem; }', errors: [error('radius'), error('radius')] },
+      { code: 'a { font-size: calc(var(--size-body) + 1REM); margin: calc(var(--space-2) + 1rem); }', errors: [error('fontSize'), error('spacing')] },
     ],
   });
 });

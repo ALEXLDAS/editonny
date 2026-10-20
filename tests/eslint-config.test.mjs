@@ -61,6 +61,10 @@ test('design-system adherence covers the library, the web app, and their stylesh
   assert.deepEqual(await rules('a { color: #fff; padding: 12px; }\n', 'design-system/components/core/core.css'), ['design/tokens', 'design/tokens']);
   assert.deepEqual(await rules('a { color: #fff; padding: 13px; border-radius: 3px; }\n', 'web/src/features/home/home.module.css'), ['design/tokens', 'design/tokens', 'design/tokens']);
   assert.deepEqual(await rules('a { color: var(--text-1); padding: var(--space-2); }\n', 'web/src/features/home/home.module.css'), []);
+  for (const path of ['design-system/components/core/core.css', 'web/src/features/home/home.module.css']) {
+    assert.deepEqual(await rules('a { font-size: 1em; padding: 1rem; border-radius: 1rem; }\n', path), ['design/tokens', 'design/tokens', 'design/tokens']);
+    assert.deepEqual(await rules('a { padding: 0.14em; border-radius: 0.14em; font-size: var(--size-body); }\n', path), []);
+  }
   assert.ok(!(await rules(':root { --accent: #ff4f12; --space-3: 12px; }\n', 'design-system/tokens/colors.css')).includes('design/tokens'));
   assert.deepEqual(await rules("export const color = '#ff4f12';\n", 'design-system/components/core/Example.tsx'), ['no-restricted-syntax']);
   assert.deepEqual(await rules("export const margin = '12px';\n", 'web/src/features/home/Example.tsx'), ['no-restricted-syntax']);

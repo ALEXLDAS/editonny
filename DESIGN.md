@@ -304,6 +304,7 @@ Primitives never change with the theme; components consume only semantic roles, 
 | `--surface-well` / `--surface-selected` | ink-850 / ink-700 | paper-50 / olive-100 | Fields, selected choices |
 | `--line-1` / `--line-2` / `--line-strong` | white 7% / 12% / 22% | paper-300 / 400 / 500 | Hairlines and borders |
 | `--text-1` / `--text-2` / `--text-3` | fog-50 / fog-400 / fog-500 | paper-900 / 700 / 600 | Primary, secondary, tertiary text |
+| `--text-label` | fog-200 | paper-900 | Field labels and compact control text |
 | `--accent` / `--text-accent` | orange-500 / orange-500 | orange-500 / orange-700 | Main action, accent text |
 | `--accent-2` / `--focus-ring` | volt-400 / volt-400 | lime-400 / olive-700 | Live, success, focus |
 | `--success` `--warning` `--danger` `--info` | volt, sun, rec, sky | olive-700, amber-700, crimson-700, azure-700 | Status text and outlines |
@@ -322,6 +323,8 @@ Primitives never change with the theme; components consume only semantic roles, 
 - **Editorial stacks** for editorial surfaces: `--font-editorial` (Inter, system sans) with `--font-serif` (Georgia) italic emphasis.
 
 Sizes come only from `--size-*` tokens (10–160 px) and the fluid `--size-fluid-*` headline tokens. Highlight the keyword of a headline with a solid block (`Highlight` or `KineticText`), one per headline.
+
+The `--text-label-font` shorthand implements `typography.label-md`; `--text-label` supplies the theme's label color.
 
 ## Layout
 

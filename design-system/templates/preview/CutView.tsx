@@ -27,7 +27,8 @@ export function CutView({ final, image, onApprove, toast }: CutViewProps) {
 
   const openForm = () => {
     if (inPoint === null) return;
-    setDraft({ start: inPoint, end: Math.max(inPoint + 0.5, t), note: '' });
+    const start = Math.min(inPoint, DURATION - 0.5);
+    setDraft({ start, end: clampTime(Math.max(start + 0.5, t)), note: '' });
   };
   const closeForm = () => { setInPoint(null); setDraft(null); };
   const addMark = (event: FormEvent) => {

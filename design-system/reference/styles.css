@@ -5,3 +5,6 @@
 @import "../tokens/spacing.css";
 @import "../tokens/motion.css";
 @import "../tokens/base.css";
+
+/* The export used --text-label as its label font; the live tokens split it into --text-label-font and a label color. */
+:root { --text-label: var(--text-label-font); }

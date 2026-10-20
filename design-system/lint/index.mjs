@@ -57,11 +57,12 @@ const tokens = {
           if (options.color && value.type === 'Hash') report(value, 'color', `#${value.value}`);
           else if (options.color && value.type === 'Function' && COLOR_FUNCTIONS.has(value.name.toLowerCase())) report(value, 'color', `${value.name}()`);
           else if (options.color && value.type === 'Identifier' && COLOR_PROPERTY.test(property) && NAMED_COLORS.has(value.name.toLowerCase())) report(value, 'color', value.name);
-          else if (value.type === 'Dimension' && value.unit.toLowerCase() === 'px') {
-            const text = `${value.value}px`;
+          else if (value.type === 'Dimension' && ['px', 'rem', 'em'].includes(value.unit.toLowerCase())) {
+            const unit = value.unit.toLowerCase();
+            const text = `${value.value}${unit}`;
             if (options.fontSize && (property === 'font-size' || property === 'font')) report(value, 'fontSize', text);
-            else if (options.spacing && SPACING_PROPERTY.test(property)) report(value, 'spacing', text);
-            else if (options.radius && RADIUS_PROPERTY.test(property)) report(value, 'radius', text);
+            else if (unit !== 'em' && options.spacing && SPACING_PROPERTY.test(property)) report(value, 'spacing', text);
+            else if (unit !== 'em' && options.radius && RADIUS_PROPERTY.test(property)) report(value, 'radius', text);
           }
           if (options.font && (property === 'font-family' || property === 'font')) {
             if (value.type === 'String') report(value, 'font', value.value);

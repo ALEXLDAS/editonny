@@ -31,6 +31,7 @@ const ICON_SIZE = { sm: 16, md: 18, lg: 20 } as const;
 
 export function Button({ variant = 'primary', size = 'md', icon, iconRight, block, disabled, loading, type = 'button', label, children, onClick, href, as, className, style }: ButtonProps) {
   const iconSize = ICON_SIZE[size] ?? ICON_SIZE.md;
+  const inactive = Boolean(disabled || loading);
   const content = <>
     {loading ? <Icon name="loader" size={iconSize} className="ds-button__spinner" /> : icon && <Icon name={icon} size={iconSize + 1} />}
     {children}
@@ -38,8 +39,9 @@ export function Button({ variant = 'primary', size = 'md', icon, iconRight, bloc
   </>;
   const shared = { className: cx('ds-button', className), style, 'aria-label': label, 'data-variant': variant, 'data-size': size, 'data-block': flag(block), onClick };
   if (href !== undefined) {
-    const Link = as ?? 'a';
-    return <Link {...shared} href={href} aria-disabled={disabled || undefined}>{content}</Link>;
+    const Link = inactive ? 'a' : as ?? 'a';
+    return <Link {...shared} href={inactive ? undefined : href} onClick={inactive ? undefined : onClick}
+      role={inactive ? 'link' : undefined} tabIndex={inactive ? -1 : undefined} aria-disabled={inactive || undefined} aria-busy={loading || undefined}>{content}</Link>;
   }
-  return <button {...shared} type={type} disabled={Boolean(disabled || loading)} aria-busy={loading || undefined}>{content}</button>;
+  return <button {...shared} type={type} disabled={inactive} aria-busy={loading || undefined}>{content}</button>;
 }

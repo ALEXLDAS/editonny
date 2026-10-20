@@ -28,16 +28,16 @@
 .ds-button[data-variant="glass"] { --button-bg: var(--glass-12); --button-bg-hover: var(--glass-18); --button-fg: var(--on-media); --button-line: var(--media-line); --button-glow: none; -webkit-backdrop-filter: blur(var(--blur-glass)); backdrop-filter: blur(var(--blur-glass)); }
 .ds-button[data-variant="outline"] { --button-bg: transparent; --button-bg-hover: var(--surface-hover); --button-fg: var(--text-1); --button-line: var(--line-strong); --button-glow: none; }
 .ds-button[data-variant="ghost"] { --button-bg: transparent; --button-bg-hover: var(--surface-hover); --button-fg: var(--text-2); --button-fg-hover: var(--text-1); --button-glow: none; }
-.ds-button:is(:hover, [data-force~="hover"]):not(:disabled) { background: var(--button-bg-hover); color: var(--button-fg-hover); box-shadow: var(--button-glow); transform: translateY(-2px); }
-.ds-button:is([data-variant="primary"], [data-variant="volt"], [data-variant="white"]):is(:hover, [data-force~="hover"]):not(:disabled)::before {
+.ds-button:is(:hover, [data-force~="hover"]):not(:disabled, [aria-disabled="true"]) { background: var(--button-bg-hover); color: var(--button-fg-hover); box-shadow: var(--button-glow); transform: translateY(-2px); }
+.ds-button:is([data-variant="primary"], [data-variant="volt"], [data-variant="white"]):is(:hover, [data-force~="hover"]):not(:disabled, [aria-disabled="true"])::before {
   content: ""; position: absolute; inset: 0 auto 0 0; width: 40%; z-index: -1; background: var(--grad-shine); animation: ed-shine 0.9s var(--ease-out) both;
 }
-.ds-button:is(:active, [data-force~="active"]):not(:disabled) { transform: scale(0.95); }
+.ds-button:is(:active, [data-force~="active"]):not(:disabled, [aria-disabled="true"]) { transform: scale(0.95); }
 .ds-button:is(:focus-visible, [data-force~="focus"]) { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
-.ds-button:disabled { opacity: 0.4; cursor: default; }
+.ds-button:is(:disabled, [aria-disabled="true"]) { opacity: 0.4; cursor: default; }
 .ds-button[aria-busy="true"] { cursor: progress; }
 .ds-button__icon-right { transition: transform var(--dur-base) var(--ease-spring); }
-.ds-button:is(:hover, [data-force~="hover"]):not(:disabled) .ds-button__icon-right { transform: translate(3px, -1px); }
+.ds-button:is(:hover, [data-force~="hover"]):not(:disabled, [aria-disabled="true"]) .ds-button__icon-right { transform: translate(3px, -1px); }
 .ds-button__spinner { animation: ed-spin 1s linear infinite; }
 
 .ds-icon-button {
